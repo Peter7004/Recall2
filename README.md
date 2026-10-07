@@ -1,39 +1,33 @@
 # Recall
 
-A Flutter vocabulary review dashboard based on the supplied Lexicon home-screen design.
+A Flutter flashcard app for building and reviewing vocabulary decks.
 
 ## Features
 
-- Create decks and add, view, or edit cards with an original, meaning, and example.
-- Review due cards with Again, Hard, Good, and Easy scheduling.
-- Set a daily study goal in Settings; today's remaining count updates from due cards.
-- Decks, cards, review schedules, and the daily goal are stored locally.
+- Create, rename, and manage vocabulary decks.
+- Add, edit, bookmark, delete, or exclude individual cards from review.
+- Import cards from CSV files with English or Korean headers for word, meaning, and example.
+- Attach an image to a card and reveal its example only after flipping the card.
+- Set a daily study goal in Settings.
+- Decks, cards, bookmarks, review exclusions, and the daily goal are stored locally.
 
-The Import CSV action is a placeholder; CSV file selection and parsing are not
-implemented yet.
+CSV files can use `front,meaning,example` or `단어,뜻,예문` as their header row.
 
 ## Run
 
-Install the Flutter SDK and Chrome. On Windows, if your project or Flutter SDK
-path contains Korean or other non-ASCII characters, map both to ASCII drive
-letters before running Flutter:
+Install the Flutter SDK and Chrome, then run from the project directory:
 
-```powershell
-subst R: "$env:USERPROFILE\OneDrive\Desktop\Recall"
-subst S: "$env:USERPROFILE\flutter"
-Set-Location R:\
-S:\bin\flutter.bat pub get
-S:\bin\flutter.bat run -d chrome
+```sh
+flutter pub get
+flutter run -d chrome
 ```
 
-The drive mappings last for the current Windows sign-in session. If a drive
-letter is already mapped, inspect `subst` and use the existing mapping instead
-of mapping it again. The review page opens from **Start Review** on the home
-screen.
+On Windows, if Flutter's shader compiler crashes, keep both the project and the
+Flutter SDK in paths that contain only ASCII characters. The review page opens
+from **Start Review** on the home screen.
 
-To target Android, install the Android SDK, then run the same Flutter command
-with an Android device or emulator selected. `flutter doctor` currently reports
-that the Android SDK is not installed.
+To target Android, install the Android SDK and select a connected device or
+emulator before running `flutter run`.
 
 The app uses Flutter's Material widgets and `shared_preferences` for local
 storage.

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recall/recall_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,6 +107,44 @@ void main() {
     restored.dispose();
   });
 
+  test('repairs duplicate legacy card ids before editing or bookmarking',
+      () async {
+    SharedPreferences.setMockInitialValues({
+      'recall.data.v1': jsonEncode({
+        'decks': [
+          {
+            'id': 'deck',
+            'name': 'Words',
+            'cards': [
+              {'id': 'duplicate', 'front': 'first', 'meaning': '첫째'},
+              {'id': 'duplicate', 'front': 'second', 'meaning': '둘째'},
+            ],
+          },
+        ],
+      }),
+    });
+
+    final store = await RecallStore.load();
+    final cards = store.decks.single.cards;
+    expect(cards.map((card) => card.id).toSet(), hasLength(2));
+
+    await store.toggleBookmark(cards[1].id);
+    await store.updateCard(
+      deckId: 'deck',
+      cardId: cards[1].id,
+      front: 'edited second',
+      meaning: '수정된 둘째',
+      example: '',
+    );
+
+    final updatedCards = store.decks.single.cards;
+    expect(updatedCards[0].front, 'first');
+    expect(updatedCards[0].isBookmarked, isFalse);
+    expect(updatedCards[1].front, 'edited second');
+    expect(updatedCards[1].isBookmarked, isTrue);
+    store.dispose();
+  });
+
   test('imports a CSV deck into a new deck', () async {
     final store = await RecallStore.load();
     final imported = await store.importCsvDeck(
@@ -120,5 +160,57 @@ void main() {
     expect(store.decks.single.cards.first.front, 'meticulous');
     expect(store.decks.single.cards.first.meaning, '꼼꼼한');
     store.dispose();
+  });
+
+  test('skips Korean CSV headers and gives each imported card a unique id',
+      () async {
+    final store = await RecallStore.load();
+    final imported = await store.importCsvDeck(
+      csvText:
+          '\uFEFF영어 단어, 뜻, 예문\napple,사과,I eat an apple.\nbook,책,This is my book.',
+    );
+
+    final cards = store.decks.single.cards;
+    expect(imported, 2);
+    expect(cards.map((card) => card.front), ['apple', 'book']);
+    expect(cards.map((card) => card.id).toSet(), hasLength(2));
+    store.dispose();
+  });
+
+  test('renames decks, excludes cards from review, and deletes selected cards',
+      () async {
+    final store = await RecallStore.load();
+    await store.createDeck('Old title');
+    final deckId = store.decks.single.id;
+    await store.addCard(
+      deckId: deckId,
+      front: 'keep',
+      meaning: '유지',
+      example: '',
+    );
+    await store.addCard(
+      deckId: deckId,
+      front: 'remove',
+      meaning: '삭제',
+      example: '',
+    );
+    final cards = store.decks.single.cards;
+
+    await store.updateDeckName(deckId, 'New title');
+    await store.toggleReviewExclusion(cards[0].id);
+    expect(store.decks.single.name, 'New title');
+    expect(store.totalCards, 2);
+    expect(store.dueCards.map((entry) => entry.card.front), ['remove']);
+
+    await store.deleteCard(deckId: deckId, cardId: cards[1].id);
+    expect(store.decks.single.cards.map((card) => card.front), ['keep']);
+    expect(store.dueCards, isEmpty);
+    store.dispose();
+
+    final restored = await RecallStore.load();
+    expect(restored.decks.single.name, 'New title');
+    expect(restored.decks.single.cards.single.isExcludedFromReview, isTrue);
+    expect(restored.dueCards, isEmpty);
+    restored.dispose();
   });
 }

@@ -12,7 +12,11 @@ build/
 .idea/
 .vscode/*
 !.vscode/extensions.json
-!.vscode/tasks.json
+*.iml
+
+# Local machine settings and logs
+android/local.properties
+flutter_*.log
 
 # OS
 .DS_Store

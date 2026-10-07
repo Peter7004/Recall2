@@ -39,7 +39,7 @@ void main() {
       deckId: store.decks.single.id,
       front: 'apple',
       meaning: '사과',
-      example: '',
+      example: 'I eat an apple.',
     );
 
     await tester.pumpWidget(MaterialApp(home: ReviewPage(store: store)));
@@ -47,15 +47,18 @@ void main() {
 
     expect(find.text('apple'), findsOneWidget);
     expect(find.text('사과'), findsNothing);
+    expect(find.text('I eat an apple.'), findsNothing);
 
     await tester.tap(find.text('답 보기'));
     await tester.pump();
     expect(find.text('사과'), findsOneWidget);
+    expect(find.text('I eat an apple.'), findsOneWidget);
 
     await tester.tap(find.text('기본 학습'));
     await tester.pump();
     expect(find.text('사과'), findsOneWidget);
     expect(find.text('apple'), findsOneWidget);
+    expect(find.text('I eat an apple.'), findsOneWidget);
 
     store.dispose();
   });

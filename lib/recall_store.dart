@@ -16,6 +16,7 @@ class RecallCard {
     required this.ease,
     required this.lastReviewed,
     this.isBookmarked = false,
+    this.isExcludedFromReview = false,
     this.imageData,
   });
 
@@ -29,6 +30,7 @@ class RecallCard {
   final double ease;
   final DateTime? lastReviewed;
   final bool isBookmarked;
+  final bool isExcludedFromReview;
   final String? imageData;
 
   Map<String, Object?> toJson() => {
@@ -42,6 +44,7 @@ class RecallCard {
         'ease': ease,
         'lastReviewed': lastReviewed?.toIso8601String(),
         'isBookmarked': isBookmarked,
+        'isExcludedFromReview': isExcludedFromReview,
         'imageData': imageData,
       };
 
@@ -57,10 +60,13 @@ class RecallCard {
         ease: (json['ease'] as num?)?.toDouble() ?? 2.5,
         lastReviewed: DateTime.tryParse(json['lastReviewed'] as String? ?? ''),
         isBookmarked: json['isBookmarked'] as bool? ?? false,
+        isExcludedFromReview:
+          json['isExcludedFromReview'] as bool? ?? false,
         imageData: json['imageData'] as String?,
       );
 
   RecallCard copyWith({
+    String? id,
     String? front,
     String? meaning,
     String? example,
@@ -70,10 +76,11 @@ class RecallCard {
     double? ease,
     DateTime? lastReviewed,
     bool? isBookmarked,
+    bool? isExcludedFromReview,
     String? imageData,
   }) =>
       RecallCard(
-        id: id,
+        id: id ?? this.id,
         front: front ?? this.front,
         meaning: meaning ?? this.meaning,
         example: example ?? this.example,
@@ -83,6 +90,8 @@ class RecallCard {
         ease: ease ?? this.ease,
         lastReviewed: lastReviewed ?? this.lastReviewed,
         isBookmarked: isBookmarked ?? this.isBookmarked,
+        isExcludedFromReview:
+          isExcludedFromReview ?? this.isExcludedFromReview,
         imageData: imageData == null
             ? this.imageData
             : imageData.isEmpty
@@ -117,6 +126,7 @@ class RecallStore extends ChangeNotifier {
   RecallStore._(this._preferences);
 
   static const _dataKey = 'recall.data.v1';
+  static int _idSequence = 0;
   final SharedPreferences _preferences;
   List<RecallDeck> _decks = [];
   int _dailyGoal = 24;
@@ -143,6 +153,7 @@ class RecallStore extends ChangeNotifier {
         store._decks = [];
       }
     }
+    store._repairDuplicateIds();
     store._rollReviewDay();
     return store;
   }
@@ -152,9 +163,9 @@ class RecallStore extends ChangeNotifier {
   int get reviewsToday => _reviewsToday;
   bool get tutorialCompleted => _tutorialCompleted;
   int get totalCards => _decks.expand((deck) => deck.cards).length;
-  int get dueCount => totalCards;
+  int get dueCount => dueCards.length;
   int get remainingToday =>
-      math.min(totalCards, math.max(0, _dailyGoal - _reviewsToday)).toInt();
+      math.min(dueCount, math.max(0, _dailyGoal - _reviewsToday)).toInt();
 
   RecallDeck? deckById(String id) {
     for (final deck in _decks) {
@@ -165,7 +176,8 @@ class RecallStore extends ChangeNotifier {
 
   List<({RecallDeck deck, RecallCard card})> get dueCards => [
         for (final deck in _decks)
-          for (final card in deck.cards) (deck: deck, card: card),
+          for (final card in deck.cards)
+            if (!card.isExcludedFromReview) (deck: deck, card: card),
       ]..sort((a, b) =>
           a.card.front.toLowerCase().compareTo(b.card.front.toLowerCase()));
 
@@ -183,6 +195,7 @@ class RecallStore extends ChangeNotifier {
     if (rows.isEmpty) return 0;
 
     final cards = <RecallCard>[];
+    final generatedIds = <String>{};
     for (final row in rows) {
       final front = row.elementAtOrNull(0)?.trim() ?? '';
       final meaning = row.elementAtOrNull(1)?.trim() ?? '';
@@ -190,7 +203,7 @@ class RecallStore extends ChangeNotifier {
       final example = row.length > 2 ? row[2].trim() : '';
       cards.add(
         RecallCard(
-          id: _newId(),
+          id: _newId(reservedIds: generatedIds),
           front: front,
           meaning: meaning,
           example: example,
@@ -209,7 +222,7 @@ class RecallStore extends ChangeNotifier {
     _decks = [
       ..._decks,
       RecallDeck(
-          id: _newId(),
+          id: _newId(reservedIds: generatedIds),
           name: name.isEmpty ? 'Imported deck' : name,
           cards: cards),
     ];
@@ -224,6 +237,30 @@ class RecallStore extends ChangeNotifier {
       ..._decks,
       RecallDeck(id: _newId(), name: trimmed, cards: const [])
     ];
+    await _save();
+  }
+
+  Future<void> updateDeckName(String deckId, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final index = _decks.indexWhere((deck) => deck.id == deckId);
+    if (index == -1) return;
+    final deck = _decks[index];
+    _replaceDeck(
+      index, RecallDeck(id: deck.id, name: trimmed, cards: deck.cards));
+    await _save();
+  }
+
+  Future<void> deleteCard({
+    required String deckId,
+    required String cardId,
+  }) async {
+    final index = _decks.indexWhere((deck) => deck.id == deckId);
+    if (index == -1) return;
+    final deck = _decks[index];
+    final cards = deck.cards.where((card) => card.id != cardId).toList();
+    if (cards.length == deck.cards.length) return;
+    _replaceDeck(index, RecallDeck(id: deck.id, name: deck.name, cards: cards));
     await _save();
   }
 
@@ -305,6 +342,22 @@ class RecallStore extends ChangeNotifier {
     }
   }
 
+  Future<void> toggleReviewExclusion(String cardId) async {
+    for (var deckIndex = 0; deckIndex < _decks.length; deckIndex++) {
+      final deck = _decks[deckIndex];
+      final cardIndex = deck.cards.indexWhere((card) => card.id == cardId);
+      if (cardIndex == -1) continue;
+      final cards = [...deck.cards];
+      cards[cardIndex] = cards[cardIndex].copyWith(
+        isExcludedFromReview: !cards[cardIndex].isExcludedFromReview,
+      );
+      _replaceDeck(
+          deckIndex, RecallDeck(id: deck.id, name: deck.name, cards: cards));
+      await _save();
+      return;
+    }
+  }
+
   Future<void> completeTutorial() async {
     if (_tutorialCompleted) return;
     _tutorialCompleted = true;
@@ -343,16 +396,40 @@ class RecallStore extends ChangeNotifier {
     if (rows.isEmpty) return const [];
 
     final header = rows.first
-        .map((value) => value.toLowerCase().trim())
+        .map((value) => value
+            .replaceFirst('\uFEFF', '')
+            .toLowerCase()
+            .trim()
+            .replaceAll(RegExp(r'[\s_()\-]'), ''))
         .toList(growable: false);
-    final hasHeader = header.any((value) =>
-            value.contains('front') ||
-            value.contains('word') ||
-            value.contains('term')) &&
-        header.any((value) =>
-            value.contains('meaning') ||
-            value.contains('definition') ||
-            value.contains('back'));
+    const frontHeaders = {
+      'front',
+      'word',
+      'term',
+      'vocabulary',
+      '단어',
+      '영어단어',
+      '영단어',
+      '앞면',
+      '질문',
+      '표제어',
+    };
+    const meaningHeaders = {
+      'meaning',
+      'definition',
+      'back',
+      'translation',
+      '뜻',
+      '의미',
+      '해석',
+      '번역',
+      '뒷면',
+      '정의',
+      '답',
+    };
+    final hasHeader =
+      header.any(frontHeaders.contains) &&
+          header.any(meaningHeaders.contains);
 
     return hasHeader ? rows.sublist(1) : rows;
   }
@@ -391,6 +468,20 @@ class RecallStore extends ChangeNotifier {
     _decks = decks;
   }
 
+  void _repairDuplicateIds() {
+    final usedIds = <String>{};
+    _decks = _decks.map((deck) {
+      final deckId =
+          usedIds.add(deck.id) ? deck.id : _newId(reservedIds: usedIds);
+      final cards = deck.cards.map((card) {
+        final cardId =
+            usedIds.add(card.id) ? card.id : _newId(reservedIds: usedIds);
+        return cardId == card.id ? card : card.copyWith(id: cardId);
+      }).toList();
+      return RecallDeck(id: deckId, name: deck.name, cards: cards);
+    }).toList();
+  }
+
   void _rollReviewDay() {
     final today = _dayKey(DateTime.now());
     if (_reviewDay != today) {
@@ -401,5 +492,18 @@ class RecallStore extends ChangeNotifier {
 
   static String _dayKey(DateTime date) =>
       '${date.year}-${date.month}-${date.day}';
-  static String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
+  String _newId({Set<String>? reservedIds}) {
+    final usedIds = <String>{
+      ...?reservedIds,
+      for (final deck in _decks) deck.id,
+      for (final deck in _decks)
+        for (final card in deck.cards) card.id,
+    };
+    String id;
+    do {
+      id = '${DateTime.now().microsecondsSinceEpoch}-${_idSequence++}';
+    } while (usedIds.contains(id));
+    reservedIds?.add(id);
+    return id;
+  }
 }

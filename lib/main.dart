@@ -1032,6 +1032,7 @@ class _ReviewPageState extends State<ReviewPage> {
                         child: _Flashcard(
                           revealed: _revealed,
                           imageData: current.card.imageData,
+                          example: current.card.example,
                           promptText: promptText,
                           answerText: answerText,
                           promptLabel: promptLabel,
@@ -1119,6 +1120,7 @@ class _Flashcard extends StatelessWidget {
   const _Flashcard({
     required this.revealed,
     required this.imageData,
+    required this.example,
     required this.promptText,
     required this.answerText,
     required this.promptLabel,
@@ -1128,6 +1130,7 @@ class _Flashcard extends StatelessWidget {
 
   final bool revealed;
   final String? imageData;
+  final String example;
   final String promptText;
   final String answerText;
   final String promptLabel;
@@ -1257,7 +1260,11 @@ class _Flashcard extends StatelessWidget {
                                     letterSpacing: 0.8))
                           ]))
                     else ...[
-                      _AnswerPanel(label: answerLabel, text: answerText),
+                      _AnswerPanel(
+                        label: answerLabel,
+                        text: answerText,
+                        example: example,
+                      ),
                     ],
                   ]),
             ),
@@ -1267,10 +1274,15 @@ class _Flashcard extends StatelessWidget {
 }
 
 class _AnswerPanel extends StatelessWidget {
-  const _AnswerPanel({required this.label, required this.text});
+  const _AnswerPanel({
+    required this.label,
+    required this.text,
+    required this.example,
+  });
 
   final String label;
   final String text;
+  final String example;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1287,7 +1299,19 @@ class _AnswerPanel extends StatelessWidget {
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 5),
           Text(text,
-              style: const TextStyle(color: _ink, fontSize: 14, height: 1.45))
+              style: const TextStyle(color: _ink, fontSize: 14, height: 1.45)),
+          if (example.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('예문',
+                style: TextStyle(
+                    color: _muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(example,
+                style: const TextStyle(
+                    color: _ink, fontSize: 13, height: 1.45)),
+          ],
         ]),
       );
 }
@@ -1363,6 +1387,8 @@ class _FeedbackDock extends StatelessWidget {
       );
 }
 
+enum _DeckCardAction { toggleReview, delete }
+
 class _DeckDetailPage extends StatelessWidget {
   const _DeckDetailPage({required this.store, required this.deckId});
 
@@ -1381,6 +1407,44 @@ class _DeckDetailPage extends StatelessWidget {
     );
   }
 
+  void _renameDeck(BuildContext context, RecallDeck deck) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _EntryDialog(
+        title: 'Rename deck',
+        label: 'Deck name',
+        action: 'Save',
+        initialValue: deck.name,
+        successMessage: 'updated',
+        onSubmit: (name) => store.updateDeckName(deck.id, name),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteCard(
+      BuildContext context, RecallDeck deck, RecallCard card) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this card?'),
+        content: Text('“${card.front}” will be removed from ${deck.name}.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await store.deleteCard(deckId: deck.id, cardId: card.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: store,
@@ -1395,6 +1459,13 @@ class _DeckDetailPage extends StatelessWidget {
             appBar: AppBar(
               backgroundColor: _surface,
               title: Text(deck.name),
+              actions: [
+                IconButton(
+                  tooltip: 'Rename deck',
+                  onPressed: () => _renameDeck(context, deck),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+              ],
             ),
             body: LayoutBuilder(
               builder: (context, constraints) {
@@ -1413,6 +1484,11 @@ class _DeckDetailPage extends StatelessWidget {
                                 const SizedBox(height: 8),
                             itemBuilder: (context, index) {
                               final card = deck.cards[index];
+                              final cardSubtitle = [
+                                card.meaning,
+                                if (card.example.isNotEmpty) card.example,
+                                if (card.isExcludedFromReview) 'Not in review',
+                              ].join('\n');
                               return _Panel(
                                 padding: EdgeInsets.zero,
                                 child: ListTile(
@@ -1423,11 +1499,12 @@ class _DeckDetailPage extends StatelessWidget {
                                   ),
                                   title: Text(card.front),
                                   subtitle: Text(
-                                    '${card.meaning}\n${card.example}',
+                                    cardSubtitle,
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  isThreeLine: card.example.isNotEmpty,
+                                  isThreeLine: card.example.isNotEmpty ||
+                                      card.isExcludedFromReview,
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1451,6 +1528,33 @@ class _DeckDetailPage extends StatelessWidget {
                                         onPressed: () =>
                                             _editCard(context, deck, card),
                                         icon: const Icon(Icons.edit_outlined),
+                                      ),
+                                      PopupMenuButton<_DeckCardAction>(
+                                        tooltip: 'More card actions',
+                                        onSelected: (action) {
+                                          switch (action) {
+                                            case _DeckCardAction.toggleReview:
+                                              store.toggleReviewExclusion(card.id);
+                                            case _DeckCardAction.delete:
+                                              _confirmDeleteCard(
+                                                  context, deck, card);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem(
+                                            value:
+                                                _DeckCardAction.toggleReview,
+                                            child: Text(
+                                              card.isExcludedFromReview
+                                                  ? 'Include in review'
+                                                  : 'Remove from review',
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: _DeckCardAction.delete,
+                                            child: Text('Delete from deck'),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -1641,6 +1745,7 @@ class _CardEditorPage extends StatefulWidget {
 class _CardEditorPageState extends State<_CardEditorPage> {
   late final TextEditingController _frontController;
   late final TextEditingController _meaningController;
+  late final TextEditingController _exampleController;
   final _imagePicker = ImagePicker();
   String? _imageData;
   bool _saving = false;
@@ -1652,6 +1757,8 @@ class _CardEditorPageState extends State<_CardEditorPage> {
     _frontController = TextEditingController(text: widget.card?.front ?? '');
     _meaningController =
         TextEditingController(text: widget.card?.meaning ?? '');
+    _exampleController =
+      TextEditingController(text: widget.card?.example ?? '');
     _imageData = widget.card?.imageData;
   }
 
@@ -1659,6 +1766,7 @@ class _CardEditorPageState extends State<_CardEditorPage> {
   void dispose() {
     _frontController.dispose();
     _meaningController.dispose();
+    _exampleController.dispose();
     super.dispose();
   }
 
@@ -1770,6 +1878,19 @@ class _CardEditorPageState extends State<_CardEditorPage> {
                     alignLabelWithHint: true,
                   ),
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _exampleController,
+                  minLines: 2,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: '예문',
+                    hintText: '카드를 공개한 뒤 확인할 예문을 입력하세요',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1815,7 +1936,7 @@ class _CardEditorPageState extends State<_CardEditorPage> {
         deckId: widget.deckId,
         front: front,
         meaning: meaning,
-        example: '',
+        example: _exampleController.text.trim(),
         imageData: _imageData,
       );
     } else {
@@ -1824,7 +1945,7 @@ class _CardEditorPageState extends State<_CardEditorPage> {
         cardId: widget.card!.id,
         front: front,
         meaning: meaning,
-        example: widget.card!.example,
+        example: _exampleController.text.trim(),
         imageData: _imageData ?? '',
       );
     }
@@ -2027,23 +2148,34 @@ class _DestinationPage extends StatelessWidget {
 }
 
 class _EntryDialog extends StatefulWidget {
-  const _EntryDialog(
-      {required this.title,
-      required this.label,
-      required this.action,
-      required this.onSubmit});
+  const _EntryDialog({
+    required this.title,
+    required this.label,
+    required this.action,
+    required this.onSubmit,
+    this.initialValue = '',
+    this.successMessage = 'added',
+  });
 
   final String title;
   final String label;
   final String action;
   final ValueChanged<String> onSubmit;
+  final String initialValue;
+  final String successMessage;
 
   @override
   State<_EntryDialog> createState() => _EntryDialogState();
 }
 
 class _EntryDialogState extends State<_EntryDialog> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
 
   @override
   void dispose() {
@@ -2079,7 +2211,8 @@ class _EntryDialogState extends State<_EntryDialog> {
     Navigator.pop(context);
     widget.onSubmit(value);
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('“$value” added')));
+      .showSnackBar(
+        SnackBar(content: Text('“$value” ${widget.successMessage}')));
   }
 }
 
