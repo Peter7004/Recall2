@@ -1,0 +1,95 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Recall on Chrome",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"run",
+				"-d",
+				"chrome"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"clear": true
+			}
+		},
+		{
+			"label": "Flutter Pub Get",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"pub",
+				"get"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Analyze Recall",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"analyze"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Test Recall",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"test"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Build Web",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"build",
+				"web",
+				"--release"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Recall on Chrome Release",
+			"type": "shell",
+			"command": "S:\\bin\\flutter.bat",
+			"args": [
+				"run",
+				"-d",
+				"chrome",
+				"--release"
+			],
+			"options": {
+				"cwd": "R:\\"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
