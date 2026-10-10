@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,29 +18,38 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Recall English and engineering vocabulary dictionary.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preload" href="branding/recall-logo.png" as="image">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="recall">
+  <meta name="apple-mobile-web-app-title" content="Recall">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>recall</title>
+  <title>Recall</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="startup.css">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <div id="recall-startup" role="status" aria-label="Recall 로딩 중" aria-busy="true">
+    <div class="startup-content">
+      <div class="startup-logo" aria-hidden="true">
+        <img src="branding/recall-logo.png" alt="" width="1254" height="1254">
+      </div>
+      <div id="startup-error" class="startup-error" role="alert" hidden>
+        <p>앱을 실행하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.</p>
+        <button id="startup-retry" type="button">다시 시도</button>
+      </div>
+    </div>
+  </div>
+  <noscript>Recall을 실행하려면 JavaScript를 활성화해 주세요.</noscript>
+  <script src="startup.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

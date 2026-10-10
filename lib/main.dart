@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:recall/branding.dart';
 import 'package:recall/recall_store.dart';
 
 void main() {
@@ -47,7 +49,8 @@ class RecallApp extends StatelessWidget {
 }
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({super.key, this.loadStore});
+  final Future<RecallStore> Function()? loadStore;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -69,7 +72,7 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _loadStore() async {
     RecallStore store;
     try {
-      store = await RecallStore.load();
+      store = await (widget.loadStore?.call() ?? RecallStore.load());
     } catch (error) {
       if (mounted) setState(() => _loadError = error);
       return;
@@ -309,27 +312,28 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final store = _store;
     if (store == null) {
+      if (_loadError == null) {
+        return const Scaffold(body: RecallLoadingScreen(animate: !kIsWeb));
+      }
       return Scaffold(
         body: Center(
-            child: _loadError == null
-                ? const CircularProgressIndicator()
-                : Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Text('저장 데이터를 불러오지 못했습니다. 기존 저장본은 보존됩니다.'),
-                      const SizedBox(height: 12),
-                      Text('$_loadError'),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() => _loadError = null);
-                          _loadStore();
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('다시 시도'),
-                      ),
-                    ]),
-                  )),
+            child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('저장 데이터를 불러오지 못했습니다. 기존 저장본은 보존됩니다.'),
+            const SizedBox(height: 12),
+            Text('$_loadError'),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() => _loadError = null);
+                _loadStore();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 시도'),
+            ),
+          ]),
+        )),
       );
     }
     return AnimatedBuilder(
@@ -454,43 +458,17 @@ class _TopBar extends StatelessWidget {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: _surface.withValues(alpha: 0.96),
-        border: const Border(bottom: BorderSide(color: _line, width: 0.6)),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: _line, width: 0.6)),
       ),
       child: Row(
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: _ink,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.menu_book_rounded,
-                color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 9),
-          const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Recall',
-                  style: TextStyle(
-                      color: _ink,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      height: 1.1)),
-              SizedBox(height: 2),
-              Text('영어·전기공학 사전',
-                  style: TextStyle(
-                      color: _muted,
-                      fontSize: 9,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const Spacer(),
+          const Expanded(
+              child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: RecallHeaderBrand())),
           IconButton(
             onPressed: onSearch,
             tooltip: 'Search vocabulary',

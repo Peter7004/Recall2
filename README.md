@@ -6,6 +6,7 @@ engineering terminology, with optional photo-assisted flashcard review.
 ## Features
 
 - Dictionary, Subjects, Bookmarks, Flashcards, and Collections navigation.
+- Reference-logo startup screen with a single brief reveal and matching header branding.
 - Two vocabulary types: `general_technical` and `technical`.
 - Learning priorities `high`, `medium`, and `low`, with visible labels and filters
   in the dictionary and bookmarks.
@@ -33,6 +34,25 @@ does not change the learner's independent review-exclusion setting.
 No formula/LaTeX rendering, detailed technical concept panels, FSRS, handwriting,
 or formula recognition is introduced. Existing engineering metadata is retained
 for later development without active learner controls.
+
+## Branding and Startup
+
+`web/branding/recall-logo.png` is the unchanged user-provided artwork. The header
+displays the book and original `Recall` wordmark in separate viewport crops;
+no substitute font is used and other application text retains its existing font.
+The startup screen displays the original stacked logo on white.
+
+Web startup shows the logo before Flutter initializes, with one 650 ms fade and
+8 px upward reveal after the image is available. Reduced-motion settings disable
+this animation. The HTML layer is removed on Flutter's first frame; local-data
+loading uses the same logo without replaying the animation on web. No minimum
+splash duration or artificial startup delay is added. Script/engine failures
+show a retry action that reloads the page without clearing saved vocabulary.
+Existing local-data errors retain their original recovery screen.
+
+Native Flutter loading uses the same artwork and finite reveal, respecting
+system motion preferences. Platform launch screens, launcher icons, and the
+browser favicon are unchanged in this update.
 
 ## Local Storage and Migration
 

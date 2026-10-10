@@ -1,0 +1,82 @@
+html, body {
+  margin: 0;
+  background: #ffffff;
+}
+
+#recall-startup {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  color: #1b3045;
+  font-family: sans-serif;
+  letter-spacing: 0;
+}
+
+.startup-content {
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+}
+
+.startup-logo {
+  position: relative;
+  width: min(228px, calc(100vw - 64px));
+  aspect-ratio: 608 / 676;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.startup-logo.is-loaded {
+  opacity: 1;
+  animation: recall-reveal 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* These coordinates match the full-artwork viewport in lib/branding.dart. */
+.startup-logo img {
+  position: absolute;
+  width: 206.25%;
+  height: 185.50295858%;
+  left: -55.92105263%;
+  top: -42.89940828%;
+  max-width: none;
+}
+
+.startup-error {
+  max-width: min(300px, calc(100vw - 48px));
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.startup-error button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #d5dde5;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1b3045;
+  font: inherit;
+  cursor: pointer;
+}
+
+.startup-error button:focus-visible {
+  outline: 2px solid #4d93f9;
+  outline-offset: 3px;
+}
+
+@keyframes recall-reveal {
+  from { opacity: 0.35; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-height: 360px) {
+  .startup-logo { width: 160px; }
+  .startup-content { gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startup-logo.is-loaded { animation: none; }
+}

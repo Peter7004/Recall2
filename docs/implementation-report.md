@@ -135,10 +135,28 @@ No FSRS or advanced spaced repetition was added.
 - Deleted subject filters reset safely. Failed additions/deletions/pin changes restore the
   categories, assignments, and preferences cache.
 
+## Branding and Loading Update
+
+- The supplied 1254x1254 PNG is preserved byte-for-byte at
+  `web/branding/recall-logo.png`. Header book/wordmark and splash artwork use
+  viewport crops of this same original, retaining the exact lettering instead
+  of guessing a font. Generated transparent-cutout candidates were inspected
+  but not used because they did not preserve the original edges faithfully.
+- Web startup displays the logo before Flutter is ready. One 650 ms fade/8 px
+  rise runs after the image loads; reduced-motion mode is static. The first
+  Flutter frame removes the HTML loader, and Flutter's data-loading logo does
+  not restart the web animation. There is no artificial minimum splash delay.
+- Custom bootstrap uses Flutter's engine/app initialization callbacks with
+  promise-error recovery. Bootstrap/entrypoint script failures offer retry;
+  retry never clears local storage. Existing corrupt-data safeguards remain.
+  Initialization hooks follow the [official Flutter startup documentation](https://docs.flutter.dev/platform-integration/web/initialization).
+- Header branding fits narrow mobile widths. Other UI fonts, vocabulary
+  features, storage, platform launcher icons, and the browser favicon are unchanged.
+
 ## Verification
 
 - `flutter analyze`: passed, no issues.
-- `flutter test --concurrency=1`: 68 tests passed (42 store, 26 widget), including
+- `flutter test --concurrency=1`: 73 tests passed (42 store, 31 widget), including
   cascade, bulk, cancellation, rollback, filtered selection, and live
   flashcard-queue regression coverage, subject-pin protection, custom-subject
   creation/deletion, one-time upgrade preservation, and subject-save failure recovery.
@@ -156,9 +174,15 @@ No FSRS or advanced spaced repetition was added.
   pin/unpin persistence, disabled subtree deletion, failed pin/unpin recovery,
   one-time root removal with promoted children and intact vocabulary, and
   retention of subsequently re-created subjects with the retired names.
+  Branding checks cover early splash display, a single finite animation,
+  reduced-motion mode, first-frame removal, source artwork/wordmark rendering,
+  CSV/bookmark reload persistence, blocked bootstrap and entrypoint retry with
+  vocabulary retained, and loader/engine/app promise-failure handling.
+  Splash/header screenshots include nonblank blue/navy pixel checks on desktop
+  and 320 px mobile screens.
   No page errors or failed local asset responses were observed.
-- Viewports checked: 1280x900, 390x844, and 360x780 in the browser;
-  360x780 in widget tests.
+- Viewports checked: 1280x900, 390x844, 360x780, and 320x640 in the browser;
+  360x780, 320x640, and 640x360 in widget tests.
 - Final Dart source/test files were hash-compared with the validated source copy.
 
 The Windows helper completed analysis, tests, and a release build in a fresh
