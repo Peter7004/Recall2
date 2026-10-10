@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -62,10 +63,18 @@ class _HomeShellState extends State<HomeShell> {
   String? _dictionaryCategoryId;
   RecallStore? _store;
   Object? _loadError;
+  Timer? _startupTimer;
+  bool _startupDurationElapsed = kIsWeb;
 
   @override
   void initState() {
     super.initState();
+    // Web startup timing is owned by the HTML loader, without a second delay.
+    if (!kIsWeb) {
+      _startupTimer = Timer(recallStartupDuration, () {
+        if (mounted) setState(() => _startupDurationElapsed = true);
+      });
+    }
     _loadStore();
   }
 
@@ -74,7 +83,13 @@ class _HomeShellState extends State<HomeShell> {
     try {
       store = await (widget.loadStore?.call() ?? RecallStore.load());
     } catch (error) {
-      if (mounted) setState(() => _loadError = error);
+      if (mounted) {
+        _startupTimer?.cancel();
+        setState(() {
+          _startupDurationElapsed = true;
+          _loadError = error;
+        });
+      }
       return;
     }
     if (!mounted) {
@@ -86,6 +101,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void dispose() {
+    _startupTimer?.cancel();
     _store?.dispose();
     super.dispose();
   }
@@ -311,7 +327,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final store = _store;
-    if (store == null) {
+    if (store == null || !_startupDurationElapsed) {
       if (_loadError == null) {
         return const Scaffold(body: RecallLoadingScreen(animate: !kIsWeb));
       }

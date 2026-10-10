@@ -35,6 +35,8 @@ jobs:
         run: flutter analyze
       - name: Run tests
         run: flutter test
+      - name: Test web startup timing
+        run: node --test test/web/startup_test.cjs
       - name: Build web app
         run: flutter build web --release --base-href /Recall2/
       - name: Verify Flutter Pages artifact

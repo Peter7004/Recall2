@@ -142,10 +142,12 @@ No FSRS or advanced spaced repetition was added.
   viewport crops of this same original, retaining the exact lettering instead
   of guessing a font. Generated transparent-cutout candidates were inspected
   but not used because they did not preserve the original edges faithfully.
-- Web startup displays the logo before Flutter is ready. One 650 ms fade/8 px
+- Web startup displays the logo before Flutter is ready. One 700 ms fade/8 px
   rise runs after the image loads; reduced-motion mode is static. The first
-  Flutter frame removes the HTML loader, and Flutter's data-loading logo does
-  not restart the web animation. There is no artificial minimum splash delay.
+  Flutter frame removes the HTML loader once the logo has been visible for
+  at least 700 ms. Slower startup adds no extra delay, and Flutter's data-loading
+  logo does not restart the web animation. Native loading also has a 700 ms
+  minimum display; errors bypass the wait and disposal cancels its timer.
 - Custom bootstrap uses Flutter's engine/app initialization callbacks with
   promise-error recovery. Bootstrap/entrypoint script failures offer retry;
   retry never clears local storage. Existing corrupt-data safeguards remain.
@@ -156,11 +158,14 @@ No FSRS or advanced spaced repetition was added.
 ## Verification
 
 - `flutter analyze`: passed, no issues.
-- `flutter test --concurrency=1`: 73 tests passed (42 store, 31 widget), including
+- `flutter test --concurrency=1`: 76 tests passed (42 store, 34 widget), including
   cascade, bulk, cancellation, rollback, filtered selection, and live
   flashcard-queue regression coverage, subject-pin protection, custom-subject
   creation/deletion, one-time upgrade preservation, and subject-save failure recovery.
 - `flutter build web --release`: succeeded.
+- `node --test test/web/startup_test.cjs`: 8 startup regression tests passed,
+  covering fast/slow readiness, delayed image loading, cancellation on errors,
+  retry, missing assets, and the 700 ms CSS/reduced-motion contract.
 - `git diff --check`: passed.
 - Playwright with Microsoft Edge: actual 13-column CSV selection, preview/import,
   priority filtering, definition/explanation detail, bookmarking, reload
@@ -175,7 +180,8 @@ No FSRS or advanced spaced repetition was added.
   one-time root removal with promoted children and intact vocabulary, and
   retention of subsequently re-created subjects with the retired names.
   Branding checks cover early splash display, a single finite animation,
-  reduced-motion mode, first-frame removal, source artwork/wordmark rendering,
+  reduced-motion mode, the minimum 700 ms first-frame handoff, source
+  artwork/wordmark rendering,
   CSV/bookmark reload persistence, blocked bootstrap and entrypoint retry with
   vocabulary retained, and loader/engine/app promise-failure handling.
   Splash/header screenshots include nonblank blue/navy pixel checks on desktop

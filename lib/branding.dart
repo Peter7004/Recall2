@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 const recallLogoAsset = 'web/branding/recall-logo.png';
+const recallStartupDuration = Duration(milliseconds: 700);
 const _sourceSize = 1254.0;
 // Viewport crops preserve the supplied artwork and lettering without a font substitute.
 const _bookRegion = Rect.fromLTWH(380, 294, 568, 495);
@@ -106,7 +107,7 @@ class RecallLoadingScreen extends StatelessWidget {
             child: TweenAnimationBuilder<double>(
               tween:
                   Tween(begin: animate && !reducedMotion ? 0.0 : 1.0, end: 1.0),
-              duration: const Duration(milliseconds: 650),
+              duration: recallStartupDuration,
               curve: Curves.easeOutCubic,
               builder: (context, value, child) => Opacity(
                 opacity: 0.35 + 0.65 * value,

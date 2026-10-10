@@ -31,7 +31,7 @@ html, body {
 
 .startup-logo.is-loaded {
   opacity: 1;
-  animation: recall-reveal 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: recall-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* These coordinates match the full-artwork viewport in lib/branding.dart. */

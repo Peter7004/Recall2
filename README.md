@@ -42,17 +42,18 @@ displays the book and original `Recall` wordmark in separate viewport crops;
 no substitute font is used and other application text retains its existing font.
 The startup screen displays the original stacked logo on white.
 
-Web startup shows the logo before Flutter initializes, with one 650 ms fade and
+Web startup shows the logo before Flutter initializes, with one 700 ms fade and
 8 px upward reveal after the image is available. Reduced-motion settings disable
-this animation. The HTML layer is removed on Flutter's first frame; local-data
-loading uses the same logo without replaying the animation on web. No minimum
-splash duration or artificial startup delay is added. Script/engine failures
-show a retry action that reloads the page without clearing saved vocabulary.
+this animation. The HTML logo stays visible for at least 700 ms after its image
+loads and is removed once Flutter's first frame is ready. Slower initialization
+does not add another delay. Local-data loading uses the same logo without
+replaying the animation on web. Script/engine failures cancel pending removal
+and show a retry action that reloads the page without clearing saved vocabulary.
 Existing local-data errors retain their original recovery screen.
 
-Native Flutter loading uses the same artwork and finite reveal, respecting
-system motion preferences. Platform launch screens, launcher icons, and the
-browser favicon are unchanged in this update.
+Native Flutter loading uses the same artwork, 700 ms minimum display, and finite
+reveal, respecting system motion preferences. Data-load errors appear immediately.
+Platform launch screens, launcher icons, and the browser favicon are unchanged.
 
 ## Local Storage and Migration
 
@@ -170,6 +171,7 @@ unverified content and is not automatically installed.
 flutter pub get
 flutter analyze
 flutter test
+node --test test/web/startup_test.cjs
 flutter run -d chrome
 ```
 
@@ -182,8 +184,9 @@ links and temporary paths outside OneDrive:
 .\tool\validate.ps1 -BuildWeb
 ```
 
-This runs analysis, all tests, and a release web build. The source checkout is
-not moved, and environment overrides are restored when the helper exits.
+This runs analysis, all Flutter tests, and a release web build. Run the Node
+startup tests separately using the command above. The source checkout is not
+moved, and environment overrides are restored when the helper exits.
 
 Fourteen existing Android source/resource copies with ` - 복사본` names were
 preserved in the ignored `.recall-backups/android-source-copies/` directory,

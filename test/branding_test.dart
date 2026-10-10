@@ -18,7 +18,13 @@ void main() {
     final opacity = find.descendant(
         of: find.byType(RecallLoadingScreen), matching: find.byType(Opacity));
     expect(tester.widget<Opacity>(opacity).opacity, closeTo(0.35, 0.001));
-    await tester.pump(const Duration(milliseconds: 325));
+    expect(
+        tester
+            .widget<TweenAnimationBuilder<double>>(
+                find.byType(TweenAnimationBuilder<double>))
+            .duration,
+        const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 350));
     expect(tester.widget<Opacity>(opacity).opacity, greaterThan(0.35));
     await tester.pumpAndSettle();
     expect(tester.widget<Opacity>(opacity).opacity, 1);
@@ -75,6 +81,55 @@ void main() {
     expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
     expect(find.byType(RecallHeaderBrand), findsOneWidget);
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'fast loading retains the logo for 700 ms even with reduced motion',
+      (tester) async {
+    for (final disableAnimations in [false, true]) {
+      final store = await RecallStore.load();
+      await tester.pumpWidget(MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(disableAnimations: disableAnimations),
+          child: HomeShell(loadStore: () async => store),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 699));
+      expect(find.byType(RecallLoadingScreen), findsOneWidget);
+      expect(find.byType(RecallHeaderBrand), findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(find.byType(RecallLoadingScreen), findsNothing);
+      expect(find.byType(RecallHeaderBrand), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('data errors bypass the minimum startup wait', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: HomeShell(
+          loadStore: () async => throw const FormatException('invalid data')),
+    ));
+    await tester.pump();
+    expect(find.byType(RecallLoadingScreen), findsNothing);
+    expect(find.text('저장 데이터를 불러오지 못했습니다. 기존 저장본은 보존됩니다.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('다시 시도'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unmount cancels the startup timer during pending data loading',
+      (tester) async {
+    final pending = Completer<RecallStore>();
+    await tester.pumpWidget(
+        MaterialApp(home: HomeShell(loadStore: () => pending.future)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 700));
+    pending.complete(await RecallStore.load());
+    await tester.pump();
     expect(tester.takeException(), isNull);
   });
 
