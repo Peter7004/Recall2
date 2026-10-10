@@ -225,7 +225,7 @@ void main() {
   });
 
   testWidgets(
-      'a shared term can be searched in its second collection and survives deletion',
+      'shared collection deletion warns, supports cancel and removes words everywhere',
       (tester) async {
     final store = await RecallStore.load();
     await store.createDeck('First');
@@ -253,12 +253,21 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 모음 삭제'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('사전에 유지됩니다.'), findsOneWidget);
-    await tester.tap(find.text('삭제'));
+    expect(find.textContaining('포함된 용어 1개를 영구 삭제'), findsOneWidget);
+    expect(find.textContaining('다른 모음 1개'), findsOneWidget);
+    expect(find.textContaining('First'), findsWidgets);
+    expect(find.textContaining('되돌릴 수 없습니다'), findsOneWidget);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.text('apple'), findsOneWidget);
+    await tester.tap(find.byTooltip('용어 모음 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('영구 삭제'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('사전').last);
     await tester.pumpAndSettle();
-    expect(find.text('apple'), findsOneWidget);
+    expect(find.text('apple'), findsNothing);
+    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -455,6 +464,170 @@ void main() {
     expect(find.textContaining('PRIVATE_'), findsNothing);
     expect(find.text('exclude'), findsNothing);
     expect(tester.takeException(), isNull);
+    store.dispose();
+  });
+
+  testWidgets(
+      'dictionary bulk deletion confirms and preserves unselected words',
+      (tester) async {
+    final store = await RecallStore.load();
+    await store.importCsvDeck(
+        csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
+    store.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('용어 선택'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('선택한 용어 삭제'), findsOneWidget);
+    final deleteButton = find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == '선택한 용어 삭제');
+    expect(tester.widget<IconButton>(deleteButton).onPressed, isNull);
+    await tester.tap(find.widgetWithText(ListTile, 'current'));
+    await tester.tap(find.widgetWithText(ListTile, 'impedance'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 2개'), findsOneWidget);
+    await tester.tap(find.byTooltip('선택한 용어 삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('용어 2개 삭제'), findsOneWidget);
+    expect(find.textContaining('북마크'), findsWidgets);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 2개'), findsOneWidget);
+    expect(find.text('current'), findsOneWidget);
+    await tester.tap(find.byTooltip('선택한 용어 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('영구 삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('current'), findsNothing);
+    expect(find.text('impedance'), findsNothing);
+    expect(find.text('maintain'), findsOneWidget);
+    expect(find.byTooltip('선택 종료'), findsNothing);
+    final restored = await RecallStore.load();
+    expect(restored.totalCards, 1);
+    expect(restored.decks.single.cards.single.displayTerm, 'maintain');
+    restored.dispose();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('selection follows filtered results and select all fits mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final store = await RecallStore.load();
+    await store.importCsvDeck(
+        csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
+    store.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('용어 선택'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('전체 선택'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 3개'), findsOneWidget);
+    await tester.tap(find.byTooltip('전체 선택 해제'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 0개'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, 'current'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'maintain');
+    await tester.pumpAndSettle();
+    expect(find.text('선택 0개'), findsOneWidget);
+    await tester.tap(find.byTooltip('전체 선택'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 1개'), findsOneWidget);
+    await tester.tap(find.byTooltip('선택한 용어 삭제'));
+    await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byType(AlertDialog), matching: find.text('maintain')),
+        findsOneWidget);
+    expect(find.textContaining('current'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('선택 종료'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('선택한 용어 삭제'), findsNothing);
+  });
+
+  testWidgets(
+      'collections support bulk word deletion without deleting the collection',
+      (tester) async {
+    final store = await RecallStore.load();
+    await store.importCsvDeck(
+        deckName: 'My terms',
+        csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스');
+    store.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('모음').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('My terms'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('용어 선택'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('전체 선택'));
+    await tester.pumpAndSettle();
+    expect(find.text('선택 2개'), findsOneWidget);
+    await tester.tap(find.byTooltip('선택한 용어 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('영구 삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('My terms'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'current'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'impedance'), findsNothing);
+    final restored = await RecallStore.load();
+    expect(restored.totalCards, 0);
+    expect(restored.decks.single.name, 'My terms');
+    restored.dispose();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bookmark bulk deletion removes entries, not only bookmark flags',
+      (tester) async {
+    final store = await RecallStore.load();
+    await store.addCard(
+        deckId: '', front: 'current', meaning: '전류', example: '');
+    await store.toggleBookmark(store.allCards.single.card.id);
+    store.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('북마크').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('용어 선택'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('전체 선택'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('선택한 용어 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('영구 삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('북마크한 용어가 없습니다.'), findsOneWidget);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
+  });
+
+  testWidgets('active flashcard queues stop displaying deleted entries',
+      (tester) async {
+    final store = await RecallStore.load();
+    await store.importCsvDeck(
+        csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스');
+    await tester.pumpWidget(MaterialApp(home: ReviewPage(store: store)));
+    await tester.pumpAndSettle();
+    expect(find.text('current'), findsOneWidget);
+    await store.deleteEntries([store.searchCards('current').single.card.id]);
+    await tester.pumpAndSettle();
+    expect(find.text('current'), findsNothing);
+    expect(find.text('impedance'), findsOneWidget);
+    await store.deleteEntries([store.searchCards('impedance').single.card.id]);
+    await tester.pumpAndSettle();
+    expect(find.text('impedance'), findsNothing);
+    expect(find.text('현재 학습할 카드가 없습니다.'), findsOneWidget);
+    expect(store.reviewsToday, 0);
+    await tester.pumpWidget(const SizedBox());
     store.dispose();
   });
 }

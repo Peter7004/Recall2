@@ -50,8 +50,10 @@ remain internal compatibility fields, not a third learner vocabulary type.
 
 Schema v3 stores global entries separately from collection `entryIds`. Entry
 updates and bookmarks are shared across collections, and each entry appears only
-once in dictionary search and global review. Removing a collection relationship
-does not remove the entry, bookmark, or review history.
+once in dictionary search and global review. Unchecking collection membership
+only removes a relationship. Explicit permanent word deletion and collection
+deletion now remove the entries, their other collection links, bookmarks, recent
+views, and per-entry review history after a warning/confirmation.
 
 ## Migration and Compatibility
 
@@ -98,19 +100,39 @@ Inclusion recommendations are not mapped to learner review exclusion. Existing
 `exclude`-recommended entries remain searchable, bookmarkable, and reviewable.
 No FSRS or advanced spaced repetition was added.
 
+## Confirmed Deletion Update
+
+- Collection deletion now cascades to its vocabulary, including shared entries.
+  Unrelated vocabulary and other collection containers are preserved.
+- Dictionary, Bookmarks, and Collections support selection, select-all/clear,
+  individual checkbox toggles, cancel, and one confirmed bulk delete.
+- Warnings show the entry count, sample words, affected collections, loss of
+  bookmarks/review history, and that the operation has no in-app undo.
+- Filtered-out entries are pruned from selection. Store writes are batched per
+  deletion, and failed deletion writes restore the in-memory state and reload
+  the preferences cache from persistent storage.
+- Active flashcard queues skip deleted entries and continue with surviving ones.
+- Existing-only CSV reimports now report successful collection linking instead
+  of incorrectly claiming that no vocabulary was found.
+- This affects only current local personal data. A future common read-only
+  terminology catalog must remain separate from personal deletions and edits.
+
 ## Verification
 
 - `flutter analyze`: passed, no issues.
-- `flutter test --concurrency=1`: 40 passed, including 27 store tests and
-  13 widget tests. Coverage includes both legacy migrations, defaults, every v3
-  field, invalid schema/enums, priority filters, metadata privacy, and safe edits.
+- `flutter test --concurrency=1`: 49 tests passed (31 store, 18 widget), including
+  cascade, bulk, cancellation, rollback, filtered selection, and live
+  flashcard-queue regression coverage.
 - `flutter build web --release`: succeeded.
 - `git diff --check`: passed.
 - Playwright with Microsoft Edge: actual 13-column CSV selection, preview/import,
   priority filtering, definition/explanation detail, bookmarking, reload
-  persistence, and desktop/mobile screenshots.
+  persistence, bulk-selection cancellation/deletion, filtered selection,
+  shared-collection cascade cancellation/deletion, single-delete cancellation,
+  simulated browser quota-failure recovery, and desktop/mobile screenshots.
   No page errors or failed local asset responses were observed.
-- Viewports checked: 1280x900 and 390x844 in the browser; 360x780 in widget tests.
+- Viewports checked: 1280x900, 390x844, and 360x780 in the browser;
+  360x780 in widget tests.
 - Final Dart source/test files were hash-compared with the validated source copy.
 
 The Windows helper completed analysis, tests, and a release build in a fresh

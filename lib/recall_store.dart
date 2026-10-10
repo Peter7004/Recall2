@@ -45,8 +45,8 @@ class RecallStore extends ChangeNotifier {
   bool _tutorialCompleted = false;
   String _reviewDay = _dayKey(DateTime.now());
 
-  static Future<RecallStore> load() async {
-    final preferences = await SharedPreferences.getInstance();
+  static Future<RecallStore> load({SharedPreferences? storage}) async {
+    final preferences = storage ?? await SharedPreferences.getInstance();
     final store = RecallStore._(preferences);
     final current = preferences.getString(_dataKey);
     final previous = preferences.getString(_previousKey);
@@ -467,8 +467,47 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> deleteDeck(String id) async {
-    _decks.removeWhere((d) => d.id == id);
-    await _save();
+    final deck = deckById(id);
+    if (deck == null) return;
+    await _deleteVocabulary(deck.cards.map((c) => c.id).toSet(), deckId: id);
+  }
+
+  Future<void> deleteEntries(Iterable<String> entryIds) =>
+      _deleteVocabulary(entryIds.where(_entries.containsKey).toSet());
+
+  Future<void> _deleteVocabulary(Set<String> ids, {String? deckId}) async {
+    if (ids.isEmpty && deckId == null) return;
+    final oldEntries = Map<String, RecallCard>.of(_entries);
+    final oldDecks = _decks;
+    final oldVisits = _recentViews;
+    _entries.removeWhere((id, _) => ids.contains(id));
+    _decks = [
+      for (final deck in _decks)
+        if (deck.id != deckId)
+          RecallDeck(
+              id: deck.id,
+              name: deck.name,
+              cards: deck.cards.where((c) => !ids.contains(c.id)).toList()),
+    ];
+    _recentViews = _recentViews.where((v) => !ids.contains(v.cardId)).toList();
+    try {
+      await _save();
+    } catch (_) {
+      _entries.clear();
+      _entries.addAll(oldEntries);
+      _decks = oldDecks;
+      _recentViews = oldVisits;
+      _allCardsCache = null;
+      _searchText.clear();
+      // Failed preferences writes can still update their in-memory cache.
+      try {
+        await _preferences.reload();
+      } catch (_) {
+        // Keep the restored vocabulary and report the original save error.
+      }
+      if (hasListeners) notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> addEntryToDeck(
@@ -484,7 +523,7 @@ class RecallStore extends ChangeNotifier {
     await _save();
   }
 
-  // Collection removal only removes a relationship, never dictionary content.
+  // Unchecking collection membership is different from deleting vocabulary.
   Future<void> deleteCard(
       {required String deckId, required String cardId}) async {
     final i = _decks.indexWhere((d) => d.id == deckId);

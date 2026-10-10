@@ -16,6 +16,8 @@ engineering terminology, with optional photo-assisted flashcard review.
   across subjects and collections without copying the dictionary entry.
 - Persistent bookmarks with search/filtering and recently viewed terminology.
 - Entry editing, sources, and related-entry navigation.
+- Confirmed permanent word deletion, collection deletion with its vocabulary,
+  and checkbox-based bulk deletion in Dictionary, Bookmarks, and Collections.
 - Simple forward/reverse flashcards from the dictionary, bookmarks, subjects,
   or collections. Existing photos, review exclusion, daily goals, and progress remain.
 - CSV validation and preview, safe merging, UTF-8 Korean, quoted commas/newlines,
@@ -44,8 +46,19 @@ legacy IDs are repaired. Existing separate legacy records are retained to avoid
 losing individual review history. New/imported terms are merged by normalized
 English term, preserving distinct meanings, subjects, and sources.
 
-Removing an entry from a collection or deleting a collection removes only its
-relationships. Dictionary entries, bookmarks, and review data remain available.
+Deleting a collection permanently deletes its vocabulary from the current local
+dictionary, including links from other collections, bookmarks, recent views,
+and per-entry review history. Unrelated entries and other collection containers
+remain. Every learner deletion requires confirmation describing the number of
+words and affected collections. Canceling the dialog makes no data changes.
+
+Bulk selection operates only on the displayed search/filter results. Changing
+filters removes hidden words from the selection. Selected-word deletion keeps
+the collection itself, even when it becomes empty. Active flashcard queues skip
+deleted entries, and failed deletion saves restore the in-memory vocabulary
+and refresh the preferences cache from storage.
+Unchecking a collection-membership checkbox remains a relationship-only action;
+it is not the permanent-delete command. Migration never deletes words on its own.
 Unreadable saves show an error and are not silently replaced by empty data.
 
 Legacy `general` maps to `general_technical`; its original explicit value is
@@ -146,6 +159,18 @@ If an old information page is cached, use a hard refresh; do not clear local
 site data, because it contains the vocabulary, bookmarks, and review history.
 
 ## Limitations and Next Steps
+
+For the intended terminology dictionary, keep the editor-curated common catalog
+separate from personal collections, custom entries, bookmarks, and review state.
+A bundled read-only catalog is a sensible first release; later a catalog database
+can deliver editorial updates, and an authenticated user database can synchronize
+personal state. Using a database does not imply allowing users to edit or delete
+the shared catalog. Personal deletion must never mutate the shared source.
+
+The current app does not yet ship that common catalog: imported/created terms
+are local personal data. Collected terminology must be provided as reviewed data
+before it can be packaged as the app's base dictionary. No backend, account
+system, or unrequested database migration was introduced in this change.
 
 Storage is local to the device/browser, with no cloud sync or multiuser editing.
 Classifications, priorities, and definitions require editorial review.

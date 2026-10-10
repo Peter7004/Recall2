@@ -273,7 +273,7 @@ class _HomeShellState extends State<HomeShell> {
       );
 
       if (!mounted) return;
-      if (report.importedCount == 0) {
+      if (report.linkedCount == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(report.invalidRowCount == 0
@@ -1061,8 +1061,41 @@ class _ReviewPageState extends State<ReviewPage> {
       widget.initialCards ??
           widget.store.dueCards.take(widget.store.remainingToday).toList();
 
-  ({RecallDeck deck, RecallCard card})? get _current =>
-      _index < _queue.length ? _queue[_index] : null;
+  ({RecallDeck deck, RecallCard card})? get _current {
+    while (_index < _queue.length &&
+        widget.store.cardById(_queue[_index].card.id) == null) {
+      _index++;
+    }
+    if (_index >= _queue.length) return null;
+    return (
+      deck: _queue[_index].deck,
+      card: widget.store.cardById(_queue[_index].card.id)!
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.store.addListener(_refreshQueue);
+  }
+
+  void _refreshQueue() {
+    if (mounted) {
+      setState(() {
+        while (_index < _queue.length &&
+            widget.store.cardById(_queue[_index].card.id) == null) {
+          _index++;
+          _revealed = false;
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.store.removeListener(_refreshQueue);
+    super.dispose();
+  }
 
   void _toggleOrientation() => setState(() => _reverse = !_reverse);
 
@@ -1553,7 +1586,117 @@ class _FeedbackDock extends StatelessWidget {
 
 enum _DeckCardAction { toggleReview, delete }
 
-class _DeckDetailPage extends StatelessWidget {
+Future<bool> _confirmVocabularyDeletion(
+    BuildContext context, RecallStore store, Set<String> ids,
+    {RecallDeck? deleteCollection}) async {
+  final cards = [
+    for (final id in ids)
+      if (store.cardById(id) != null) store.cardById(id)!
+  ];
+  if (cards.isEmpty && deleteCollection == null) return false;
+  final affected = store.decks
+      .where((d) =>
+          d.id != deleteCollection?.id &&
+          d.cards.any((c) => ids.contains(c.id)))
+      .map((d) => d.name)
+      .toList();
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(
+          deleteCollection == null ? '용어 ${cards.length}개 삭제' : '용어 모음 삭제'),
+      content: SingleChildScrollView(
+          child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(deleteCollection == null
+              ? '선택한 용어 ${cards.length}개를 사전에서 영구 삭제합니다.'
+              : '“${deleteCollection.name}” 모음과 포함된 용어 ${cards.length}개를 영구 삭제합니다.'),
+          if (cards.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(cards.take(5).map((c) => c.displayTerm).join(', ') +
+                (cards.length > 5 ? ' 외 ${cards.length - 5}개' : '')),
+            const SizedBox(height: 12),
+            const Text('북마크, 최근 조회 및 해당 용어의 학습 기록도 삭제됩니다.'),
+          ],
+          if (affected.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('다른 모음 ${affected.length}개에서도 해당 용어가 삭제됩니다: '
+                '${affected.take(3).join(', ')}${affected.length > 3 ? ' 외 ${affected.length - 3}개' : ''}'),
+          ],
+          const SizedBox(height: 12),
+          const Text('이 작업은 앱에서 되돌릴 수 없습니다.'),
+        ],
+      )),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('취소')),
+        FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('영구 삭제')),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return false;
+  try {
+    if (deleteCollection == null) {
+      await store.deleteEntries(ids);
+    } else {
+      await store.deleteDeck(deleteCollection.id);
+    }
+    return true;
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('삭제하지 못했습니다: $error')));
+    }
+    return false;
+  }
+}
+
+class _TermSelectionBar extends StatelessWidget {
+  const _TermSelectionBar(
+      {required this.count,
+      required this.allSelected,
+      required this.busy,
+      required this.onSelectAll,
+      required this.onDelete,
+      required this.onClose});
+  final int count;
+  final bool allSelected;
+  final bool busy;
+  final VoidCallback onSelectAll;
+  final VoidCallback onDelete;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      height: 52,
+      child: Row(children: [
+        IconButton(
+            tooltip: '선택 종료',
+            onPressed: busy ? null : onClose,
+            icon: const Icon(Icons.close)),
+        Expanded(
+            child: Text('선택 $count개',
+                style: const TextStyle(fontWeight: FontWeight.w600))),
+        IconButton(
+            tooltip: allSelected ? '전체 선택 해제' : '전체 선택',
+            onPressed: busy ? null : onSelectAll,
+            icon: Icon(allSelected ? Icons.deselect : Icons.select_all)),
+        IconButton(
+            tooltip: '선택한 용어 삭제',
+            onPressed: busy || count == 0 ? null : onDelete,
+            color: Theme.of(context).colorScheme.error,
+            icon: const Icon(Icons.delete_outline)),
+      ]));
+}
+
+class _DeckDetailPage extends StatefulWidget {
   const _DeckDetailPage({
     required this.store,
     required this.deckId,
@@ -1565,6 +1708,36 @@ class _DeckDetailPage extends StatelessWidget {
   final String deckId;
   final void Function(String, RecallCard) onOpenTerm;
   final ValueChanged<String> onCategorySelected;
+
+  @override
+  State<_DeckDetailPage> createState() => _DeckDetailPageState();
+}
+
+class _DeckDetailPageState extends State<_DeckDetailPage> {
+  RecallStore get store => widget.store;
+  String get deckId => widget.deckId;
+  bool _selecting = false;
+  bool _deleting = false;
+  final Set<String> _selectedIds = {};
+
+  void _toggleSelected(String id) => setState(() {
+        if (!_selectedIds.add(id)) _selectedIds.remove(id);
+      });
+
+  Future<void> _deleteSelected() async {
+    setState(() => _deleting = true);
+    final deleted =
+        await _confirmVocabularyDeletion(context, store, Set.of(_selectedIds));
+    if (mounted) {
+      setState(() {
+        _deleting = false;
+        if (deleted) {
+          _selectedIds.clear();
+          _selecting = false;
+        }
+      });
+    }
+  }
 
   void _editCard(BuildContext context, RecallDeck deck, [RecallCard? card]) {
     Navigator.of(context).push(
@@ -1594,52 +1767,17 @@ class _DeckDetailPage extends StatelessWidget {
 
   Future<void> _confirmDeleteCard(
       BuildContext context, RecallDeck deck, RecallCard card) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete this card?'),
-        content: Text('“${card.front}” will be removed from ${deck.name}.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await store.deleteCard(deckId: deck.id, cardId: card.id);
-    }
+    await _confirmVocabularyDeletion(context, store, {card.id});
   }
 
   Future<void> _confirmDeleteDeck(BuildContext context, RecallDeck deck) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('용어 모음 삭제'),
-        content: Text(
-          '“${deck.name}” 모음을 삭제합니다. 포함된 용어 ${deck.cards.length}개는 사전에 유지됩니다.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await store.deleteDeck(deck.id);
-      if (context.mounted) Navigator.of(context).pop();
-    }
+    setState(() => _deleting = true);
+    final deleted = await _confirmVocabularyDeletion(
+        context, store, deck.cards.map((c) => c.id).toSet(),
+        deleteCollection: deck);
+    if (!mounted) return;
+    setState(() => _deleting = false);
+    if (deleted && context.mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -1652,140 +1790,207 @@ class _DeckDetailPage extends StatelessWidget {
               body: Center(child: Text('This deck is no longer available.')),
             );
           }
+          final ids = deck.cards.map((c) => c.id).toSet();
+          _selectedIds.removeWhere((id) => !ids.contains(id));
           return Scaffold(
             appBar: AppBar(
               backgroundColor: _surface,
               title: Text(deck.name),
               actions: [
                 IconButton(
+                    tooltip: '용어 선택',
+                    onPressed: _deleting || ids.isEmpty
+                        ? null
+                        : () => setState(() {
+                              _selecting = !_selecting;
+                              _selectedIds.clear();
+                            }),
+                    icon: const Icon(Icons.checklist)),
+                IconButton(
                   tooltip: '이 모음에서 검색',
-                  onPressed: () => showSearch<void>(
-                    context: context,
-                    delegate: _CollectionSearch(
-                      store: store,
-                      deckId: deck.id,
-                      onOpenTerm: onOpenTerm,
-                    ),
-                  ),
+                  onPressed: _deleting
+                      ? null
+                      : () => showSearch<void>(
+                            context: context,
+                            delegate: _CollectionSearch(
+                              store: store,
+                              deckId: deck.id,
+                              onOpenTerm: widget.onOpenTerm,
+                            ),
+                          ),
                   icon: const Icon(Icons.search_rounded),
                 ),
                 IconButton(
                   tooltip: 'Rename deck',
-                  onPressed: () => _renameDeck(context, deck),
+                  onPressed:
+                      _deleting ? null : () => _renameDeck(context, deck),
                   icon: const Icon(Icons.edit_outlined),
                 ),
                 IconButton(
                   tooltip: '용어 모음 삭제',
-                  onPressed: () => _confirmDeleteDeck(context, deck),
+                  onPressed: _deleting
+                      ? null
+                      : () => _confirmDeleteDeck(context, deck),
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
               ],
             ),
-            body: LayoutBuilder(
-              builder: (context, constraints) {
-                final width =
-                    constraints.maxWidth > 680 ? 620.0 : double.infinity;
-                return Align(
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: width,
-                    child: deck.cards.isEmpty
-                        ? const _EmptyCards()
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
-                            itemCount: deck.cards.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final card = deck.cards[index];
-                              final cardSubtitle = [
-                                card.meaning,
-                                if (card.example.isNotEmpty) card.example,
-                                if (card.isExcludedFromReview) 'Not in review',
-                              ].join('\n');
-                              return _Panel(
-                                padding: EdgeInsets.zero,
-                                child: ListTile(
-                                  leading: _CardImage(
-                                    imageData: card.imageData,
-                                    width: 52,
-                                    height: 52,
-                                  ),
-                                  title: Text(card.front),
-                                  subtitle: Text(
-                                    cardSubtitle,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  isThreeLine: card.example.isNotEmpty ||
-                                      card.isExcludedFromReview,
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        tooltip: card.isBookmarked
-                                            ? 'Remove bookmark'
-                                            : 'Bookmark card',
-                                        onPressed: () =>
-                                            store.toggleBookmark(card.id),
-                                        icon: Icon(
-                                          card.isBookmarked
-                                              ? Icons.bookmark_rounded
-                                              : Icons.bookmark_outline_rounded,
-                                          color: card.isBookmarked
-                                              ? _indigo
-                                              : _muted,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Edit card',
-                                        onPressed: () =>
-                                            _editCard(context, deck, card),
-                                        icon: const Icon(Icons.edit_outlined),
-                                      ),
-                                      PopupMenuButton<_DeckCardAction>(
-                                        tooltip: 'More card actions',
-                                        onSelected: (action) {
-                                          switch (action) {
-                                            case _DeckCardAction.toggleReview:
-                                              store.toggleReviewExclusion(
-                                                  card.id);
-                                            case _DeckCardAction.delete:
-                                              _confirmDeleteCard(
-                                                  context, deck, card);
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          PopupMenuItem(
-                                            value: _DeckCardAction.toggleReview,
-                                            child: Text(
-                                              card.isExcludedFromReview
-                                                  ? 'Include in review'
-                                                  : 'Remove from review',
-                                            ),
+            body: Column(children: [
+              if (_selecting)
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _TermSelectionBar(
+                      count: _selectedIds.length,
+                      allSelected:
+                          ids.isNotEmpty && _selectedIds.length == ids.length,
+                      busy: _deleting,
+                      onSelectAll: () => setState(() {
+                        if (_selectedIds.length == ids.length) {
+                          _selectedIds.clear();
+                        } else {
+                          _selectedIds.addAll(ids);
+                        }
+                      }),
+                      onDelete: _deleteSelected,
+                      onClose: () => setState(() {
+                        _selecting = false;
+                        _selectedIds.clear();
+                      }),
+                    )),
+              Expanded(child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width =
+                      constraints.maxWidth > 680 ? 620.0 : double.infinity;
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: width,
+                      child: deck.cards.isEmpty
+                          ? const _EmptyCards()
+                          : ListView.separated(
+                              padding:
+                                  const EdgeInsets.fromLTRB(20, 16, 20, 96),
+                              itemCount: deck.cards.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final card = deck.cards[index];
+                                final cardSubtitle = [
+                                  card.meaning,
+                                  if (card.example.isNotEmpty) card.example,
+                                  if (card.isExcludedFromReview)
+                                    'Not in review',
+                                ].join('\n');
+                                return _Panel(
+                                  padding: EdgeInsets.zero,
+                                  child: ListTile(
+                                    leading: _selecting
+                                        ? Checkbox(
+                                            value:
+                                                _selectedIds.contains(card.id),
+                                            semanticLabel:
+                                                '${card.displayTerm} 선택',
+                                            onChanged: _deleting
+                                                ? null
+                                                : (_) =>
+                                                    _toggleSelected(card.id),
+                                          )
+                                        : _CardImage(
+                                            imageData: card.imageData,
+                                            width: 52,
+                                            height: 52,
                                           ),
-                                          const PopupMenuItem(
-                                            value: _DeckCardAction.delete,
-                                            child: Text('Delete from deck'),
+                                    title: Text(card.displayTerm),
+                                    subtitle: Text(
+                                      cardSubtitle,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    isThreeLine: card.example.isNotEmpty ||
+                                        card.isExcludedFromReview,
+                                    trailing: _selecting
+                                        ? null
+                                        : Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                tooltip: card.isBookmarked
+                                                    ? 'Remove bookmark'
+                                                    : 'Bookmark card',
+                                                onPressed: () => store
+                                                    .toggleBookmark(card.id),
+                                                icon: Icon(
+                                                  card.isBookmarked
+                                                      ? Icons.bookmark_rounded
+                                                      : Icons
+                                                          .bookmark_outline_rounded,
+                                                  color: card.isBookmarked
+                                                      ? _indigo
+                                                      : _muted,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                tooltip: 'Edit card',
+                                                onPressed: () => _editCard(
+                                                    context, deck, card),
+                                                icon: const Icon(
+                                                    Icons.edit_outlined),
+                                              ),
+                                              PopupMenuButton<_DeckCardAction>(
+                                                tooltip: 'More card actions',
+                                                onSelected: (action) {
+                                                  switch (action) {
+                                                    case _DeckCardAction
+                                                          .toggleReview:
+                                                      store
+                                                          .toggleReviewExclusion(
+                                                              card.id);
+                                                    case _DeckCardAction.delete:
+                                                      _confirmDeleteCard(
+                                                          context, deck, card);
+                                                  }
+                                                },
+                                                itemBuilder: (context) => [
+                                                  PopupMenuItem(
+                                                    value: _DeckCardAction
+                                                        .toggleReview,
+                                                    child: Text(
+                                                      card.isExcludedFromReview
+                                                          ? 'Include in review'
+                                                          : 'Remove from review',
+                                                    ),
+                                                  ),
+                                                  const PopupMenuItem(
+                                                    value:
+                                                        _DeckCardAction.delete,
+                                                    child: Text('용어 영구 삭제'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                    ],
+                                    onTap: _deleting
+                                        ? null
+                                        : _selecting
+                                            ? () => _toggleSelected(card.id)
+                                            : () => widget.onOpenTerm(
+                                                deck.id, card),
                                   ),
-                                  onTap: () => onOpenTerm(deck.id, card),
-                                ),
-                              );
-                            },
-                          ),
+                                );
+                              },
+                            ),
+                    ),
+                  );
+                },
+              )),
+            ]),
+            floatingActionButton: _selecting
+                ? null
+                : FloatingActionButton.extended(
+                    onPressed: () => _editCard(context, deck),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add card'),
                   ),
-                );
-              },
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => _editCard(context, deck),
-              icon: const Icon(Icons.add),
-              label: const Text('Add card'),
-            ),
           );
         },
       );
@@ -1913,6 +2118,28 @@ class _DictionaryPageState extends State<_DictionaryPage> {
   String? _categoryId;
   VocabularyType? _type;
   LearningPriority? _priority;
+  bool _selecting = false;
+  bool _deleting = false;
+  final Set<String> _selectedIds = {};
+
+  void _toggleSelected(String id) => setState(() {
+        if (!_selectedIds.add(id)) _selectedIds.remove(id);
+      });
+
+  Future<void> _deleteSelected() async {
+    setState(() => _deleting = true);
+    final deleted = await _confirmVocabularyDeletion(
+        context, widget.store, Set.of(_selectedIds));
+    if (mounted) {
+      setState(() {
+        _deleting = false;
+        if (deleted) {
+          _selectedIds.clear();
+          _selecting = false;
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -1947,6 +2174,8 @@ class _DictionaryPageState extends State<_DictionaryPage> {
               vocabularyType: _type,
               learningPriority: _priority,
               bookmarkedOnly: widget.bookmarkedOnly);
+          final ids = results.map((e) => e.card.id).toSet();
+          _selectedIds.removeWhere((id) => !ids.contains(id));
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 960),
@@ -1964,6 +2193,15 @@ class _DictionaryPageState extends State<_DictionaryPage> {
                                     color: _ink))),
                         Text('${results.length}개',
                             style: const TextStyle(color: _muted)),
+                        IconButton(
+                            tooltip: '용어 선택',
+                            onPressed: _deleting || ids.isEmpty
+                                ? null
+                                : () => setState(() {
+                                      _selecting = !_selecting;
+                                      _selectedIds.clear();
+                                    }),
+                            icon: const Icon(Icons.checklist)),
                       ]),
                     ),
                     Padding(
@@ -2087,6 +2325,27 @@ class _DictionaryPageState extends State<_DictionaryPage> {
                                 )),
                           ]),
                     ),
+                    if (_selecting)
+                      Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _TermSelectionBar(
+                            count: _selectedIds.length,
+                            allSelected: ids.isNotEmpty &&
+                                _selectedIds.length == ids.length,
+                            busy: _deleting,
+                            onSelectAll: () => setState(() {
+                              if (_selectedIds.length == ids.length) {
+                                _selectedIds.clear();
+                              } else {
+                                _selectedIds.addAll(ids);
+                              }
+                            }),
+                            onDelete: _deleteSelected,
+                            onClose: () => setState(() {
+                              _selecting = false;
+                              _selectedIds.clear();
+                            }),
+                          )),
                     Expanded(
                       child: results.isEmpty
                           ? Center(
@@ -2107,8 +2366,18 @@ class _DictionaryPageState extends State<_DictionaryPage> {
                               itemBuilder: (context, i) => _VocabularyTile(
                                   store: widget.store,
                                   card: results[i].card,
-                                  onTap: () => widget.onOpenTerm(
-                                      results[i].deck.id, results[i].card)),
+                                  selecting: _selecting,
+                                  selected:
+                                      _selectedIds.contains(results[i].card.id),
+                                  enabled: !_deleting,
+                                  onLongPress: () => setState(() {
+                                        _selecting = true;
+                                        _selectedIds.add(results[i].card.id);
+                                      }),
+                                  onTap: () => _selecting
+                                      ? _toggleSelected(results[i].card.id)
+                                      : widget.onOpenTerm(
+                                          results[i].deck.id, results[i].card)),
                             ),
                     ),
                   ]),
@@ -2120,16 +2389,34 @@ class _DictionaryPageState extends State<_DictionaryPage> {
 
 class _VocabularyTile extends StatelessWidget {
   const _VocabularyTile(
-      {required this.store, required this.card, required this.onTap});
+      {required this.store,
+      required this.card,
+      required this.onTap,
+      this.selecting = false,
+      this.selected = false,
+      this.enabled = true,
+      this.onLongPress});
   final RecallStore store;
   final RecallCard card;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool selecting;
+  final bool selected;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final subjects = store.categoryNamesForCard(card);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      enabled: enabled,
+      selected: selected,
+      leading: selecting
+          ? Checkbox(
+              value: selected,
+              semanticLabel: '${card.displayTerm} 선택',
+              onChanged: enabled ? (_) => onTap() : null)
+          : null,
       title: Text(card.displayTerm,
           style: const TextStyle(color: _ink, fontWeight: FontWeight.w700)),
       subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2145,15 +2432,18 @@ class _VocabularyTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, color: _muted)),
       ]),
-      trailing: IconButton(
-          tooltip: card.isBookmarked ? '북마크 해제' : '북마크 추가',
-          onPressed: () => store.toggleBookmark(card.id),
-          icon: Icon(
-              card.isBookmarked
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_outline_rounded,
-              color: card.isBookmarked ? _indigo : _muted)),
-      onTap: onTap,
+      trailing: selecting
+          ? null
+          : IconButton(
+              tooltip: card.isBookmarked ? '북마크 해제' : '북마크 추가',
+              onPressed: () => store.toggleBookmark(card.id),
+              icon: Icon(
+                  card.isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_outline_rounded,
+                  color: card.isBookmarked ? _indigo : _muted)),
+      onTap: enabled ? onTap : null,
+      onLongPress: enabled ? onLongPress : null,
     );
   }
 }
@@ -2336,6 +2626,16 @@ class _DictionaryTermPageState extends State<_DictionaryTermPage> {
               backgroundColor: _surface,
               title: const Text('용어 사전'),
               actions: [
+                IconButton(
+                    tooltip: '용어 삭제',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      final deleted = await _confirmVocabularyDeletion(
+                          context, widget.store, {term.id});
+                      if (deleted && context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    }),
                 IconButton(
                     tooltip: '용어 편집',
                     icon: const Icon(Icons.edit_outlined),

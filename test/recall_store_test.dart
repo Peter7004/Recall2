@@ -299,8 +299,8 @@ void main() {
     await store.deleteDeck(deletedId);
     expect(store.decks, hasLength(1));
     expect(store.decks.single.id, preservedId);
-    expect(store.totalCards, 2);
-    expect(store.searchCards('옴의 법칙'), hasLength(1));
+    expect(store.totalCards, 1);
+    expect(store.searchCards('옴의 법칙'), isEmpty);
     store.dispose();
   });
 
@@ -341,6 +341,9 @@ void main() {
     expect(store.searchCards('', categoryId: subject.id).single.card.id,
         current.id);
     await store.toggleBookmark(current.id);
+    for (final card in store.decks.single.cards) {
+      await store.deleteCard(deckId: store.decks.single.id, cardId: card.id);
+    }
     await store.deleteDeck(store.decks.single.id);
     expect(store.totalCards, 3);
     expect(store.bookmarkedCards.single.card.id, current.id);
@@ -396,11 +399,12 @@ void main() {
     expect(store.decks.first.cards, isEmpty);
     expect(store.decks.last.cards.single.isBookmarked, isTrue);
     await store.deleteDeck(store.decks.last.id);
-    expect(store.bookmarkedCards.single.card.id, id);
+    expect(store.bookmarkedCards, isEmpty);
+    expect(store.decks.single.cards, isEmpty);
     store.dispose();
     final restored = await RecallStore.load();
-    expect(restored.totalCards, 1);
-    expect(restored.bookmarkedCards.single.card.id, id);
+    expect(restored.totalCards, 0);
+    expect(restored.bookmarkedCards, isEmpty);
     restored.dispose();
   });
 
@@ -898,4 +902,138 @@ void main() {
     expect(prefs.getString('recall.data.v3'), '{broken');
     expect(prefs.getString('recall.data.v2'), '{old');
   });
+
+  test(
+      'collection deletion cascades shared words but preserves unrelated entries',
+      () async {
+    final store = await RecallStore.load();
+    await store.createDeck('First');
+    final first = store.decks.single.id;
+    await store.addCard(
+        deckId: first, front: 'current', meaning: '전류', example: '');
+    final shared = store.allCards.single.card.id;
+    await store.toggleBookmark(shared);
+    await store.recordCardViewed(shared);
+    await store.markReviewed(shared);
+    await store.createDeck('Second');
+    final second = store.decks.last.id;
+    await store.addEntryToDeck(deckId: second, cardId: shared);
+    await store.addCard(
+        deckId: second, front: 'impedance', meaning: '임피던스', example: '');
+    final preserved = store.searchCards('impedance').single.card.id;
+    await store.toggleBookmark(preserved);
+    await store.recordCardViewed(preserved);
+    await store.deleteDeck(first);
+    expect(store.deckById(first), isNull);
+    expect(store.cardById(shared), isNull);
+    expect(store.decks.single.cards.single.id, preserved);
+    expect(store.searchCards('current'), isEmpty);
+    expect(store.bookmarkedCards.single.card.id, preserved);
+    expect(store.recentCards.single.card.id, preserved);
+    expect(store.dueCards.single.card.id, preserved);
+    expect(store.reviewsToday,
+        1); // Aggregate daily activity is not entry history.
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.cardById(shared), isNull);
+    expect(restored.decks.single.cards.single.id, preserved);
+    expect(restored.totalCards, 1);
+    restored.dispose();
+  });
+
+  test('bulk deletion is deduplicated and clears every entry reference',
+      () async {
+    final store = await RecallStore.load();
+    await store.importCsvDeck(
+        csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
+    final current = store.searchCards('current').single.card.id;
+    final impedance = store.searchCards('impedance').single.card.id;
+    await store.createDeck('Shared');
+    await store.addEntryToDeck(deckId: store.decks.last.id, cardId: current);
+    await store.toggleBookmark(current);
+    await store.toggleBookmark(impedance);
+    await store.recordCardViewed(current);
+    await store.recordCardViewed(impedance);
+    var notifications = 0;
+    store.addListener(() => notifications++);
+    await store.deleteEntries([current, impedance, current, 'missing']);
+    expect(notifications, 1);
+    expect(store.totalCards, 1);
+    expect(store.allCards.single.card.displayTerm, 'maintain');
+    expect(store.decks.first.cards.single.displayTerm, 'maintain');
+    expect(store.decks.last.cards, isEmpty);
+    expect(store.bookmarkedCards, isEmpty);
+    expect(store.recentCards, isEmpty);
+    await store.deleteEntries([]);
+    await store.deleteDeck('missing');
+    expect(notifications, 1);
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.totalCards, 1);
+    expect(restored.decks.last.cards, isEmpty);
+    restored.dispose();
+  });
+
+  test('deleting an empty collection keeps dictionary-only vocabulary',
+      () async {
+    final store = await RecallStore.load();
+    await store.addCard(
+        deckId: '', front: 'current', meaning: '전류', example: '');
+    await store.createDeck('Empty');
+    await store.deleteDeck(store.decks.single.id);
+    expect(store.decks, isEmpty);
+    expect(store.totalCards, 1);
+    store.dispose();
+  });
+
+  test('failed delete writes restore entries, references and preferences cache',
+      () async {
+    final preferences =
+        _FailingPreferences(await SharedPreferences.getInstance());
+    final store = await RecallStore.load(storage: preferences);
+    await store.importCsvDeck(csvText: 'word,meaning\ncurrent,전류');
+    final id = store.allCards.single.card.id;
+    final deckId = store.decks.single.id;
+    await store.toggleBookmark(id);
+    await store.recordCardViewed(id);
+    final encoded = preferences.getString('recall.data.v3');
+    preferences.failWrites = true;
+    await expectLater(store.deleteEntries([id]), throwsStateError);
+    expect(store.cardById(id), isNotNull);
+    expect(store.searchCards('current'), hasLength(1));
+    expect(store.decks.single.cards.single.id, id);
+    expect(store.bookmarkedCards.single.card.id, id);
+    expect(store.recentCards.single.card.id, id);
+    await expectLater(store.deleteDeck(deckId), throwsStateError);
+    expect(store.deckById(deckId)!.cards.single.id, id);
+    expect(preferences.getString('recall.data.v3'), encoded);
+    store.dispose();
+    final restored = await RecallStore.load(storage: preferences);
+    expect(restored.cardById(id), isNotNull);
+    expect(restored.deckById(deckId), isNotNull);
+    restored.dispose();
+  });
+}
+
+class _FailingPreferences extends Fake implements SharedPreferences {
+  _FailingPreferences(this.delegate);
+  final SharedPreferences delegate;
+  bool failWrites = false;
+  final Map<String, String> _failedCache = {};
+  @override
+  String? getString(String key) => _failedCache[key] ?? delegate.getString(key);
+  @override
+  Future<bool> setString(String key, String value) {
+    if (failWrites) {
+      _failedCache[key] = value;
+      return Future.value(false);
+    }
+    return delegate.setString(key, value);
+  }
+
+  @override
+  Future<void> reload() async {
+    await delegate.reload();
+    _failedCache.clear();
+  }
 }
