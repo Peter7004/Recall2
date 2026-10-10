@@ -1,0 +1,5 @@
+term_en,vocabulary_type,primary_meaning_ko,part_of_speech,subject,definition_en,explanation_ko,learning_priority,priority_reason,inclusion_recommendation,collector,source_title,notes
+maintain,general_technical,유지하다,verb,Electrical and Electronic Engineering,Keep something in its existing state.,기존 상태를 유지하다,medium,전공 문장에서 자주 쓰이는 동사,review,,,Illustrative draft; not independently verified
+current,general_technical,전류,noun,Circuit Theory,A flow of electric charge.,전하가 이동하는 흐름,high,회로이론의 기본 어휘,review,,,Illustrative draft; not independently verified
+impedance,technical,임피던스,noun,Circuit Theory;Electronics,Opposition to the flow of alternating current.,교류의 흐름을 방해하는 정도,high,교류 회로의 기본 어휘,review,,,Illustrative draft; not independently verified
+nominal,general_technical,공칭의,adjective,Electrical Machines,Stated as a designated value.,제품이나 장치에 지정된 값을 나타내는 말,low,보조 어휘,review,,,Illustrative draft; not independently verified

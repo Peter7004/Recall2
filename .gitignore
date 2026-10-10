@@ -17,6 +17,7 @@ build/
 # Local machine settings and logs
 android/local.properties
 flutter_*.log
+.recall-backups/
 
 # OS
 .DS_Store

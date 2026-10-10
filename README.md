@@ -1,33 +1,142 @@
-# Recall
+# Recall v3.0
 
-A Flutter flashcard app for building and reviewing vocabulary decks.
+A dictionary-first Flutter application for English vocabulary and electrical
+engineering terminology, with optional photo-assisted flashcard review.
 
 ## Features
 
-- Create, rename, and manage vocabulary decks.
-- Add, edit, bookmark, delete, or exclude individual cards from review.
-- Import cards from CSV files with English or Korean headers for word, meaning, and example.
-- Attach an image to a card and reveal its example only after flipping the card.
-- Set a daily study goal in Settings.
-- Decks, cards, bookmarks, review exclusions, and the daily goal are stored locally.
+- Dictionary, Subjects, Bookmarks, Flashcards, and Collections navigation.
+- Two vocabulary types: `general_technical` and `technical`.
+- Learning priorities `high`, `medium`, and `low`, with visible labels and filters
+  in the dictionary and bookmarks.
+- Local English/Korean search, partial matching, type and subject filters.
+- Korean meanings, English definitions (`definition_en`), concise Korean
+  explanations (`explanation_ko`), and existing examples/translations.
+- Nine initial engineering subjects, existing nested categories, and terms shared
+  across subjects and collections without copying the dictionary entry.
+- Persistent bookmarks with search/filtering and recently viewed terminology.
+- Entry editing, sources, and related-entry navigation.
+- Simple forward/reverse flashcards from the dictionary, bookmarks, subjects,
+  or collections. Existing photos, review exclusion, daily goals, and progress remain.
+- CSV validation and preview, safe merging, UTF-8 Korean, quoted commas/newlines,
+  and preservation of legacy unrecognized columns as hidden metadata.
 
-CSV files can use `front,meaning,example` or `단어,뜻,예문` as their header row.
+Inclusion recommendations (`include`, `review`, `exclude`), collectors, editorial
+notes, priority reasons, and legacy verification fields are management metadata.
+They are persisted but not displayed in learner lists, details, editors, search,
+or flashcards. An `exclude` recommendation does not delete or hide an entry and
+does not change the learner's independent review-exclusion setting.
 
-## Run
+No formula/LaTeX rendering, detailed technical concept panels, FSRS, handwriting,
+or formula recognition is introduced. Existing engineering metadata is retained
+for later development without active learner controls.
 
-Install the Flutter SDK and Chrome, then run from the project directory:
+## Local Storage and Migration
+
+The application continues using `shared_preferences`. `recall.data.v3` stores
+one global `entries` list and collections with `entryIds`, plus categories,
+bookmarks, recent views, daily goals, and review progress.
+
+On first load, previous `recall.data.v1` or `recall.data.v2` saves are migrated
+into v3. Both old values remain untouched as backups. IDs, photos, bookmark/exclusion flags, review
+history, category assignments, and original card fields are retained. Conflicting
+legacy IDs are repaired. Existing separate legacy records are retained to avoid
+losing individual review history. New/imported terms are merged by normalized
+English term, preserving distinct meanings, subjects, and sources.
+
+Removing an entry from a collection or deleting a collection removes only its
+relationships. Dictionary entries, bookmarks, and review data remain available.
+Unreadable saves show an error and are not silently replaced by empty data.
+
+Legacy `general` maps to `general_technical`; its original explicit value is
+retained in `extra_fields.legacy_vocabulary_type`. Missing priorities default to
+`medium`, and missing inclusion recommendations default to `review`.
+Legacy types without an explicit classification default to `general_technical`;
+entries with existing formulas/symbols/units are provisionally treated as technical.
+Legacy definition/explanation values remain available through the new field names
+without automatic translation or fabricated content. Subject assignment alone
+does not make a word technical.
+
+## CSV Import
+
+Legacy files support `front,meaning,example`, `word,meaning,example_sentence`,
+Korean headers, or three columns without a header. The previous extended format
+with `term_ko,term_en,definition,category,subcategory` also remains supported.
+
+Recall v3.0 uses exactly these 13 columns in this order:
+
+```csv
+term_en,vocabulary_type,primary_meaning_ko,part_of_speech,subject,definition_en,explanation_ko,learning_priority,priority_reason,inclusion_recommendation,collector,source_title,notes
+maintain,general_technical,유지하다,verb,,Keep something in its existing state.,기존 상태를 유지하다,medium,,review,,,
+```
+
+`term_en` and `primary_meaning_ko` are required. Every row must contain 13 cells,
+including empty optional cells. Blank `vocabulary_type` defaults to
+`general_technical`; blank `learning_priority` defaults to `medium`; blank
+`inclusion_recommendation` defaults to `review` for new entries. Nonblank enum
+values must be valid. `general` is accepted only in the legacy importer.
+
+Files using a v3-specific header (`definition_en`, `explanation_ko`,
+`learning_priority`, `priority_reason`, or `inclusion_recommendation`) must match
+the fixed schema. Missing, reordered, duplicate, or extra headers reject import.
+Legacy header aliases and no-header files remain supported separately.
+
+Distinct meaning content is preserved; identical meanings are not added twice.
+Explicit imported types/priorities/recommendations update existing entries, while
+blank values do not reset their metadata. Bookmarks, photos, review history, and
+old meanings are preserved. Collector and notes values are combined without
+duplicating identical lines. Use `;` or `|` for multiple subjects or parts of
+speech and `/` for nested subject paths. English subject names map to existing
+Korean subjects.
+
+`source_title` supplies a source label; other historical source metadata remains
+preserved by legacy import and storage. The app does not independently verify
+definitions or generate citations.
+
+Invalid records are reported in the preview and skipped only after confirmation.
+Malformed quoting or ambiguous duplicate headers reject the import. Unknown
+legacy columns are named in the preview and stored in hidden `extra_fields`.
+Re-importing a term links its existing entry into the new collection.
+
+See [examples/vocabulary.csv](examples/vocabulary.csv) for a small illustrative
+dataset covering both types and all three priorities. It is illustrative,
+unverified content and is not automatically installed.
+
+## Run and Verify
 
 ```sh
 flutter pub get
+flutter analyze
+flutter test
 flutter run -d chrome
 ```
 
-On Windows, if Flutter's shader compiler crashes, keep both the project and the
-Flutter SDK in paths that contain only ASCII characters. The review page opens
-from **Start Review** on the home screen.
+On Windows, Flutter's test engine can fail when its generated temporary files
+use a non-ASCII path. OneDrive can also block cleanup of generated build files.
+The verification helper creates a fresh source copy and uses ASCII SDK/cache
+links and temporary paths outside OneDrive:
 
-To target Android, install the Android SDK and select a connected device or
-emulator before running `flutter run`.
+```powershell
+.\tool\validate.ps1 -BuildWeb
+```
 
-The app uses Flutter's Material widgets and `shared_preferences` for local
-storage.
+This runs analysis, all tests, and a release web build. The source checkout is
+not moved, and environment overrides are restored when the helper exits.
+
+Fourteen existing Android source/resource copies with ` - 복사본` names were
+preserved in the ignored `.recall-backups/android-source-copies/` directory,
+outside Android compilation roots. Dart source copies are excluded from analysis.
+Existing Git staging was not changed.
+
+Android requires an installed Android SDK; iOS requires macOS/Xcode. GitHub
+Actions still analyzes, tests, builds, and deploys the web app to GitHub Pages.
+
+## Limitations and Next Steps
+
+Storage is local to the device/browser, with no cloud sync or multiuser editing.
+Classifications, priorities, and definitions require editorial review.
+SharedPreferences is appropriate
+for modest datasets; SQLite/IndexedDB indexing is the next step for large libraries.
+An export/restore workflow and database indexing are future improvements, not
+part of this focused vocabulary release. Camera/gallery integration still needs testing
+on physical Android/iOS devices.
