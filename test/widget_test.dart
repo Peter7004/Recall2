@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -630,24 +632,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     store.dispose();
   });
-  testWidgets('fixed subjects have locks and no delete controls',
+  testWidgets('fresh subjects page is empty with no mandatory roots',
       (tester) async {
     await tester.pumpWidget(const RecallApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
-    expect(find.text('전기공학'), findsOneWidget);
-    expect(find.text('반도체공학'), findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+    expect(find.text('전기공학'), findsNothing);
+    expect(find.text('반도체공학'), findsNothing);
+    expect(find.text('등록된 과목이 없습니다.'), findsOneWidget);
     expect(find.byTooltip('전기공학 과목 삭제'), findsNothing);
     expect(find.byTooltip('반도체공학 과목 삭제'), findsNothing);
     expect(find.byTooltip('과목 추가'), findsOneWidget);
-    expect(find.byType(ListTile), findsNWidgets(2));
+    expect(find.byType(ListTile), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('subject creation validates names and persists after restart',
       (tester) async {
+    final initial = await RecallStore.load();
+    await initial.createCategory('이미 있는 과목');
+    initial.dispose();
     await tester.pumpWidget(const RecallApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
@@ -657,7 +662,7 @@ void main() {
     await tester.tap(find.text('추가'));
     await tester.pumpAndSettle();
     expect(find.text('과목 이름을 입력해 주세요.'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), '전기공학');
+    await tester.enterText(find.byType(TextField), '이미 있는 과목');
     await tester.tap(find.text('추가'));
     await tester.pumpAndSettle();
     expect(find.text('같은 위치에 동일한 과목이 이미 있습니다.'), findsOneWidget);
@@ -673,7 +678,7 @@ void main() {
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
     expect(find.text('재료공학'), findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+    expect(find.byIcon(Icons.push_pin_outlined), findsNWidgets(2));
     expect(tester.takeException(), isNull);
   });
 
@@ -683,6 +688,9 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final initial = await RecallStore.load();
+    await initial.createCategory('반도체공학');
+    initial.dispose();
     await tester.pumpWidget(const RecallApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
@@ -700,7 +708,7 @@ void main() {
     final restored = await RecallStore.load();
     final subject = restored.categories.last;
     expect(restored.categoryPath(subject.id), ['반도체공학', '마이크로전자공학 및 반도체소자']);
-    expect(restored.isFixedCategory(subject.id), isFalse);
+    expect(subject.isPinned, isFalse);
     restored.dispose();
     expect(tester.takeException(), isNull);
   });
@@ -760,12 +768,139 @@ void main() {
     expect(find.text('impedance'), findsOneWidget);
     expect(tester.takeException(), isNull);
     final restored = await RecallStore.load();
-    expect(restored.categories, hasLength(2));
+    expect(restored.categories, hasLength(1));
     expect(restored.cardById(id)!.categoryIds, isEmpty);
     expect(restored.cardById(id)!.isBookmarked, isTrue);
     expect(restored.cardById(id)!.lastReviewed, isNotNull);
     expect(restored.recentCards.single.card.id, id);
     expect(restored.totalCards, 2);
     restored.dispose();
+  });
+
+  testWidgets('subject pin disables deletion, persists, and can be removed',
+      (tester) async {
+    final initial = await RecallStore.load();
+    final subject = await initial.createCategory('재료공학');
+    initial.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('과목').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('재료공학 과목 고정'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.push_pin), findsOneWidget);
+    final deleteButton = tester.widget<IconButton>(find.byWidgetPredicate(
+        (widget) =>
+            widget is IconButton && widget.tooltip == '재료공학 과목 삭제 · 고정 해제 필요'));
+    expect(deleteButton.onPressed, isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('과목').last);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('재료공학 과목 고정 해제'), findsOneWidget);
+    final persisted = await RecallStore.load();
+    expect(persisted.categoryById(subject.id)!.isPinned, isTrue);
+    persisted.dispose();
+    await tester.tap(find.byTooltip('재료공학 과목 고정 해제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('재료공학 과목 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.text('재료공학'), findsOneWidget);
+    await tester.tap(find.byTooltip('재료공학 과목 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('등록된 과목이 없습니다.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pinned child disables parent deletion until child is unpinned',
+      (tester) async {
+    final initial = await RecallStore.load();
+    await initial.createCategory('재료공학');
+    await initial.createCategory('소자', parentId: initial.categories.single.id);
+    initial.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('과목').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('재료공학 / 소자 과목 고정'));
+    await tester.pumpAndSettle();
+    for (final path in ['재료공학', '재료공학 / 소자']) {
+      expect(
+          tester
+              .widget<IconButton>(find.byWidgetPredicate((widget) =>
+                  widget is IconButton &&
+                  widget.tooltip == '$path 과목 삭제 · 고정 해제 필요'))
+              .onPressed,
+          isNull);
+    }
+    await tester.tap(find.byTooltip('재료공학 / 소자 과목 고정 해제'));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<IconButton>(find.byWidgetPredicate((widget) =>
+                widget is IconButton && widget.tooltip == '재료공학 과목 삭제'))
+            .onPressed,
+        isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pin controls fit long subject paths on mobile', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    const name = '마이크로전자공학 및 반도체소자';
+    final initial = await RecallStore.load();
+    final root = await initial.createCategory('재료공학');
+    await initial.createCategory(name, parentId: root.id);
+    initial.dispose();
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('과목').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('재료공학 / $name 과목 고정'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('재료공학 / $name 과목 고정 해제'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'upgrade removes mandatory subjects and keeps terms and subsubjects',
+      (tester) async {
+    final initial = await RecallStore.load();
+    await initial.addCard(
+        deckId: '',
+        front: 'current',
+        meaning: '전류',
+        example: '',
+        categoryPaths: ['Electrical Engineering / Circuits']);
+    await initial.createCategory('반도체공학');
+    final id = initial.allCards.single.card.id;
+    await initial.toggleBookmark(id);
+    final preferences = await SharedPreferences.getInstance();
+    final json = jsonDecode(preferences.getString('recall.data.v3')!) as Map
+      ..remove('subjectSettingsVersion');
+    initial.dispose();
+    SharedPreferences.setMockInitialValues(
+        {'recall.data.v3': jsonEncode(json)});
+    await tester.pumpWidget(const RecallApp());
+    await tester.pumpAndSettle();
+    expect(find.text('current'), findsOneWidget);
+    await tester.tap(find.text('과목').last);
+    await tester.pumpAndSettle();
+    expect(find.text('전기공학'), findsNothing);
+    expect(find.text('반도체공학'), findsNothing);
+    expect(find.text('Circuits'), findsOneWidget);
+    final restored = await RecallStore.load();
+    expect(restored.totalCards, 1);
+    expect(restored.bookmarkedCards.single.card.id, id);
+    expect(restored.categories.single.parentId, isNull);
+    restored.dispose();
+    expect(tester.takeException(), isNull);
   });
 }

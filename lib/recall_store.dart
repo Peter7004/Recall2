@@ -21,7 +21,8 @@ class RecallStore extends ChangeNotifier {
   static const _previousKey = 'recall.data.v2';
   static const _dataKey = 'recall.data.v3';
   static int _idSequence = 0;
-  static const _fixedSubjectNames = ['전기공학', '반도체공학'];
+  static const _retiredDefaultSubjects = ['전기공학', '반도체공학'];
+  static const _subjectSettingsVersion = 1;
   static const _subjectNames = {
     'Electrical Engineering': '전기공학',
     'Semiconductor Engineering': '반도체공학',
@@ -54,9 +55,12 @@ class RecallStore extends ChangeNotifier {
     final current = preferences.getString(_dataKey);
     final previous = preferences.getString(_previousKey);
     final encoded = current ?? previous ?? preferences.getString(_legacyKey);
+    var migrateSubjects = false;
     if (encoded != null) {
       // Never overwrite a corrupt save with a silently empty dictionary.
       final json = jsonDecode(encoded) as Map<String, dynamic>;
+      migrateSubjects = (json['subjectSettingsVersion'] as int? ?? 0) <
+          _subjectSettingsVersion;
       store._categories = (json['categories'] as List? ?? [])
           .map((c) =>
               RecallCategory.fromJson(Map<String, Object?>.from(c as Map)))
@@ -123,32 +127,50 @@ class RecallStore extends ChangeNotifier {
           .take(20)
           .toList();
     }
-    var fixedSubjectsChanged = false;
-    for (final name in _fixedSubjectNames) {
-      final index = store._categories.indexWhere((c) =>
-          c.parentId == null && store._categoryDisplayName(c.name) == name);
-      if (index == -1) {
-        store._findOrCreateCategory(name);
-        fixedSubjectsChanged = true;
-      } else if (store._categories[index].name != name) {
-        store._categories[index] =
-            RecallCategory(id: store._categories[index].id, name: name);
-        fixedSubjectsChanged = true;
+    if (migrateSubjects) {
+      // Retire only the old mandatory roots; promote their children intact.
+      final removedIds = store._categories
+          .where((c) =>
+              c.parentId == null &&
+              _retiredDefaultSubjects
+                  .contains(store._categoryDisplayName(c.name)))
+          .map((c) => c.id)
+          .toSet();
+      store._categories = [
+        for (final category in store._categories)
+          if (!removedIds.contains(category.id))
+            if (removedIds.contains(category.parentId))
+              RecallCategory(
+                  id: category.id,
+                  name: category.name,
+                  isPinned: category.isPinned)
+            else
+              category,
+      ];
+      for (final card in store._entries.values.toList()) {
+        if (card.categoryIds.any(removedIds.contains)) {
+          store._entries[card.id] = card.copyWith(
+              categoryIds: card.categoryIds
+                  .where((id) => !removedIds.contains(id))
+                  .toList());
+        }
       }
     }
     store._rollReviewDay();
-    if (fixedSubjectsChanged || (encoded != null && current == null)) {
-      await store._save();
+    if (migrateSubjects || (encoded != null && current == null)) {
+      try {
+        await store._save();
+      } catch (_) {
+        // SharedPreferences caches a value even when the platform write fails.
+        await preferences.reload();
+        rethrow;
+      }
     }
     return store;
   }
 
   List<RecallDeck> get decks => List.unmodifiable(_decks.map(_hydrateDeck));
-  List<RecallCategory> get categories => List.unmodifiable([
-        for (final name in _fixedSubjectNames)
-          ..._categories.where((c) => c.parentId == null && c.name == name),
-        ..._categories.where((c) => !isFixedCategory(c.id)),
-      ]);
+  List<RecallCategory> get categories => List.unmodifiable(_categories);
   int get dailyGoal => _dailyGoal;
   int get reviewsToday => _reviewsToday;
   bool get tutorialCompleted => _tutorialCompleted;
@@ -205,11 +227,21 @@ class RecallStore extends ChangeNotifier {
     return null;
   }
 
-  bool isFixedCategory(String id) {
-    final category = categoryById(id);
-    return category != null &&
-        category.parentId == null &&
-        _fixedSubjectNames.contains(_categoryDisplayName(category.name));
+  bool isCategoryDeletionProtected(String id) =>
+      categorySubtree(id).any((category) => category.isPinned);
+
+  Future<void> setCategoryPinned(String id, bool pinned) async {
+    final index = _categories.indexWhere((c) => c.id == id);
+    if (index == -1) throw StateError('과목을 찾을 수 없습니다.');
+    final category = _categories[index];
+    if (category.isPinned == pinned) return;
+    final oldCategories = List<RecallCategory>.of(_categories);
+    _categories[index] = RecallCategory(
+        id: category.id,
+        name: category.name,
+        parentId: category.parentId,
+        isPinned: pinned);
+    await _saveCategoryChanges(oldCategories);
   }
 
   List<RecallCategory> categorySubtree(String id) {
@@ -256,8 +288,8 @@ class RecallStore extends ChangeNotifier {
   Future<void> deleteCategory(String id) async {
     final removed = categorySubtree(id);
     if (removed.isEmpty) return;
-    if (removed.any((c) => isFixedCategory(c.id))) {
-      throw StateError('기본 과목은 삭제할 수 없습니다.');
+    if (removed.any((c) => c.isPinned)) {
+      throw StateError('고정된 과목이 있습니다. 먼저 고정을 해제해 주세요.');
     }
     final ids = removed.map((c) => c.id).toSet();
     final oldCategories = List<RecallCategory>.of(_categories);
@@ -841,6 +873,7 @@ class RecallStore extends ChangeNotifier {
     _searchText.clear();
     final encoded = jsonEncode({
       'schemaVersion': 3,
+      'subjectSettingsVersion': _subjectSettingsVersion,
       'entries': _entries.values.map((c) => c.toJson()).toList(),
       'decks': _decks.map((d) => d.toJson()).toList(),
       'categories': _categories.map((c) => c.toJson()).toList(),

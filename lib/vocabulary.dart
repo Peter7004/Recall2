@@ -167,16 +167,26 @@ class VocabularySource {
 }
 
 class RecallCategory {
-  const RecallCategory({required this.id, required this.name, this.parentId});
+  const RecallCategory(
+      {required this.id,
+      required this.name,
+      this.parentId,
+      this.isPinned = false});
   final String id;
   final String name;
   final String? parentId;
-  Map<String, Object?> toJson() =>
-      {'id': id, 'name': name, 'parentId': parentId};
+  final bool isPinned;
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'name': name,
+        'parentId': parentId,
+        'isPinned': isPinned,
+      };
   factory RecallCategory.fromJson(Map<String, Object?> json) => RecallCategory(
         id: json['id']! as String,
         name: json['name']! as String,
         parentId: json['parentId'] as String?,
+        isPinned: json['isPinned'] as bool? ?? false,
       );
 }
 

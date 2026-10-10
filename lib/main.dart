@@ -2483,12 +2483,45 @@ class _LearningPriorityLabel extends StatelessWidget {
       ));
 }
 
-class _SubjectsPage extends StatelessWidget {
+class _SubjectsPage extends StatefulWidget {
   const _SubjectsPage({required this.store, required this.onOpenSubject});
   final RecallStore store;
   final ValueChanged<String> onOpenSubject;
 
+  @override
+  State<_SubjectsPage> createState() => _SubjectsPageState();
+}
+
+class _SubjectsPageState extends State<_SubjectsPage> {
+  RecallStore get store => widget.store;
+  bool _saving = false;
+
+  Future<void> _togglePinned(RecallCategory subject) async {
+    setState(() => _saving = true);
+    try {
+      await store.setCategoryPinned(subject.id, !subject.isPinned);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('과목 고정을 변경하지 못했습니다: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _deleteSubject(
+      BuildContext context, RecallCategory subject) async {
+    if (_saving || store.isCategoryDeletionProtected(subject.id)) return;
+    setState(() => _saving = true);
+    try {
+      await _confirmDeleteSubject(context, subject);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _confirmDeleteSubject(
       BuildContext context, RecallCategory subject) async {
     final removed = store.categorySubtree(subject.id);
     final count = store.cardsInCategory(subject.id).length;
@@ -2552,13 +2585,19 @@ class _SubjectsPage extends StatelessWidget {
                             fontSize: 22, fontWeight: FontWeight.w700))),
                 IconButton(
                     tooltip: '과목 추가',
-                    onPressed: () => showDialog<void>(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => _SubjectDialog(store: store)),
+                    onPressed: _saving
+                        ? null
+                        : () => showDialog<void>(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => _SubjectDialog(store: store)),
                     icon: const Icon(Icons.add)),
               ]),
               const SizedBox(height: 12),
+              if (store.categories.isEmpty)
+                const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: Text('등록된 과목이 없습니다.'))),
               for (final subject in store.categories)
                 ListTile(
                   leading: Icon(subject.parentId == null
@@ -2569,21 +2608,28 @@ class _SubjectsPage extends StatelessWidget {
                   subtitle:
                       Text('${store.cardsInCategory(subject.id).length}개 용어'),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (store.isFixedCategory(subject.id))
-                      const SizedBox.square(
-                          dimension: 48,
-                          child: Tooltip(
-                              message: '기본 과목 · 삭제할 수 없음',
-                              child: Icon(Icons.lock_outline, size: 20)))
-                    else
-                      IconButton(
-                          tooltip:
-                              '${store.categoryPath(subject.id).join(' / ')} 과목 삭제',
-                          onPressed: () => _deleteSubject(context, subject),
-                          icon: const Icon(Icons.delete_outline)),
+                    IconButton(
+                        tooltip:
+                            '${store.categoryPath(subject.id).join(' / ')} '
+                            '과목 ${subject.isPinned ? '고정 해제' : '고정'}',
+                        isSelected: subject.isPinned,
+                        onPressed:
+                            _saving ? null : () => _togglePinned(subject),
+                        icon: const Icon(Icons.push_pin_outlined),
+                        selectedIcon:
+                            const Icon(Icons.push_pin, color: _indigo)),
+                    IconButton(
+                        tooltip:
+                            '${store.categoryPath(subject.id).join(' / ')} 과목 삭제'
+                            '${store.isCategoryDeletionProtected(subject.id) ? ' · 고정 해제 필요' : ''}',
+                        onPressed: _saving ||
+                                store.isCategoryDeletionProtected(subject.id)
+                            ? null
+                            : () => _deleteSubject(context, subject),
+                        icon: const Icon(Icons.delete_outline)),
                     const Icon(Icons.chevron_right),
                   ]),
-                  onTap: () => onOpenSubject(subject.id),
+                  onTap: () => widget.onOpenSubject(subject.id),
                 ),
             ],
           ),

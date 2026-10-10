@@ -12,8 +12,8 @@ engineering terminology, with optional photo-assisted flashcard review.
 - Local English/Korean search, partial matching, type and subject filters.
 - Korean meanings, English definitions (`definition_en`), concise Korean
   explanations (`explanation_ko`), and existing examples/translations.
-- Two fixed subjects (Electrical Engineering and Semiconductor Engineering),
-  editable custom subjects, existing nested categories, and terms shared across
+- Custom subjects with optional deletion-protection pins, existing nested
+  categories, and terms shared across
   subjects and collections without copying the dictionary entry.
 - Persistent bookmarks with search/filtering and recently viewed terminology.
 - Entry editing, sources, and related-entry navigation.
@@ -77,13 +77,19 @@ The Subjects screen supports adding top-level subjects or selecting an optional
 parent for a subsubject. Empty names, names containing the `/` path separator,
 and case-insensitive sibling duplicates are rejected.
 
-`전기공학` (Electrical Engineering) and `반도체공학` (Semiconductor Engineering)
-are always listed first with lock icons. They cannot be deleted, including
-through the storage API. Fresh installations start with these two subjects.
-Existing subjects, IDs, assignments, and vocabulary are preserved; previous
-default subjects become removable and are no longer recreated on every load.
-Existing English-named fixed subjects retain their IDs with canonical Korean
-display names.
+Fresh installations have no mandatory subjects. A one-time upgrade removes the
+previous mandatory roots `전기공학` (Electrical Engineering) and `반도체공학`
+(Semiconductor Engineering), including their English aliases. Their direct
+children become independent subjects with unchanged IDs, descendants, and pins.
+Only the retired roots' assignments are cleared; vocabulary, collections,
+bookmarks, and learning history remain intact. `subjectSettingsVersion` records
+the upgrade, so subjects later created/imported with those names are retained.
+
+Each subject has a pin/unpin icon. A pinned subject cannot be deleted, and a
+parent cannot be deleted while any descendant is pinned. Both the delete control
+and storage API enforce this protection. Unpinning restores confirmed deletion;
+pinning does not prevent editing vocabulary or removing an unpinned child.
+Pins persist across restarts. Existing subjects without a pin field are unpinned.
 
 Deleting a custom subject asks for confirmation and includes its descendants.
 The warning shows subsubjects and the affected vocabulary count. Unlike deleting
@@ -91,7 +97,7 @@ a collection, subject deletion only clears those subject assignments: entries,
 collections, bookmarks, recent views, and review history remain. Other subject
 assignments remain unchanged. A deleted dictionary subject filter returns to
 all subjects. Failed subject saves restore the categories and assignments and
-refresh the preferences cache.
+refresh the preferences cache, including failed pin/unpin operations.
 
 ## CSV Import
 

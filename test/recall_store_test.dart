@@ -500,7 +500,7 @@ void main() {
     expect(store.resolveRelatedTerm('IMPEDANCE')!.primaryMeaning, '임피던스');
     expect(store.resolveRelatedTerm('missing'), isNull);
     expect(store.decks, isEmpty);
-    expect(store.categories, hasLength(2));
+    expect(store.categories, isEmpty);
     store.dispose();
   });
 
@@ -1013,58 +1013,86 @@ void main() {
     expect(restored.deckById(deckId), isNotNull);
     restored.dispose();
   });
-  test('only two fixed subjects are seeded, stable and protected', () async {
+  test(
+      'no subjects are seeded and previous default names are ordinary subjects',
+      () async {
     final store = await RecallStore.load();
-    expect(store.categories.map((c) => c.name), ['전기공학', '반도체공학']);
+    expect(store.categories, isEmpty);
+    final electrical = await store.createCategory('Electrical Engineering');
+    final semiconductor = await store.createCategory('반도체공학');
+    expect(electrical.name, '전기공학');
+    expect(electrical.isPinned, isFalse);
+    expect(semiconductor.isPinned, isFalse);
     final ids = store.categories.map((c) => c.id).toList();
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = prefs.getString('recall.data.v3');
-    for (final id in ids) {
-      expect(store.isFixedCategory(id), isTrue);
-      await expectLater(store.deleteCategory(id), throwsStateError);
-    }
-    await expectLater(store.createCategory('Electrical Engineering'),
-        throwsA(isA<FormatException>()));
-    expect(prefs.getString('recall.data.v3'), encoded);
     store.dispose();
     final restored = await RecallStore.load();
     expect(restored.categories.map((c) => c.id), ids);
+    for (final id in ids) {
+      expect(restored.isCategoryDeletionProtected(id), isFalse);
+      await restored.deleteCategory(id);
+    }
     restored.dispose();
+    final empty = await RecallStore.load();
+    expect(empty.categories, isEmpty);
+    empty.dispose();
   });
 
-  test('existing subjects and fixed-subject ids survive upgrade', () async {
+  test('upgrade retires mandatory roots once, keeping children and vocabulary',
+      () async {
     final store = await RecallStore.load();
+    await store.importCsvDeck(csvText: 'word,meaning\ncurrent,전류');
     await store.addCard(
-        deckId: '',
-        front: 'current',
-        meaning: '전류',
+        deckId: store.decks.single.id,
+        front: 'impedance',
+        meaning: '임피던스',
         example: '',
-        categoryNames: ['Electrical Engineering', 'Circuit Theory']);
+        categoryPaths: [
+          'Electrical Engineering / Circuits / AC',
+          'Semiconductor Engineering / Devices',
+          'Circuit Theory',
+        ]);
     final fixed = store.categories.firstWhere((c) => c.name == '전기공학');
-    final old = store.categories.firstWhere((c) => c.name == '회로이론');
-    final id = store.allCards.single.card.id;
+    final semiconductor = store.categories.firstWhere((c) => c.name == '반도체공학');
+    final child = store.categories.firstWhere((c) => c.name == 'Circuits');
+    final grandchild = store.categories.firstWhere((c) => c.name == 'AC');
+    final otherChild = store.categories.firstWhere((c) => c.name == 'Devices');
+    final id = store.searchCards('impedance').single.card.id;
+    await store.setCategoryPinned(child.id, true);
+    await store.toggleBookmark(id);
+    await store.recordCardViewed(id);
+    await store.markReviewed(id);
+    final before = Map<String, Object?>.of(store.cardById(id)!.toJson());
     final prefs = await SharedPreferences.getInstance();
-    final json = jsonDecode(prefs.getString('recall.data.v3')!) as Map;
+    final json = jsonDecode(prefs.getString('recall.data.v3')!) as Map
+      ..remove('subjectSettingsVersion');
     final subjects = (json['categories'] as List).cast<Map>();
-    subjects.removeWhere((c) => c['name'] == '반도체공학');
     subjects.firstWhere((c) => c['id'] == fixed.id)['name'] =
         'Electrical Engineering';
-    json['categories'] = subjects;
     store.dispose();
     SharedPreferences.setMockInitialValues(
         {'recall.data.v3': jsonEncode(json)});
     final upgraded = await RecallStore.load();
-    expect(upgraded.categories.take(2).map((c) => c.name), ['전기공학', '반도체공학']);
-    expect(upgraded.categoryById(fixed.id)!.name, '전기공학');
-    expect(upgraded.isFixedCategory(fixed.id), isTrue);
-    expect(upgraded.cardById(id)!.categoryIds, containsAll([fixed.id, old.id]));
-    await upgraded.deleteCategory(old.id);
+    expect(upgraded.categoryById(fixed.id), isNull);
+    expect(upgraded.categoryById(semiconductor.id), isNull);
+    expect(upgraded.categoryById(child.id)!.parentId, isNull);
+    expect(upgraded.categoryById(otherChild.id)!.parentId, isNull);
+    expect(upgraded.categoryById(child.id)!.isPinned, isTrue);
+    expect(upgraded.categoryById(grandchild.id)!.parentId, child.id);
+    expect(upgraded.categoryPath(grandchild.id), ['Circuits', 'AC']);
+    before['categoryIds'] = (before['categoryIds'] as List)
+        .where((value) => value != fixed.id && value != semiconductor.id)
+        .toList();
+    expect(upgraded.cardById(id)!.toJson(), before);
+    expect(upgraded.decks.single.cards, hasLength(2));
+    expect(upgraded.bookmarkedCards.single.card.id, id);
+    expect(upgraded.recentCards.single.card.id, id);
+    expect(upgraded.reviewsToday, 1);
+    final recreated = await upgraded.createCategory('전기공학');
     upgraded.dispose();
     final restored = await RecallStore.load();
-    expect(restored.categoryById(old.id), isNull);
-    expect(restored.categories.any((c) => c.name == '회로이론'), isFalse);
-    expect(restored.cardById(id)!.categoryIds, [fixed.id]);
-    expect(restored.totalCards, 1);
+    expect(restored.categoryById(recreated.id), isNotNull);
+    expect(restored.cardById(id)!.toJson(), before);
+    expect(restored.totalCards, 2);
     restored.dispose();
   });
 
@@ -1075,7 +1103,7 @@ void main() {
     final child = await store.createCategory('Devices', parentId: root.id);
     final other = await store.createCategory('Devices');
     expect(store.categoryPath(child.id), ['Materials', 'Devices']);
-    expect(store.isFixedCategory(root.id), isFalse);
+    expect(root.isPinned, isFalse);
     expect(
         store.categorySubtree(root.id).map((c) => c.id), [root.id, child.id]);
     for (final invalid in ['', ' / ', 'Materials/Devices', 'materials']) {
@@ -1131,7 +1159,7 @@ void main() {
     store.dispose();
     final restored = await RecallStore.load();
     expect(restored.cardById(id)!.toJson(), before);
-    expect(restored.categories, hasLength(2));
+    expect(restored.categories, hasLength(1));
     restored.dispose();
   });
 
@@ -1184,6 +1212,107 @@ void main() {
     expect(restored.categoryById(subject.id), isNotNull);
     expect(restored.allCards.single.card.categoryIds, [subject.id]);
     restored.dispose();
+  });
+
+  test('pinning persists, protects a subtree, and unpinning enables deletion',
+      () async {
+    final store = await RecallStore.load();
+    final root = await store.createCategory('Materials');
+    final child = await store.createCategory('Devices', parentId: root.id);
+    await store.setCategoryPinned(child.id, true);
+    expect(store.isCategoryDeletionProtected(root.id), isTrue);
+    await expectLater(store.deleteCategory(root.id), throwsStateError);
+    await expectLater(store.deleteCategory(child.id), throwsStateError);
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.categoryById(child.id)!.isPinned, isTrue);
+    expect(restored.categoryById(child.id)!.parentId, root.id);
+    await restored.setCategoryPinned(child.id, false);
+    expect(restored.isCategoryDeletionProtected(root.id), isFalse);
+    await restored.deleteCategory(root.id);
+    expect(restored.categories, isEmpty);
+    restored.dispose();
+  });
+
+  test(
+      'pinning a parent allows removing unpinned children but never the parent',
+      () async {
+    final store = await RecallStore.load();
+    final root = await store.createCategory('Materials');
+    final child = await store.createCategory('Devices', parentId: root.id);
+    await store.setCategoryPinned(root.id, true);
+    await expectLater(store.deleteCategory(root.id), throwsStateError);
+    await store.deleteCategory(child.id);
+    expect(store.categoryById(root.id)!.isPinned, isTrue);
+    store.dispose();
+  });
+
+  test('missing and unchanged pin commands cannot create or duplicate subjects',
+      () async {
+    final store = await RecallStore.load();
+    final subject = await store.createCategory('Materials');
+    var notifications = 0;
+    store.addListener(() => notifications++);
+    await store.setCategoryPinned(subject.id, false);
+    await expectLater(
+        store.setCategoryPinned('missing', true), throwsStateError);
+    expect(notifications, 0);
+    expect(store.categories.single.id, subject.id);
+    store.dispose();
+  });
+
+  test(
+      'failed pin and unpin restore the saved protection and preferences cache',
+      () async {
+    final preferences =
+        _FailingPreferences(await SharedPreferences.getInstance());
+    final store = await RecallStore.load(storage: preferences);
+    final subject = await store.createCategory('Materials');
+    final beforePin = preferences.getString('recall.data.v3');
+    preferences.failWrites = true;
+    await expectLater(
+        store.setCategoryPinned(subject.id, true), throwsStateError);
+    expect(store.categoryById(subject.id)!.isPinned, isFalse);
+    expect(preferences.getString('recall.data.v3'), beforePin);
+    preferences.failWrites = false;
+    await store.setCategoryPinned(subject.id, true);
+    final beforeUnpin = preferences.getString('recall.data.v3');
+    preferences.failWrites = true;
+    await expectLater(
+        store.setCategoryPinned(subject.id, false), throwsStateError);
+    expect(store.categoryById(subject.id)!.isPinned, isTrue);
+    expect(preferences.getString('recall.data.v3'), beforeUnpin);
+    await expectLater(store.deleteCategory(subject.id), throwsStateError);
+    store.dispose();
+    final restored = await RecallStore.load(storage: preferences);
+    expect(restored.categoryById(subject.id)!.isPinned, isTrue);
+    restored.dispose();
+  });
+
+  test('failed subject migration preserves the old save and retries safely',
+      () async {
+    final json = jsonEncode({
+      'schemaVersion': 2,
+      'entries': [],
+      'decks': [],
+      'categories': [
+        {'id': 'old-root', 'name': '전기공학'},
+        {'id': 'child', 'name': '회로', 'parentId': 'old-root'},
+      ],
+    });
+    SharedPreferences.setMockInitialValues({'recall.data.v2': json});
+    final preferences =
+        _FailingPreferences(await SharedPreferences.getInstance())
+          ..failWrites = true;
+    await expectLater(RecallStore.load(storage: preferences), throwsStateError);
+    expect(preferences.getString('recall.data.v3'), isNull);
+    expect(preferences.getString('recall.data.v2'), json);
+    preferences.failWrites = false;
+    final upgraded = await RecallStore.load(storage: preferences);
+    expect(upgraded.categories.single.id, 'child');
+    expect(upgraded.categories.single.parentId, isNull);
+    expect(preferences.getString('recall.data.v2'), json);
+    upgraded.dispose();
   });
 }
 
