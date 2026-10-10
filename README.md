@@ -12,8 +12,9 @@ engineering terminology, with optional photo-assisted flashcard review.
 - Local English/Korean search, partial matching, type and subject filters.
 - Korean meanings, English definitions (`definition_en`), concise Korean
   explanations (`explanation_ko`), and existing examples/translations.
-- Nine initial engineering subjects, existing nested categories, and terms shared
-  across subjects and collections without copying the dictionary entry.
+- Two fixed subjects (Electrical Engineering and Semiconductor Engineering),
+  editable custom subjects, existing nested categories, and terms shared across
+  subjects and collections without copying the dictionary entry.
 - Persistent bookmarks with search/filtering and recently viewed terminology.
 - Entry editing, sources, and related-entry navigation.
 - Confirmed permanent word deletion, collection deletion with its vocabulary,
@@ -69,6 +70,28 @@ entries with existing formulas/symbols/units are provisionally treated as techni
 Legacy definition/explanation values remain available through the new field names
 without automatic translation or fabricated content. Subject assignment alone
 does not make a word technical.
+
+## Subject Management
+
+The Subjects screen supports adding top-level subjects or selecting an optional
+parent for a subsubject. Empty names, names containing the `/` path separator,
+and case-insensitive sibling duplicates are rejected.
+
+`전기공학` (Electrical Engineering) and `반도체공학` (Semiconductor Engineering)
+are always listed first with lock icons. They cannot be deleted, including
+through the storage API. Fresh installations start with these two subjects.
+Existing subjects, IDs, assignments, and vocabulary are preserved; previous
+default subjects become removable and are no longer recreated on every load.
+Existing English-named fixed subjects retain their IDs with canonical Korean
+display names.
+
+Deleting a custom subject asks for confirmation and includes its descendants.
+The warning shows subsubjects and the affected vocabulary count. Unlike deleting
+a collection, subject deletion only clears those subject assignments: entries,
+collections, bookmarks, recent views, and review history remain. Other subject
+assignments remain unchanged. A deleted dictionary subject filter returns to
+all subjects. Failed subject saves restore the categories and assignments and
+refresh the preferences cache.
 
 ## CSV Import
 

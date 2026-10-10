@@ -500,7 +500,7 @@ void main() {
     expect(store.resolveRelatedTerm('IMPEDANCE')!.primaryMeaning, '임피던스');
     expect(store.resolveRelatedTerm('missing'), isNull);
     expect(store.decks, isEmpty);
-    expect(store.categories, hasLength(9));
+    expect(store.categories, hasLength(2));
     store.dispose();
   });
 
@@ -1011,6 +1011,178 @@ void main() {
     final restored = await RecallStore.load(storage: preferences);
     expect(restored.cardById(id), isNotNull);
     expect(restored.deckById(deckId), isNotNull);
+    restored.dispose();
+  });
+  test('only two fixed subjects are seeded, stable and protected', () async {
+    final store = await RecallStore.load();
+    expect(store.categories.map((c) => c.name), ['전기공학', '반도체공학']);
+    final ids = store.categories.map((c) => c.id).toList();
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = prefs.getString('recall.data.v3');
+    for (final id in ids) {
+      expect(store.isFixedCategory(id), isTrue);
+      await expectLater(store.deleteCategory(id), throwsStateError);
+    }
+    await expectLater(store.createCategory('Electrical Engineering'),
+        throwsA(isA<FormatException>()));
+    expect(prefs.getString('recall.data.v3'), encoded);
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.categories.map((c) => c.id), ids);
+    restored.dispose();
+  });
+
+  test('existing subjects and fixed-subject ids survive upgrade', () async {
+    final store = await RecallStore.load();
+    await store.addCard(
+        deckId: '',
+        front: 'current',
+        meaning: '전류',
+        example: '',
+        categoryNames: ['Electrical Engineering', 'Circuit Theory']);
+    final fixed = store.categories.firstWhere((c) => c.name == '전기공학');
+    final old = store.categories.firstWhere((c) => c.name == '회로이론');
+    final id = store.allCards.single.card.id;
+    final prefs = await SharedPreferences.getInstance();
+    final json = jsonDecode(prefs.getString('recall.data.v3')!) as Map;
+    final subjects = (json['categories'] as List).cast<Map>();
+    subjects.removeWhere((c) => c['name'] == '반도체공학');
+    subjects.firstWhere((c) => c['id'] == fixed.id)['name'] =
+        'Electrical Engineering';
+    json['categories'] = subjects;
+    store.dispose();
+    SharedPreferences.setMockInitialValues(
+        {'recall.data.v3': jsonEncode(json)});
+    final upgraded = await RecallStore.load();
+    expect(upgraded.categories.take(2).map((c) => c.name), ['전기공학', '반도체공학']);
+    expect(upgraded.categoryById(fixed.id)!.name, '전기공학');
+    expect(upgraded.isFixedCategory(fixed.id), isTrue);
+    expect(upgraded.cardById(id)!.categoryIds, containsAll([fixed.id, old.id]));
+    await upgraded.deleteCategory(old.id);
+    upgraded.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.categoryById(old.id), isNull);
+    expect(restored.categories.any((c) => c.name == '회로이론'), isFalse);
+    expect(restored.cardById(id)!.categoryIds, [fixed.id]);
+    expect(restored.totalCards, 1);
+    restored.dispose();
+  });
+
+  test('custom subject creation supports parents and rejects ambiguous names',
+      () async {
+    final store = await RecallStore.load();
+    final root = await store.createCategory('  Materials  ');
+    final child = await store.createCategory('Devices', parentId: root.id);
+    final other = await store.createCategory('Devices');
+    expect(store.categoryPath(child.id), ['Materials', 'Devices']);
+    expect(store.isFixedCategory(root.id), isFalse);
+    expect(
+        store.categorySubtree(root.id).map((c) => c.id), [root.id, child.id]);
+    for (final invalid in ['', ' / ', 'Materials/Devices', 'materials']) {
+      await expectLater(
+          store.createCategory(invalid), throwsA(isA<FormatException>()));
+    }
+    await expectLater(store.createCategory('devices', parentId: root.id),
+        throwsA(isA<FormatException>()));
+    await expectLater(store.createCategory('Missing', parentId: 'missing'),
+        throwsA(isA<FormatException>()));
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.categoryPath(child.id), ['Materials', 'Devices']);
+    expect(restored.categoryById(other.id), isNotNull);
+    restored.dispose();
+  });
+
+  test('deleting a subject tree clears assignments without deleting vocabulary',
+      () async {
+    final store = await RecallStore.load();
+    final root = await store.createCategory('Materials');
+    final child = await store.createCategory('Devices', parentId: root.id);
+    final grandchild = await store.createCategory('MOSFET', parentId: child.id);
+    await store.importCsvDeck(csvText: 'word,meaning\ncurrent,전류');
+    final id = store.allCards.single.card.id;
+    await store.updateCard(
+        deckId: store.decks.single.id,
+        cardId: id,
+        front: 'current',
+        meaning: '전류',
+        example: 'Measured current.',
+        imageData: 'AQID',
+        categoryPaths: [
+          'Materials / Devices / MOSFET',
+          'Electrical Engineering'
+        ]);
+    await store.toggleBookmark(id);
+    await store.recordCardViewed(id);
+    await store.markReviewed(id);
+    final before = Map<String, Object?>.of(store.cardById(id)!.toJson());
+    final fixedId = store.categories.firstWhere((c) => c.name == '전기공학').id;
+    await store.deleteCategory(root.id);
+    for (final removedId in [root.id, child.id, grandchild.id]) {
+      expect(store.categoryById(removedId), isNull);
+    }
+    before['categoryIds'] = [fixedId];
+    expect(store.cardById(id)!.toJson(), before);
+    expect(store.decks.single.cards.single.categoryIds, [fixedId]);
+    expect(store.bookmarkedCards.single.card.id, id);
+    expect(store.recentCards.single.card.id, id);
+    expect(store.reviewsToday, 1);
+    expect(store.cardsInCategory(root.id), isEmpty);
+    store.dispose();
+    final restored = await RecallStore.load();
+    expect(restored.cardById(id)!.toJson(), before);
+    expect(restored.categories, hasLength(2));
+    restored.dispose();
+  });
+
+  test('deleting a child keeps its parent, siblings and unrelated assignments',
+      () async {
+    final store = await RecallStore.load();
+    final root = await store.createCategory('Materials');
+    final child = await store.createCategory('Devices', parentId: root.id);
+    final sibling = await store.createCategory('Signals', parentId: root.id);
+    await store.addCard(
+        deckId: '',
+        front: 'current',
+        meaning: '전류',
+        example: '',
+        categoryPaths: ['Materials / Devices', 'Materials / Signals']);
+    await store.deleteCategory(child.id);
+    expect(store.allCards.single.card.categoryIds, [root.id, sibling.id]);
+    expect(store.categoryById(root.id), isNotNull);
+    expect(store.categoryById(sibling.id), isNotNull);
+    var notifications = 0;
+    store.addListener(() => notifications++);
+    await store.deleteCategory('missing');
+    expect(notifications, 0);
+    store.dispose();
+  });
+
+  test(
+      'failed subject creation and deletion restore data and preferences cache',
+      () async {
+    final preferences =
+        _FailingPreferences(await SharedPreferences.getInstance());
+    final store = await RecallStore.load(storage: preferences);
+    final subject = await store.createCategory('Materials');
+    await store.addCard(
+        deckId: '',
+        front: 'current',
+        meaning: '전류',
+        example: '',
+        categoryNames: ['Materials']);
+    final before = preferences.getString('recall.data.v3');
+    preferences.failWrites = true;
+    await expectLater(store.createCategory('Failed'), throwsStateError);
+    expect(store.categories.any((c) => c.name == 'Failed'), isFalse);
+    await expectLater(store.deleteCategory(subject.id), throwsStateError);
+    expect(store.categoryById(subject.id), isNotNull);
+    expect(store.allCards.single.card.categoryIds, [subject.id]);
+    expect(preferences.getString('recall.data.v3'), before);
+    store.dispose();
+    final restored = await RecallStore.load(storage: preferences);
+    expect(restored.categoryById(subject.id), isNotNull);
+    expect(restored.allCards.single.card.categoryIds, [subject.id]);
     restored.dispose();
   });
 }

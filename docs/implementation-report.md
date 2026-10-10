@@ -117,12 +117,26 @@ No FSRS or advanced spaced repetition was added.
 - This affects only current local personal data. A future common read-only
   terminology catalog must remain separate from personal deletions and edits.
 
+## Subject Management Update
+
+- Fresh installations seed only Electrical Engineering and Semiconductor
+  Engineering, always shown first with locks and protected at the storage API.
+- Existing subjects and assignments survive upgrade. English-named fixed roots
+  reuse their IDs; previous default subjects are not re-created after deletion.
+- Subjects can be added with optional parents. Empty/path-separator names and
+  sibling duplicates are rejected.
+- Confirmed custom-subject deletion removes its subtree and category references,
+  never the vocabulary, collection memberships, bookmarks, or learning history.
+- Deleted subject filters reset safely. Failed additions/deletions restore the
+  categories, assignments, and preferences cache.
+
 ## Verification
 
 - `flutter analyze`: passed, no issues.
-- `flutter test --concurrency=1`: 49 tests passed (31 store, 18 widget), including
+- `flutter test --concurrency=1`: 59 tests passed (37 store, 22 widget), including
   cascade, bulk, cancellation, rollback, filtered selection, and live
-  flashcard-queue regression coverage.
+  flashcard-queue regression coverage, fixed-subject protection, custom-subject
+  creation/deletion, upgrade preservation, and subject-save failure recovery.
 - `flutter build web --release`: succeeded.
 - `git diff --check`: passed.
 - Playwright with Microsoft Edge: actual 13-column CSV selection, preview/import,
@@ -130,6 +144,9 @@ No FSRS or advanced spaced repetition was added.
   persistence, bulk-selection cancellation/deletion, filtered selection,
   shared-collection cascade cancellation/deletion, single-delete cancellation,
   simulated browser quota-failure recovery, and desktop/mobile screenshots.
+  Subject checks cover fixed-root locks, name validation, root/nested creation,
+  subtree deletion and cancellation, retained vocabulary/bookmarks, stale-filter
+  reset, reload persistence, and quota-failure rollback for additions/deletions.
   No page errors or failed local asset responses were observed.
 - Viewports checked: 1280x900, 390x844, and 360x780 in the browser;
   360x780 in widget tests.

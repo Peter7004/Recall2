@@ -2169,6 +2169,10 @@ class _DictionaryPageState extends State<_DictionaryPage> {
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: widget.store,
         builder: (context, _) {
+          if (_categoryId != null &&
+              widget.store.categoryById(_categoryId!) == null) {
+            _categoryId = null;
+          }
           final results = widget.store.searchCards(_queryController.text,
               categoryId: _categoryId,
               vocabularyType: _type,
@@ -2483,6 +2487,57 @@ class _SubjectsPage extends StatelessWidget {
   const _SubjectsPage({required this.store, required this.onOpenSubject});
   final RecallStore store;
   final ValueChanged<String> onOpenSubject;
+
+  Future<void> _deleteSubject(
+      BuildContext context, RecallCategory subject) async {
+    final removed = store.categorySubtree(subject.id);
+    final count = store.cardsInCategory(subject.id).length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('과목 삭제'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  '“${store.categoryPath(subject.id).join(' / ')}” 과목을 삭제합니다.'),
+              if (removed.length > 1) ...[
+                const SizedBox(height: 12),
+                Text('하위 과목 ${removed.length - 1}개도 함께 삭제됩니다: '
+                    '${removed.skip(1).take(5).map((c) => c.name).join(', ')}'
+                    '${removed.length > 6 ? ' 외 ${removed.length - 6}개' : ''}'),
+              ],
+              const SizedBox(height: 12),
+              Text('용어 $count개의 과목 연결만 해제됩니다. '
+                  '단어, 모음, 북마크 및 학습 기록은 유지됩니다.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('취소')),
+          FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('삭제')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await store.deleteCategory(subject.id);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('과목을 삭제하지 못했습니다: $error')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Center(
         child: ConstrainedBox(
@@ -2490,23 +2545,138 @@ class _SubjectsPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
             children: [
-              const Text('과목',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+              Row(children: [
+                const Expanded(
+                    child: Text('과목',
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.w700))),
+                IconButton(
+                    tooltip: '과목 추가',
+                    onPressed: () => showDialog<void>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => _SubjectDialog(store: store)),
+                    icon: const Icon(Icons.add)),
+              ]),
               const SizedBox(height: 12),
               for (final subject in store.categories)
                 ListTile(
                   leading: Icon(subject.parentId == null
                       ? Icons.school_outlined
                       : Icons.subdirectory_arrow_right),
-                  title: Text(store.categoryPath(subject.id).join(' / ')),
+                  title: Text(store.categoryPath(subject.id).join(' / '),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
                   subtitle:
                       Text('${store.cardsInCategory(subject.id).length}개 용어'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (store.isFixedCategory(subject.id))
+                      const SizedBox.square(
+                          dimension: 48,
+                          child: Tooltip(
+                              message: '기본 과목 · 삭제할 수 없음',
+                              child: Icon(Icons.lock_outline, size: 20)))
+                    else
+                      IconButton(
+                          tooltip:
+                              '${store.categoryPath(subject.id).join(' / ')} 과목 삭제',
+                          onPressed: () => _deleteSubject(context, subject),
+                          icon: const Icon(Icons.delete_outline)),
+                    const Icon(Icons.chevron_right),
+                  ]),
                   onTap: () => onOpenSubject(subject.id),
                 ),
             ],
           ),
         ),
+      );
+}
+
+class _SubjectDialog extends StatefulWidget {
+  const _SubjectDialog({required this.store});
+  final RecallStore store;
+  @override
+  State<_SubjectDialog> createState() => _SubjectDialogState();
+}
+
+class _SubjectDialogState extends State<_SubjectDialog> {
+  final _name = TextEditingController();
+  String? _parentId;
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.store.createCategory(_name.text, parentId: _parentId);
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = error is FormatException ? error.message : '과목을 저장하지 못했습니다.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('과목 추가'),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: _name,
+                enabled: !_saving,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: _saving ? null : (_) => _create(),
+                decoration: const InputDecoration(labelText: '과목 이름'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _parentId ?? '',
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: '상위 과목'),
+                items: [
+                  const DropdownMenuItem(value: '', child: Text('없음')),
+                  for (final subject in widget.store.categories)
+                    DropdownMenuItem(
+                        value: subject.id,
+                        child: Text(
+                            widget.store.categoryPath(subject.id).join(' / '),
+                            overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: _saving
+                    ? null
+                    : (id) => setState(() => _parentId = id == '' ? null : id),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error)),
+              ],
+            ]),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: _saving ? null : () => Navigator.pop(context),
+              child: const Text('취소')),
+          FilledButton(
+              onPressed: _saving ? null : _create, child: const Text('추가')),
+        ],
       );
 }
 

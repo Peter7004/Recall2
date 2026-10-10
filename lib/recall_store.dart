@@ -21,7 +21,10 @@ class RecallStore extends ChangeNotifier {
   static const _previousKey = 'recall.data.v2';
   static const _dataKey = 'recall.data.v3';
   static int _idSequence = 0;
+  static const _fixedSubjectNames = ['전기공학', '반도체공학'];
   static const _subjectNames = {
+    'Electrical Engineering': '전기공학',
+    'Semiconductor Engineering': '반도체공학',
     'Mathematics': '수학',
     'Electromagnetics': '전자기학',
     'Circuit Theory': '회로이론',
@@ -120,16 +123,32 @@ class RecallStore extends ChangeNotifier {
           .take(20)
           .toList();
     }
-    for (final name in _subjectNames.values) {
-      store._findOrCreateCategory(name);
+    var fixedSubjectsChanged = false;
+    for (final name in _fixedSubjectNames) {
+      final index = store._categories.indexWhere((c) =>
+          c.parentId == null && store._categoryDisplayName(c.name) == name);
+      if (index == -1) {
+        store._findOrCreateCategory(name);
+        fixedSubjectsChanged = true;
+      } else if (store._categories[index].name != name) {
+        store._categories[index] =
+            RecallCategory(id: store._categories[index].id, name: name);
+        fixedSubjectsChanged = true;
+      }
     }
     store._rollReviewDay();
-    if (encoded != null && current == null) await store._save();
+    if (fixedSubjectsChanged || (encoded != null && current == null)) {
+      await store._save();
+    }
     return store;
   }
 
   List<RecallDeck> get decks => List.unmodifiable(_decks.map(_hydrateDeck));
-  List<RecallCategory> get categories => List.unmodifiable(_categories);
+  List<RecallCategory> get categories => List.unmodifiable([
+        for (final name in _fixedSubjectNames)
+          ..._categories.where((c) => c.parentId == null && c.name == name),
+        ..._categories.where((c) => !isFixedCategory(c.id)),
+      ]);
   int get dailyGoal => _dailyGoal;
   int get reviewsToday => _reviewsToday;
   bool get tutorialCompleted => _tutorialCompleted;
@@ -184,6 +203,96 @@ class RecallStore extends ChangeNotifier {
       if (c.id == id) return c;
     }
     return null;
+  }
+
+  bool isFixedCategory(String id) {
+    final category = categoryById(id);
+    return category != null &&
+        category.parentId == null &&
+        _fixedSubjectNames.contains(_categoryDisplayName(category.name));
+  }
+
+  List<RecallCategory> categorySubtree(String id) {
+    final root = categoryById(id);
+    if (root == null) return [];
+    final ids = {id};
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (final category in _categories) {
+        if (ids.contains(category.parentId) && ids.add(category.id)) {
+          changed = true;
+        }
+      }
+    }
+    return [
+      root,
+      ..._categories.where((c) => c.id != id && ids.contains(c.id))
+    ];
+  }
+
+  Future<RecallCategory> createCategory(String name, {String? parentId}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw const FormatException('과목 이름을 입력해 주세요.');
+    if (trimmed.contains('/')) {
+      throw const FormatException('과목 이름에는 /를 사용할 수 없습니다.');
+    }
+    if (parentId != null && categoryById(parentId) == null) {
+      throw const FormatException('상위 과목을 찾을 수 없습니다.');
+    }
+    final display = _categoryDisplayName(trimmed, parentId: parentId);
+    if (_categories.any((c) =>
+        c.parentId == parentId &&
+        _categoryDisplayName(c.name, parentId: c.parentId).toLowerCase() ==
+            display.toLowerCase())) {
+      throw const FormatException('같은 위치에 동일한 과목이 이미 있습니다.');
+    }
+    final oldCategories = List<RecallCategory>.of(_categories);
+    final category = _findOrCreateCategory(display, parentId: parentId);
+    await _saveCategoryChanges(oldCategories);
+    return category;
+  }
+
+  Future<void> deleteCategory(String id) async {
+    final removed = categorySubtree(id);
+    if (removed.isEmpty) return;
+    if (removed.any((c) => isFixedCategory(c.id))) {
+      throw StateError('기본 과목은 삭제할 수 없습니다.');
+    }
+    final ids = removed.map((c) => c.id).toSet();
+    final oldCategories = List<RecallCategory>.of(_categories);
+    final oldEntries = Map<String, RecallCard>.of(_entries);
+    _categories.removeWhere((c) => ids.contains(c.id));
+    for (final card in _entries.values.toList()) {
+      if (card.categoryIds.any(ids.contains)) {
+        _entries[card.id] = card.copyWith(
+            categoryIds:
+                card.categoryIds.where((id) => !ids.contains(id)).toList());
+      }
+    }
+    await _saveCategoryChanges(oldCategories, oldEntries: oldEntries);
+  }
+
+  Future<void> _saveCategoryChanges(List<RecallCategory> oldCategories,
+      {Map<String, RecallCard>? oldEntries}) async {
+    try {
+      await _save();
+    } catch (_) {
+      _categories = oldCategories;
+      if (oldEntries != null) {
+        _entries.clear();
+        _entries.addAll(oldEntries);
+      }
+      _allCardsCache = null;
+      _searchText.clear();
+      try {
+        await _preferences.reload();
+      } catch (_) {
+        // Report the original save error after restoring the in-memory data.
+      }
+      if (hasListeners) notifyListeners();
+      rethrow;
+    }
   }
 
   List<String> categoryPath(String id) {
@@ -754,12 +863,16 @@ class RecallStore extends ChangeNotifier {
     return save;
   }
 
-  RecallCategory _findOrCreateCategory(String name, {String? parentId}) {
+  String _categoryDisplayName(String name, {String? parentId}) {
     final aliases = _subjectNames.entries
         .where((e) => e.key.toLowerCase() == name.trim().toLowerCase());
-    final display = parentId == null && aliases.isNotEmpty
+    return parentId == null && aliases.isNotEmpty
         ? aliases.first.value
         : name.trim();
+  }
+
+  RecallCategory _findOrCreateCategory(String name, {String? parentId}) {
+    final display = _categoryDisplayName(name, parentId: parentId);
     for (final c in _categories) {
       if (c.name.toLowerCase() == display.toLowerCase() &&
           c.parentId == parentId) {
