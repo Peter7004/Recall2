@@ -37,6 +37,13 @@ jobs:
         run: flutter test
       - name: Build web app
         run: flutter build web --release --base-href /Recall2/
+      - name: Verify Flutter Pages artifact
+        run: |
+          test -s build/web/index.html
+          test -s build/web/flutter_bootstrap.js
+          test -s build/web/main.dart.js
+          grep -Fq '<base href="/Recall2/">' build/web/index.html
+          grep -Fq 'src="flutter_bootstrap.js"' build/web/index.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

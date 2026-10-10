@@ -131,6 +131,20 @@ Existing Git staging was not changed.
 Android requires an installed Android SDK; iOS requires macOS/Xcode. GitHub
 Actions still analyzes, tests, builds, and deploys the web app to GitHub Pages.
 
+## Web Deployment
+
+The published app is at https://peter7004.github.io/Recall2/.
+Repository Settings > Pages > Build and deployment > Source must be **GitHub
+Actions**, not **Deploy from a branch**. Branch publishing from the source root
+builds the README with Jekyll and competes with the Flutter deployment.
+
+`.github/workflows/deploy.yml` builds with `--base-href /Recall2/`, verifies the
+Flutter HTML/bootstrap/JavaScript entry points, and uploads only `build/web`.
+The repository source and documentation are not the Pages deployment artifact.
+Push to `main` or manually run this workflow to publish a new web build.
+If an old information page is cached, use a hard refresh; do not clear local
+site data, because it contains the vocabulary, bookmarks, and review history.
+
 ## Limitations and Next Steps
 
 Storage is local to the device/browser, with no cloud sync or multiuser editing.
