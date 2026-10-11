@@ -197,8 +197,24 @@ web build. Browser smoke-test data used an isolated test browser context.
 
 ## Known Limitations
 
-Android builds were not executed because the Android SDK is unavailable. iOS
-builds/device camera testing require macOS/Xcode and physical devices. The web
+The Android release-mode test APK was built on GitHub's Ubuntu runner, without
+installing an Android SDK/JDK on the local PC. The successful
+[APK build](https://github.com/Peter7004/Recall2/actions/runs/38117020235)
+used source commit `33628ac13cab94c22b4f0f7b29b87c488d0c319b` and passed
+76 Flutter tests, 8 web startup tests, and analysis. `apksigner` verified its
+v2 signature; package information confirms `com.example.recall`, version
+`1.0.0+1`, minimum API 24, target API 36, and ARM32/ARM64/x86_64 runtimes.
+The downloaded APK is 54,007,064 bytes with SHA-256
+`655aa1446e03075e078d5579bdfabc5adaad7bff3a511e4d208fa8240b54a022`.
+Both artifact/APK checksums and the byte-identical original logo were verified
+locally. The APK and verification reports are in the ignored
+`build/apk/run-38117020235/` directory, not committed to source control.
+
+This APK uses a temporary debug signer and is not a production-signed release.
+Fresh builds may have different signers; persistent private signing and
+backup/restore are required before continued distribution. Android installation,
+startup, camera/gallery, and CSV selection still need physical-device testing.
+iOS builds/device camera testing require macOS/Xcode and physical devices. The web
 build succeeds with an existing warning about a missing CupertinoIcons font;
 Apple-platform navigation icons need checking before an iOS release.
 
