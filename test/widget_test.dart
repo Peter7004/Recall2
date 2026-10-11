@@ -1,16 +1,102 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:recall/main.dart';
 import 'package:recall/recall_store.dart';
+import 'package:recall/recall_backup.dart';
 import 'v3_fixtures.dart';
+
+class _BackupFilePicker extends FilePicker {
+  Uint8List? saved;
+  Uint8List? input;
+  @override
+  Future<String?> saveFile(
+      {String? dialogTitle,
+      String? fileName,
+      String? initialDirectory,
+      FileType type = FileType.any,
+      List<String>? allowedExtensions,
+      Uint8List? bytes,
+      bool lockParentWindow = false}) async {
+    saved = bytes;
+    return 'backup.json';
+  }
+
+  @override
+  Future<FilePickerResult?> pickFiles(
+          {String? dialogTitle,
+          String? initialDirectory,
+          FileType type = FileType.any,
+          List<String>? allowedExtensions,
+          Function(FilePickerStatus)? onFileLoading,
+          bool allowCompression = true,
+          int compressionQuality = 30,
+          bool allowMultiple = false,
+          bool withData = false,
+          bool withReadStream = false,
+          bool lockParentWindow = false,
+          bool readSequential = false}) async =>
+      input == null
+          ? null
+          : FilePickerResult([
+              PlatformFile(
+                  name: 'backup.json', size: input!.length, bytes: input)
+            ]);
+}
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets(
+      'settings exports full backup and requires confirmation to restore',
+      (tester) async {
+    FilePickerIO.registerWith();
+    final originalPicker = FilePicker.platform;
+    final picker = _BackupFilePicker();
+    FilePicker.platform = picker;
+    addTearDown(() => FilePicker.platform = originalPicker);
+    final store = await RecallStore.load();
+    await store.createDeck('Existing');
+    await tester
+        .pumpWidget(MaterialApp(home: HomeShell(loadStore: () async => store)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('백업 파일 저장'));
+    await tester.pumpAndSettle();
+    final backup = RecallBackup.parse(utf8.decode(picker.saved!));
+    expect(backup.deckCount, 1);
+    picker.input = Uint8List.fromList(utf8.encode(store.exportBackup()));
+    await store.createDeck('Added after backup');
+    await tester.tap(find.text('백업 파일 복원'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('백업을 복원할까요?'), findsOneWidget);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(store.decks.length, 2);
+    await tester.tap(find.text('백업 파일 복원'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('복원'));
+    await tester.pumpAndSettle();
+    expect(store.decks.single.name, 'Existing');
+    picker.input = Uint8List.fromList(utf8.encode('{broken'));
+    await tester.tap(find.text('백업 파일 복원'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(store.decks.single.name, 'Existing');
+    picker.input = null;
+    await tester.tap(find.text('백업 파일 복원'));
+    await tester.pumpAndSettle();
+    expect(store.decks.single.name, 'Existing');
   });
 
   testWidgets('dictionary is the first page and has five destinations',

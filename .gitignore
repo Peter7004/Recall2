@@ -18,6 +18,10 @@ build/
 android/local.properties
 flutter_*.log
 .recall-backups/
+android/key.properties
+*.jks
+*.keystore
+*.p12
 
 # OS
 .DS_Store

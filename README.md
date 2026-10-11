@@ -206,19 +206,66 @@ APK signature, package information, original logo asset, and three supported
 ABIs, then uploads `Recall-test.apk` with verification reports and a SHA-256
 checksum. Artifacts are retained for 30 days. Run the workflow manually from
 Actions, or push changes to the Android/app/build inputs on `main`.
+The workflow explicitly sets `RECALL_TEST_BUILD=true`; only this opt-in permits
+debug signing for release-mode test code and uses the legacy test application ID.
 
 This is release-mode code with the existing **temporary debug signing key**,
 not a production-signed or Play Store release. No keystore or private key is
 uploaded. Fresh runner builds can have different signers and are not guaranteed
 to update one another in place. Configure a persistent private release key and
 backup/restore before ongoing distribution; do not uninstall a data-bearing
-installation to work around a signing mismatch. The app ID remains
+installation to work around a signing mismatch. The test app ID remains
 `com.example.recall`, and platform launcher icons are unchanged.
 
 Android APK generation does not require a connected phone. Physical-device
 testing is still necessary, particularly for camera/gallery, CSV file selection,
 startup, and local-data persistence. Browser data does not transfer into this
 installation automatically. The APK workflow is separate from Pages publishing.
+
+## Signed APK Distribution and Updates
+
+The private distribution repository is `Peter7004/Recall-APK-Private`.
+`tool/private-apk-workflow.yml` is the workflow template installed there as
+`.github/workflows/signed-apk.yml`; dispatch it with the full reviewed source
+commit SHA from `Recall2`. Signing secrets and signed artifacts stay in the
+private repository, while public test builds and Pages continue independently.
+
+Production APKs use the fixed application ID `io.github.peter7004.recall` and
+an encrypted PKCS12 keystore. Gradle requires `RECALL_KEYSTORE_PATH`,
+`RECALL_KEYSTORE_PASSWORD`, and `RECALL_KEY_ALIAS`; release tasks fail without
+the keystore unless explicitly building a test APK. The private workflow checks
+the resulting certificate against `RECALL_CERT_SHA256` before uploading it.
+Never commit a keystore or password, include it in an artifact, or print it in logs.
+
+For each update, keep the same application ID and keystore, increase the build
+number in `pubspec.yaml` (currently `1.0.1+2`), test, then publish a newer APK.
+Users install it over the production app without uninstalling. The stable private
+download is the latest release's `Recall.apk`. GitHub login with repository access
+is required. This is manual APK distribution, not an automatic updater or a
+Google Play release.
+
+The original runner-generated debug private key is unavailable, so version 1.0.1
+cannot update the legacy `com.example.recall` app in place. It installs beside it.
+Keep the old installation, import the original CSV into the new app, and verify
+the terms before retiring the old app. Legacy bookmarks and review history are
+not migrated automatically. Do not uninstall a data-bearing legacy installation
+to try to force an update. Previous public test APK copies are intentionally kept.
+
+## Data Backup and Restore
+
+Settings includes JSON backup download/save and restore. A versioned backup
+contains every vocabulary field, images, collections and shared memberships,
+subject hierarchy and pins, bookmarks, review exclusions/history, recent views,
+tutorial state, and daily settings. It preserves the existing v3 storage schema;
+older local saves still follow their existing migration path.
+
+Restore validates the format, schema, field types, enum values, unique IDs,
+references, and subject cycles before requesting confirmation. It replaces the
+current library and settings, not merges them: export the current data first.
+Canceled/invalid restores change nothing. A failed storage write leaves live
+data intact, and other edits are blocked while the restore write is running.
+The import/export limit is 64 MiB. Backup files are not encrypted; store them
+privately. CSV is for vocabulary import, not a full account-state backup.
 
 ## Web Deployment
 
@@ -252,6 +299,6 @@ Storage is local to the device/browser, with no cloud sync or multiuser editing.
 Classifications, priorities, and definitions require editorial review.
 SharedPreferences is appropriate
 for modest datasets; SQLite/IndexedDB indexing is the next step for large libraries.
-An export/restore workflow and database indexing are future improvements, not
-part of this focused vocabulary release. Camera/gallery integration still needs testing
+Database indexing remains a future improvement, not
+part of this focused vocabulary release. Camera/gallery and backup file selection still need testing
 on physical Android/iOS devices.

@@ -50,6 +50,8 @@ jobs:
       - name: Test web startup timing
         run: node --test test/web/startup_test.cjs
       - name: Build universal test APK
+        env:
+          RECALL_TEST_BUILD: 'true'
         run: flutter build apk --release
       - name: Verify and package the APK
         run: |

@@ -1,0 +1,93 @@
+name: Build signed Recall APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full reviewed Recall2 source commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signed-recall-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Validate private build and pinned source
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          test "$PRIVATE" = true
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - name: Check out reviewed public source
+        uses: actions/checkout@v4
+        with:
+          repository: Peter7004/Recall2
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Select JDK
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+      - name: Prepare Android components
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test --concurrency=1
+      - run: node --test test/web/startup_test.cjs
+      - name: Build with permanent signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RECALL_KEYSTORE_BASE64 }}
+          RECALL_KEYSTORE_PASSWORD: ${{ secrets.RECALL_KEYSTORE_PASSWORD }}
+          RECALL_KEY_ALIAS: ${{ secrets.RECALL_KEY_ALIAS }}
+          RECALL_KEYSTORE_PATH: ${{ runner.temp }}/recall-release.p12
+        run: |
+          umask 077
+          test -n "$KEYSTORE_BASE64"
+          test -n "$RECALL_KEYSTORE_PASSWORD"
+          test -n "$RECALL_KEY_ALIAS"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RECALL_KEYSTORE_PATH"
+          flutter build apk --release
+      - name: Verify and package production APK
+        env:
+          EXPECTED_CERT: ${{ secrets.RECALL_CERT_SHA256 }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          mkdir -p build/signed-apk
+          cp build/app/outputs/flutter-apk/app-release.apk build/signed-apk/Recall.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs build/signed-apk/Recall.apk | tee build/signed-apk/signature.txt
+          grep -Fx "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT" build/signed-apk/signature.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/signed-apk/Recall.apk > build/signed-apk/package-info.txt
+          grep "package: name='io.github.peter7004.recall'" build/signed-apk/package-info.txt
+          unzip -Z1 build/signed-apk/Recall.apk | grep -Fx 'assets/flutter_assets/web/branding/recall-logo.png'
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            unzip -Z1 build/signed-apk/Recall.apk | grep -Fx "lib/$abi/libflutter.so"
+          done
+          cd build/signed-apk
+          sha256sum Recall.apk > Recall.apk.sha256
+          printf 'Source: %s\nBuild: %s/actions/runs/%s\nSigning: permanent Recall distribution certificate\n' "$SOURCE_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > build-info.txt
+      - name: Remove runner signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/recall-release.p12"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Recall-signed-apk-${{ github.run_number }}
+          path: build/signed-apk/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

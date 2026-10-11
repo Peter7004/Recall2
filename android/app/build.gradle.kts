@@ -4,6 +4,9 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val testBuild = System.getenv("RECALL_TEST_BUILD") == "true"
+val signingStore = System.getenv("RECALL_KEYSTORE_PATH")
+
 android {
     namespace = "com.example.recall"
     compileSdk = flutter.compileSdkVersion
@@ -15,8 +18,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.recall"
+        // Keep test APKs separate from the permanently signed distribution.
+        applicationId = if (testBuild) "com.example.recall" else "io.github.peter7004.recall"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -29,12 +32,34 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (signingStore != null) {
+            create("distribution") {
+                storeFile = file(signingStore)
+                storeType = "PKCS12"
+                storePassword = System.getenv("RECALL_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RECALL_KEY_ALIAS")
+                keyPassword = System.getenv("RECALL_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = when {
+                testBuild -> signingConfigs.getByName("debug")
+                signingStore != null -> signingConfigs.getByName("distribution")
+                else -> null
+            }
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    if (!testBuild && signingStore == null && allTasks.any {
+            it.name.contains("Release", ignoreCase = true)
+        }) {
+        throw GradleException("Production release requires the fixed Recall signing keystore.")
     }
 }
 

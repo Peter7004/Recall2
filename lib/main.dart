@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:recall/branding.dart';
+import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
 
 void main() {
@@ -3615,8 +3616,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                         max: 200,
                         divisions: 199,
                         label: _dailyGoal.round().toString(),
-                        onChanged: (value) =>
-                            setState(() => _dailyGoal = value),
+                        onChanged: _saving
+                            ? null
+                            : (value) => setState(() => _dailyGoal = value),
                       ),
                     ],
                   ),
@@ -3626,6 +3628,24 @@ class _SettingsPageState extends State<_SettingsPage> {
                   onPressed: _saving ? null : _save,
                   child: Text(_saving ? 'Saving…' : 'Save settings'),
                 ),
+                const SizedBox(height: 32),
+                const _HomeSectionHeading('데이터 백업'),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _exportBackup,
+                  icon: const Icon(Icons.download_outlined),
+                  label: const Text('백업 파일 저장'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _restoreBackup,
+                  icon: const Icon(Icons.restore_outlined),
+                  label: const Text('백업 파일 복원'),
+                ),
+                if (_saving) ...[
+                  const SizedBox(height: 16),
+                  const LinearProgressIndicator(),
+                ],
               ],
             ),
           ),
@@ -3634,8 +3654,94 @@ class _SettingsPageState extends State<_SettingsPage> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    await widget.store.setDailyGoal(_dailyGoal.round());
-    if (mounted) Navigator.pop(context);
+    try {
+      await widget.store.setDailyGoal(_dailyGoal.round());
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      _message('설정을 저장하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _exportBackup() async {
+    setState(() => _saving = true);
+    try {
+      final bytes =
+          Uint8List.fromList(utf8.encode(widget.store.exportBackup()));
+      if (bytes.length > RecallBackup.maxBytes) {
+        throw const FormatException('백업 파일이 64 MB를 초과합니다.');
+      }
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Recall 백업 저장',
+        fileName: 'Recall-backup-${DateTime.now().millisecondsSinceEpoch}.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: bytes,
+      );
+      if (kIsWeb) {
+        _message('백업 파일 다운로드를 시작했습니다.');
+      } else if (result != null) {
+        _message('백업 파일을 저장했습니다.');
+      }
+    } catch (_) {
+      _message('백업 파일을 저장하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    setState(() => _saving = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+      if (result == null || !mounted) return;
+      final file = result.files.single;
+      if (file.size > RecallBackup.maxBytes || file.bytes == null) {
+        throw const FormatException('읽을 수 없거나 64 MB를 초과하는 백업입니다.');
+      }
+      final backup = RecallBackup.parse(utf8.decode(file.bytes!));
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('백업을 복원할까요?'),
+          content: Text('현재 단어 ${widget.store.totalCards}개와 모든 설정이 '
+              '백업의 단어 ${backup.entryCount}개, 모음 ${backup.deckCount}개로 '
+              '교체됩니다. 현재 데이터를 먼저 백업했는지 확인해 주세요.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('취소')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('복원')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      await widget.store.restoreBackup(backup);
+      if (mounted) {
+        setState(() => _dailyGoal = widget.store.dailyGoal.toDouble());
+      }
+      _message('백업을 복원했습니다.');
+    } on FormatException catch (error) {
+      _message(error.message);
+    } catch (_) {
+      _message('복원하지 못했습니다. 기존 데이터는 유지됩니다.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _message(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 }
 

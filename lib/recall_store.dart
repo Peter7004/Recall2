@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'csv_import.dart';
+import 'recall_backup.dart';
 import 'vocabulary.dart';
 
 export 'csv_import.dart'
@@ -44,6 +45,7 @@ class RecallStore extends ChangeNotifier {
   DictionaryCards? _allCardsCache;
   final Map<String, String> _searchText = {};
   Future<void> _pendingSave = Future.value();
+  bool _restoring = false;
   int _dailyGoal = 24;
   int _reviewsToday = 0;
   bool _tutorialCompleted = false;
@@ -231,6 +233,7 @@ class RecallStore extends ChangeNotifier {
       categorySubtree(id).any((category) => category.isPinned);
 
   Future<void> setCategoryPinned(String id, bool pinned) async {
+    _assertWritable();
     final index = _categories.indexWhere((c) => c.id == id);
     if (index == -1) throw StateError('과목을 찾을 수 없습니다.');
     final category = _categories[index];
@@ -264,6 +267,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<RecallCategory> createCategory(String name, {String? parentId}) async {
+    _assertWritable();
     final trimmed = name.trim();
     if (trimmed.isEmpty) throw const FormatException('과목 이름을 입력해 주세요.');
     if (trimmed.contains('/')) {
@@ -286,6 +290,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> deleteCategory(String id) async {
+    _assertWritable();
     final removed = categorySubtree(id);
     if (removed.isEmpty) return;
     if (removed.any((c) => c.isPinned)) {
@@ -428,6 +433,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> recordCardViewed(String id) async {
+    _assertWritable();
     if (!_entries.containsKey(id)) return;
     _recentViews.removeWhere((v) => v.cardId == id);
     _recentViews.insert(0, (cardId: id, viewedAt: DateTime.now()));
@@ -471,6 +477,7 @@ class RecallStore extends ChangeNotifier {
           .importedCount;
   Future<CsvImportReport> importCsvDeckDetailed(
       {required String csvText, String? deckName}) async {
+    _assertWritable();
     final preview = previewCsvImportDetailed(csvText);
     final byKey = <String, RecallCard>{};
     for (final card in _entries.values) {
@@ -595,12 +602,14 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> createDeck(String name) async {
+    _assertWritable();
     if (name.trim().isEmpty) return;
     _decks.add(RecallDeck(id: _newId(), name: name.trim(), cards: []));
     await _save();
   }
 
   Future<void> updateDeckName(String id, String name) async {
+    _assertWritable();
     final i = _decks.indexWhere((d) => d.id == id);
     if (i < 0 || name.trim().isEmpty) return;
     _decks[i] = RecallDeck(id: id, name: name.trim(), cards: _decks[i].cards);
@@ -617,6 +626,7 @@ class RecallStore extends ChangeNotifier {
       _deleteVocabulary(entryIds.where(_entries.containsKey).toSet());
 
   Future<void> _deleteVocabulary(Set<String> ids, {String? deckId}) async {
+    _assertWritable();
     if (ids.isEmpty && deckId == null) return;
     final oldEntries = Map<String, RecallCard>.of(_entries);
     final oldDecks = _decks;
@@ -653,6 +663,7 @@ class RecallStore extends ChangeNotifier {
 
   Future<void> addEntryToDeck(
       {required String deckId, required String cardId}) async {
+    _assertWritable();
     final i = _decks.indexWhere((d) => d.id == deckId);
     final card = _entries[cardId];
     if (i < 0 || card == null || _decks[i].cards.any((c) => c.id == cardId)) {
@@ -667,6 +678,7 @@ class RecallStore extends ChangeNotifier {
   // Unchecking collection membership is different from deleting vocabulary.
   Future<void> deleteCard(
       {required String deckId, required String cardId}) async {
+    _assertWritable();
     final i = _decks.indexWhere((d) => d.id == deckId);
     if (i < 0) return;
     final deck = _decks[i];
@@ -704,6 +716,7 @@ class RecallStore extends ChangeNotifier {
     List<VocabularySource> sources = const [],
     VerificationStatus verificationStatus = VerificationStatus.needsReview,
   }) async {
+    _assertWritable();
     if (front.trim().isEmpty || meaning.trim().isEmpty) {
       throw ArgumentError('용어와 뜻이 필요합니다.');
     }
@@ -785,6 +798,7 @@ class RecallStore extends ChangeNotifier {
     List<VocabularySource>? sources,
     VerificationStatus? verificationStatus,
   }) async {
+    _assertWritable();
     final old = _entries[cardId];
     if (old == null) return;
     if (front.trim().isEmpty || meaning.trim().isEmpty) {
@@ -836,6 +850,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> markReviewed(String id) async {
+    _assertWritable();
     _rollReviewDay();
     if (!_entries.containsKey(id)) return;
     _entries[id] = _entries[id]!.copyWith(lastReviewed: DateTime.now());
@@ -844,6 +859,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> toggleBookmark(String id) async {
+    _assertWritable();
     final card = _entries[id];
     if (card == null) return;
     _entries[id] = card.copyWith(isBookmarked: !card.isBookmarked);
@@ -851,6 +867,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> toggleReviewExclusion(String id) async {
+    _assertWritable();
     final card = _entries[id];
     if (card == null) return;
     _entries[id] =
@@ -859,33 +876,99 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> completeTutorial() async {
+    _assertWritable();
     _tutorialCompleted = true;
     await _save();
   }
 
   Future<void> setDailyGoal(int value) async {
+    _assertWritable();
     _dailyGoal = value.clamp(1, 200);
     await _save();
+  }
+
+  Map<String, Object?> _snapshot() => {
+        'schemaVersion': 3,
+        'subjectSettingsVersion': _subjectSettingsVersion,
+        'entries': _entries.values.map((c) => c.toJson()).toList(),
+        'decks': _decks.map((d) => d.toJson()).toList(),
+        'categories': _categories.map((c) => c.toJson()).toList(),
+        'recentViews': [
+          for (final v in _recentViews)
+            {'cardId': v.cardId, 'viewedAt': v.viewedAt.toIso8601String()}
+        ],
+        'dailyGoal': _dailyGoal,
+        'reviewsToday': _reviewsToday,
+        'tutorialCompleted': _tutorialCompleted,
+        'reviewDay': _reviewDay,
+      };
+
+  String exportBackup() => RecallBackup.encode(_snapshot());
+
+  Future<void> restoreBackup(RecallBackup backup) async {
+    _assertWritable();
+    _restoring = true;
+    try {
+      // Drain earlier writes, then persist before changing the live dictionary.
+      await _pendingSave;
+      final data = backup.snapshot;
+      final entries = {
+        for (final value in data['entries'] as List)
+          (value as Map<String, dynamic>)['id'] as String:
+              RecallCard.fromJson(value)
+      };
+      final categories = (data['categories'] as List)
+          .map((c) => RecallCategory.fromJson(c as Map<String, dynamic>))
+          .toList();
+      final decks = (data['decks'] as List)
+          .map((d) => RecallDeck(
+              id: d['id'] as String,
+              name: d['name'] as String,
+              cards: [for (final id in d['entryIds'] as List) entries[id]!]))
+          .toList();
+      if (!await _preferences.setString(_dataKey, jsonEncode(data))) {
+        throw StateError('복원을 저장하지 못했습니다. 기존 데이터는 유지됩니다.');
+      }
+      _entries
+        ..clear()
+        ..addAll(entries);
+      _categories = categories;
+      _decks = decks;
+      _recentViews = [
+        for (final v in data['recentViews'] as List)
+          (
+            cardId: v['cardId'] as String,
+            viewedAt: DateTime.parse(v['viewedAt'] as String)
+          )
+      ];
+      _dailyGoal = data['dailyGoal'] as int;
+      _reviewsToday = data['reviewsToday'] as int;
+      _tutorialCompleted = data['tutorialCompleted'] as bool;
+      _reviewDay = data['reviewDay'] as String;
+      _allCardsCache = null;
+      _searchText.clear();
+      _rollReviewDay();
+    } catch (_) {
+      try {
+        await _preferences.reload();
+      } catch (_) {
+        // Preserve the original error; live data has not been replaced.
+      }
+      rethrow;
+    } finally {
+      _restoring = false;
+    }
+    if (hasListeners) notifyListeners();
+  }
+
+  void _assertWritable() {
+    if (_restoring) throw StateError('백업 복원이 진행 중입니다.');
   }
 
   Future<void> _save() {
     _allCardsCache = null;
     _searchText.clear();
-    final encoded = jsonEncode({
-      'schemaVersion': 3,
-      'subjectSettingsVersion': _subjectSettingsVersion,
-      'entries': _entries.values.map((c) => c.toJson()).toList(),
-      'decks': _decks.map((d) => d.toJson()).toList(),
-      'categories': _categories.map((c) => c.toJson()).toList(),
-      'recentViews': [
-        for (final v in _recentViews)
-          {'cardId': v.cardId, 'viewedAt': v.viewedAt.toIso8601String()}
-      ],
-      'dailyGoal': _dailyGoal,
-      'reviewsToday': _reviewsToday,
-      'tutorialCompleted': _tutorialCompleted,
-      'reviewDay': _reviewDay,
-    });
+    final encoded = jsonEncode(_snapshot());
     final save = _pendingSave.then((_) async {
       if (!await _preferences.setString(_dataKey, encoded)) {
         throw StateError('저장하지 못했습니다.');
