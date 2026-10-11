@@ -251,6 +251,18 @@ the terms before retiring the old app. Legacy bookmarks and review history are
 not migrated automatically. Do not uninstall a data-bearing legacy installation
 to try to force an update. Previous public test APK copies are intentionally kept.
 
+## iOS Build Preparation
+
+The iOS bundle ID is `io.github.peter7004.recall` with minimum iOS 15.0.
+`.github/workflows/build-ios.yml` provides manual unsigned release-archive and
+iPhone Simulator launch validation on GitHub's macOS runner, using Xcode 26.3
+and Flutter 3.47.6. No iOS SDK installation on the Windows PC is needed.
+The artifact is not an installable IPA and cannot be uploaded to TestFlight.
+Apple Developer enrollment, app registration, distribution signing, privacy/store
+preparation, and physical-device testing remain required before publication.
+See [iOS distribution preparation](docs/ios-distribution.md) for the workflow
+and the enrollment-to-TestFlight checklist. Existing APK downloads are unchanged.
+
 ## Data Backup and Restore
 
 Settings includes JSON backup download/save and restore. A versioned backup

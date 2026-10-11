@@ -22,6 +22,9 @@ android/key.properties
 *.jks
 *.keystore
 *.p12
+*.p8
+*.mobileprovision
+__pycache__/
 
 # OS
 .DS_Store

@@ -1,0 +1,69 @@
+name: Validate iOS build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Check Xcode and SDKs
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+          ruby -ryaml -e 'puts "RECALL_VERSION=#{YAML.load_file("pubspec.yaml").fetch("version")}"' >> "$GITHUB_ENV"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze Dart code
+        run: flutter analyze
+      - name: Run tests
+        run: |
+          flutter test --concurrency=1
+          node --test test/web/startup_test.cjs
+          python3 -m unittest discover -s tool -p 'ios_build_test.py' -v
+      - name: Build unsigned device archive
+        run: flutter build ipa --release --no-codesign
+      - name: Verify the device archive
+        run: |
+          mkdir -p build/ios-validation
+          python3 tool/ios_build.py verify build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app --platform iPhoneOS --version "$RECALL_VERSION" --report build/ios-validation/device-build.json
+      - name: Build the Simulator app
+        run: flutter build ios --simulator --debug --no-codesign
+      - name: Verify and launch on an iPhone Simulator
+        run: |
+          python3 tool/ios_build.py verify build/ios/iphonesimulator/Runner.app --platform iPhoneSimulator --version "$RECALL_VERSION" --report build/ios-validation/simulator-build.json
+          python3 tool/ios_build.py smoke build/ios/iphonesimulator/Runner.app --output build/ios-validation
+      - name: Package the unsigned archive
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent build/ios/archive/Runner.xcarchive build/ios-validation/Recall-unsigned.xcarchive.zip
+          cd build/ios-validation
+          shasum -a 256 Recall-unsigned.xcarchive.zip > Recall-unsigned.xcarchive.zip.sha256
+          printf 'Source: %s\nVersion: %s\nRun: %s/%s/actions/runs/%s\nUnsigned validation only; cannot install on an iPhone or upload to TestFlight.\n' "$GITHUB_SHA" "$RECALL_VERSION" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > build-info.txt
+          printf '## iOS validation\n\nUnsigned device archive and iPhone Simulator launch verified. This is **not an installable IPA** or a TestFlight release. Apple enrollment and distribution signing are still required.\n\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Recall-iOS-validation-${{ github.run_number }}
+          path: build/ios-validation/
+          if-no-files-found: warn
+          retention-days: 14
+          compression-level: 0
