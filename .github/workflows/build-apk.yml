@@ -1,0 +1,76 @@
+name: Build test Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-apk.yml
+      - android/**
+      - lib/**
+      - test/**
+      - pubspec.yaml
+      - pubspec.lock
+      - web/branding/recall-logo.png
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-test-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Select the preinstalled JDK
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+          cache: true
+      - name: Prepare Android build components on the runner
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze Dart code
+        run: flutter analyze
+      - name: Run tests
+        run: flutter test --concurrency=1
+      - name: Test web startup timing
+        run: node --test test/web/startup_test.cjs
+      - name: Build universal test APK
+        run: flutter build apk --release
+      - name: Verify and package the APK
+        run: |
+          mkdir -p build/apk-artifact
+          cp build/app/outputs/flutter-apk/app-release.apk build/apk-artifact/Recall-test.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs build/apk-artifact/Recall-test.apk | tee build/apk-artifact/signature.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/apk-artifact/Recall-test.apk | tee build/apk-artifact/package-info.txt
+          unzip -Z1 build/apk-artifact/Recall-test.apk | grep -Fx 'assets/flutter_assets/web/branding/recall-logo.png'
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            unzip -Z1 build/apk-artifact/Recall-test.apk | grep -Fx "lib/$abi/libflutter.so"
+          done
+          cd build/apk-artifact
+          sha256sum Recall-test.apk > Recall-test.apk.sha256
+          printf 'Source commit: %s\nBuild run: %s/actions/runs/%s\nSigning: temporary Android debug key; testing only\n' "$GITHUB_SHA" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > build-info.txt
+          printf '## Test APK\n\nUniversal release-mode APK with a temporary debug signer. Not a production-signed release.\n\nSource: `%s`\n\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          cat Recall-test.apk.sha256 >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the test APK and verification reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: Recall-test-apk-${{ github.run_number }}
+          path: build/apk-artifact/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

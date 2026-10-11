@@ -196,6 +196,30 @@ Existing Git staging was not changed.
 Android requires an installed Android SDK; iOS requires macOS/Xcode. GitHub
 Actions still analyzes, tests, builds, and deploys the web app to GitHub Pages.
 
+## Test APK Builds
+
+`.github/workflows/build-apk.yml` builds a universal Android APK on GitHub's
+Ubuntu runner without installing Android SDK/JDK tools on your PC. It uses
+Flutter 3.47.6, JDK 17, Android API 36/Build Tools 36.0.0, and NDK 28.2.13676358.
+It runs analysis and tests before `flutter build apk --release`, verifies the
+APK signature, package information, original logo asset, and three supported
+ABIs, then uploads `Recall-test.apk` with verification reports and a SHA-256
+checksum. Artifacts are retained for 30 days. Run the workflow manually from
+Actions, or push changes to the Android/app/build inputs on `main`.
+
+This is release-mode code with the existing **temporary debug signing key**,
+not a production-signed or Play Store release. No keystore or private key is
+uploaded. Fresh runner builds can have different signers and are not guaranteed
+to update one another in place. Configure a persistent private release key and
+backup/restore before ongoing distribution; do not uninstall a data-bearing
+installation to work around a signing mismatch. The app ID remains
+`com.example.recall`, and platform launcher icons are unchanged.
+
+Android APK generation does not require a connected phone. Physical-device
+testing is still necessary, particularly for camera/gallery, CSV file selection,
+startup, and local-data persistence. Browser data does not transfer into this
+installation automatically. The APK workflow is separate from Pages publishing.
+
 ## Web Deployment
 
 The published app is at https://peter7004.github.io/Recall2/.
