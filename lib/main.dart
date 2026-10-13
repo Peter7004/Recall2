@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:recall/branding.dart';
+import 'package:recall/bundled_vocabulary.dart';
 import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
 
@@ -24,7 +25,8 @@ typedef StudyCards = List<({RecallDeck deck, RecallCard card})>;
 typedef TermDetailValue = ({String label, String value});
 
 class RecallApp extends StatelessWidget {
-  const RecallApp({super.key});
+  const RecallApp({super.key, this.loadStore});
+  final Future<RecallStore> Function()? loadStore;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +47,7 @@ class RecallApp extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
         ),
       ),
-      home: const HomeShell(),
+      home: HomeShell(loadStore: loadStore),
     );
   }
 }
@@ -82,7 +84,8 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _loadStore() async {
     RecallStore store;
     try {
-      store = await (widget.loadStore?.call() ?? RecallStore.load());
+      store = await (widget.loadStore?.call() ??
+          RecallStore.load(bundledVocabulary: await BundledVocabulary.load()));
     } catch (error) {
       if (mounted) {
         _startupTimer?.cancel();

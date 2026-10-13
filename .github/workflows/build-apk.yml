@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/build-apk.yml
       - android/**
+      - assets/**
       - lib/**
       - test/**
       - pubspec.yaml
@@ -60,6 +61,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs build/apk-artifact/Recall-test.apk | tee build/apk-artifact/signature.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/apk-artifact/Recall-test.apk | tee build/apk-artifact/package-info.txt
           unzip -Z1 build/apk-artifact/Recall-test.apk | grep -Fx 'assets/flutter_assets/web/branding/recall-logo.png'
+          unzip -Z1 build/apk-artifact/Recall-test.apk | grep -Fx 'assets/flutter_assets/assets/vocabulary/recall_core_v1.csv'
           for abi in armeabi-v7a arm64-v8a x86_64; do
             unzip -Z1 build/apk-artifact/Recall-test.apk | grep -Fx "lib/$abi/libflutter.so"
           done

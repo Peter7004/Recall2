@@ -103,6 +103,9 @@ void main() {
           b['data']['categories'].first['id'],
       (b) => b['data']['dailyGoal'] = 0,
       (b) => b['data']['unknownFutureSetting'] = true,
+      (b) => b['data']['bundledVocabularyVersion'] = -1,
+      (b) => b['data']['bundledVocabularyVersion'] = '1',
+      (b) => b['data']['bundledVocabularyVersion'] = null,
     ];
     for (final change in changes) {
       final envelope = jsonDecode(store.exportBackup()) as Map<String, dynamic>;

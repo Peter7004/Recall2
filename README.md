@@ -57,6 +57,24 @@ Platform launch screens, launcher icons, and the browser favicon are unchanged.
 
 ## Local Storage and Migration
 
+### Bundled Vocabulary
+
+Version 1.0.2 includes `assets/vocabulary/recall_core_v1.csv` in Android and web
+builds. Its 288 source rows form 276 unique English terms in the
+`기본 전공 용어` collection; distinct meanings, definitions, explanations,
+subjects, and source metadata from duplicate rows are preserved.
+Blank vocabulary types use the existing `general_technical` import default.
+Editorial review recommendations remain hidden from learners.
+
+Each catalog version is initialized once on startup. Existing matching entries
+are linked without changing their IDs, content, bookmarks, exclusion settings,
+or review history. Missing terms are added; unrelated vocabulary is retained.
+Later launches of the same catalog do not recreate deleted entries or collections.
+The catalog initialization version is saved and included in full JSON backups;
+backups made before this setting existed remain importable. As with other
+collections, deleting the bundled collection removes its linked vocabulary
+only after the existing confirmation dialog.
+
 The application continues using `shared_preferences`. `recall.data.v3` stores
 one global `entries` list and collections with `entryIds`, plus categories,
 bookmarks, recent views, daily goals, and review progress.
@@ -224,24 +242,26 @@ installation automatically. The APK workflow is separate from Pages publishing.
 
 ## Signed APK Distribution and Updates
 
-The private distribution repository is `Peter7004/Recall-APK-Private`.
+The distribution repository is `Peter7004/Recall-APK-Private`; despite its
+historical name, it is now public at the owner's request.
 `tool/private-apk-workflow.yml` is the workflow template installed there as
 `.github/workflows/signed-apk.yml`; dispatch it with the full reviewed source
-commit SHA from `Recall2`. Signing secrets and signed artifacts stay in the
-private repository, while public test builds and Pages continue independently.
+commit SHA from `Recall2`. Signing credentials remain protected GitHub Actions
+secrets and are never uploaded with public APKs. Test builds and Pages continue
+independently.
 
 Production APKs use the fixed application ID `io.github.peter7004.recall` and
 an encrypted PKCS12 keystore. Gradle requires `RECALL_KEYSTORE_PATH`,
 `RECALL_KEYSTORE_PASSWORD`, and `RECALL_KEY_ALIAS`; release tasks fail without
-the keystore unless explicitly building a test APK. The private workflow checks
+the keystore unless explicitly building a test APK. The signing workflow checks
 the resulting certificate against `RECALL_CERT_SHA256` before uploading it.
 Never commit a keystore or password, include it in an artifact, or print it in logs.
 
 For each update, keep the same application ID and keystore, increase the build
-number in `pubspec.yaml` (currently `1.0.1+2`), test, then publish a newer APK.
-Users install it over the production app without uninstalling. The stable private
-download is the latest release's `Recall.apk`. GitHub login with repository access
-is required. This is manual APK distribution, not an automatic updater or a
+number in `pubspec.yaml` (currently `1.0.2+3`), test, then publish a newer APK.
+Users install it over the production app without uninstalling. The stable public
+download is the latest release's `Recall.apk`, with no GitHub login required.
+This is manual APK distribution, not an automatic updater or a
 Google Play release.
 
 The original runner-generated debug private key is unavailable, so version 1.0.1

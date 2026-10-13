@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Validate private build and pinned source
+      - name: Validate distribution repository and pinned source
         env:
-          PRIVATE: ${{ github.event.repository.private }}
+          REPOSITORY: ${{ github.repository }}
           SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
-          test "$PRIVATE" = true
+          test "$REPOSITORY" = 'Peter7004/Recall-APK-Private'
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
       - name: Check out reviewed public source
         uses: actions/checkout@v4
@@ -75,6 +75,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/signed-apk/Recall.apk > build/signed-apk/package-info.txt
           grep "package: name='io.github.peter7004.recall'" build/signed-apk/package-info.txt
           unzip -Z1 build/signed-apk/Recall.apk | grep -Fx 'assets/flutter_assets/web/branding/recall-logo.png'
+          unzip -Z1 build/signed-apk/Recall.apk | grep -Fx 'assets/flutter_assets/assets/vocabulary/recall_core_v1.csv'
           for abi in armeabi-v7a arm64-v8a x86_64; do
             unzip -Z1 build/signed-apk/Recall.apk | grep -Fx "lib/$abi/libflutter.so"
           done

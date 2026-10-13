@@ -11,6 +11,8 @@ import 'package:recall/recall_store.dart';
 import 'package:recall/recall_backup.dart';
 import 'v3_fixtures.dart';
 
+Widget _testApp() => RecallApp(loadStore: () => RecallStore.load());
+
 class _BackupFilePicker extends FilePicker {
   Uint8List? saved;
   Uint8List? input;
@@ -101,7 +103,7 @@ void main() {
 
   testWidgets('dictionary is the first page and has five destinations',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
     expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
@@ -134,7 +136,7 @@ void main() {
     await store.completeTutorial();
     store.dispose();
 
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'electric potential');
     await tester.pumpAndSettle();
@@ -212,7 +214,7 @@ void main() {
               unit: 'A'),
         ]);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('current'));
     await tester.pumpAndSettle();
@@ -236,7 +238,7 @@ void main() {
       await store.toggleBookmark(entry.card.id);
     }
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('북마크').last);
     await tester.pumpAndSettle();
@@ -261,7 +263,7 @@ void main() {
         vocabularyType: VocabularyType.technical,
         categoryNames: const ['Circuit Theory', 'Electronics']);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -287,7 +289,7 @@ void main() {
         vocabularyType: VocabularyType.technical,
         categoryNames: const ['Electromagnetics']);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('electromagnetic induction'));
@@ -297,7 +299,7 @@ void main() {
   });
 
   testWidgets('a term can be created without a collection', (tester) async {
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어·모음 추가'));
     await tester.pumpAndSettle();
@@ -326,7 +328,7 @@ void main() {
     await store.createDeck('Second');
     await store.addEntryToDeck(deckId: store.decks.last.id, cardId: id);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('모음').last);
     await tester.pumpAndSettle();
@@ -370,7 +372,7 @@ void main() {
         example: '',
         imageData: '%%%not-base64');
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('모음').last);
     await tester.pumpAndSettle();
@@ -406,7 +408,7 @@ void main() {
       await store.toggleBookmark(entry.card.id);
     }
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     expect(find.text('일반 영어'), findsNothing);
     expect(find.byType(ChoiceChip), findsNWidgets(3));
@@ -463,7 +465,7 @@ void main() {
         ]);
     final id = store.allCards.single.card.id;
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     expect(find.text('impedance'),
         findsOneWidget); // exclude does not hide the term.
@@ -562,7 +564,7 @@ void main() {
     await store.importCsvDeck(
         csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 선택'));
     await tester.pumpAndSettle();
@@ -607,7 +609,7 @@ void main() {
     await store.importCsvDeck(
         csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 선택'));
     await tester.pumpAndSettle();
@@ -648,7 +650,7 @@ void main() {
         deckName: 'My terms',
         csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스');
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('모음').last);
     await tester.pumpAndSettle();
@@ -680,7 +682,7 @@ void main() {
         deckId: '', front: 'current', meaning: '전류', example: '');
     await store.toggleBookmark(store.allCards.single.card.id);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('북마크').last);
     await tester.pumpAndSettle();
@@ -720,7 +722,7 @@ void main() {
   });
   testWidgets('fresh subjects page is empty with no mandatory roots',
       (tester) async {
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -739,7 +741,7 @@ void main() {
     final initial = await RecallStore.load();
     await initial.createCategory('이미 있는 과목');
     initial.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -759,7 +761,7 @@ void main() {
     expect(find.text('재료공학'), findsOneWidget);
     expect(find.byTooltip('재료공학 과목 삭제'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -777,7 +779,7 @@ void main() {
     final initial = await RecallStore.load();
     await initial.createCategory('반도체공학');
     initial.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -825,7 +827,7 @@ void main() {
         example: '',
         categoryNames: ['전기공학']);
     store.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -868,7 +870,7 @@ void main() {
     final initial = await RecallStore.load();
     final subject = await initial.createCategory('재료공학');
     initial.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -880,7 +882,7 @@ void main() {
             widget is IconButton && widget.tooltip == '재료공학 과목 삭제 · 고정 해제 필요'));
     expect(deleteButton.onPressed, isNull);
     await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -909,7 +911,7 @@ void main() {
     await initial.createCategory('재료공학');
     await initial.createCategory('소자', parentId: initial.categories.single.id);
     initial.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -945,7 +947,7 @@ void main() {
     final root = await initial.createCategory('재료공학');
     await initial.createCategory(name, parentId: root.id);
     initial.dispose();
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('과목').last);
     await tester.pumpAndSettle();
@@ -974,7 +976,7 @@ void main() {
     initial.dispose();
     SharedPreferences.setMockInitialValues(
         {'recall.data.v3': jsonEncode(json)});
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     expect(find.text('current'), findsOneWidget);
     await tester.tap(find.text('과목').last);

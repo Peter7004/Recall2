@@ -146,7 +146,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpWidget(const RecallApp());
+      await tester.pumpWidget(RecallApp(loadStore: () => RecallStore.load()));
       await tester.pumpAndSettle();
       expect(find.byType(RecallHeaderBrand), findsOneWidget);
       final images = find.descendant(
@@ -164,7 +164,7 @@ void main() {
   testWidgets('startup data errors retain the saved data and retry works',
       (tester) async {
     SharedPreferences.setMockInitialValues({'recall.data.v3': '{broken'});
-    await tester.pumpWidget(const RecallApp());
+    await tester.pumpWidget(RecallApp(loadStore: () => RecallStore.load()));
     await tester.pumpAndSettle();
     expect(find.byType(RecallLoadingScreen), findsNothing);
     expect(find.text('저장 데이터를 불러오지 못했습니다. 기존 저장본은 보존됩니다.'), findsOneWidget);

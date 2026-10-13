@@ -1,7 +1,7 @@
 name: recall
 description: A visual front-and-back flashcard learning app.
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -22,4 +22,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/vocabulary/recall_core_v1.csv
     - web/branding/recall-logo.png

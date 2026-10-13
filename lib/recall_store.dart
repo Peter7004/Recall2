@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bundled_vocabulary.dart';
 import 'csv_import.dart';
 import 'recall_backup.dart';
 import 'vocabulary.dart';
@@ -47,11 +48,14 @@ class RecallStore extends ChangeNotifier {
   Future<void> _pendingSave = Future.value();
   bool _restoring = false;
   int _dailyGoal = 24;
+  int _bundledVocabularyVersion = 0;
   int _reviewsToday = 0;
   bool _tutorialCompleted = false;
   String _reviewDay = _dayKey(DateTime.now());
 
-  static Future<RecallStore> load({SharedPreferences? storage}) async {
+  static Future<RecallStore> load(
+      {SharedPreferences? storage,
+      BundledVocabulary? bundledVocabulary}) async {
     final preferences = storage ?? await SharedPreferences.getInstance();
     final store = RecallStore._(preferences);
     final current = preferences.getString(_dataKey);
@@ -112,6 +116,11 @@ class RecallStore extends ChangeNotifier {
         }
       }
       store._dailyGoal = (json['dailyGoal'] as int? ?? 24).clamp(1, 200);
+      store._bundledVocabularyVersion =
+          json['bundledVocabularyVersion'] as int? ?? 0;
+      if (store._bundledVocabularyVersion < 0) {
+        throw const FormatException('기본 단어 데이터 버전이 올바르지 않습니다.');
+      }
       store._reviewsToday = json['reviewsToday'] as int? ?? 0;
       store._tutorialCompleted = json['tutorialCompleted'] as bool? ?? false;
       store._reviewDay =
@@ -159,7 +168,9 @@ class RecallStore extends ChangeNotifier {
       }
     }
     store._rollReviewDay();
-    if (migrateSubjects || (encoded != null && current == null)) {
+    final seeded = bundledVocabulary != null &&
+        store._seedBundledVocabulary(bundledVocabulary);
+    if (seeded || migrateSubjects || (encoded != null && current == null)) {
       try {
         await store._save();
       } catch (_) {
@@ -169,6 +180,69 @@ class RecallStore extends ChangeNotifier {
       }
     }
     return store;
+  }
+
+  bool _seedBundledVocabulary(BundledVocabulary catalog) {
+    if (_bundledVocabularyVersion >= catalog.version) return false;
+    final existingByKey = <String, RecallCard>{};
+    for (final card in _entries.values) {
+      existingByKey.putIfAbsent(vocabularyKey(card), () => card);
+    }
+    final grouped = <String, List<CsvVocabularyRow>>{};
+    for (final row in catalog.rows) {
+      grouped.putIfAbsent(vocabularyKey(row.card), () => []).add(row);
+    }
+    final linkedIds = <String>{};
+    for (final group in grouped.entries) {
+      final existing = existingByKey[group.key];
+      if (existing != null) {
+        // Bundled content never overwrites a user's meanings or study history.
+        linkedIds.add(existing.id);
+        continue;
+      }
+      final stableId =
+          'recall-builtin-${base64Url.encode(utf8.encode(group.key)).replaceAll('=', '')}';
+      final id = _idExists(stableId) ? _newId() : stableId;
+      var card = group.value.first.card.copyWith(
+          id: id,
+          categoryIds: _categoryIdsForPaths(group.value.first.subjectPaths));
+      for (final row in group.value.skip(1)) {
+        card = _mergeEntry(
+            card,
+            row.card
+                .copyWith(categoryIds: _categoryIdsForPaths(row.subjectPaths)),
+            suppliedFields: row.suppliedFields);
+      }
+      card = card.copyWith(meanings: [
+        for (var i = 0; i < card.meanings.length; i++)
+          VocabularyMeaning.fromJson(
+              {...card.meanings[i].toJson(), 'id': '$id-meaning-$i'})
+      ], extraFields: {
+        ...card.extraFields,
+        'recall_catalog': 'core',
+        'recall_catalog_version': '${catalog.version}',
+      });
+      _entries[id] = card;
+      linkedIds.add(id);
+    }
+    final index = _decks.indexWhere((d) => d.id == BundledVocabulary.deckId);
+    if (index >= 0) {
+      final deck = _decks[index];
+      final ids = {...deck.cards.map((c) => c.id), ...linkedIds};
+      _decks[index] = RecallDeck(
+          id: deck.id,
+          name: deck.name,
+          cards: ids.map((id) => _entries[id]!).toList());
+    } else if (linkedIds.isNotEmpty) {
+      _decks.add(RecallDeck(
+          id: _idExists(BundledVocabulary.deckId)
+              ? _newId()
+              : BundledVocabulary.deckId,
+          name: BundledVocabulary.deckName,
+          cards: linkedIds.map((id) => _entries[id]!).toList()));
+    }
+    _bundledVocabularyVersion = catalog.version;
+    return true;
   }
 
   List<RecallDeck> get decks => List.unmodifiable(_decks.map(_hydrateDeck));
@@ -890,6 +964,7 @@ class RecallStore extends ChangeNotifier {
   Map<String, Object?> _snapshot() => {
         'schemaVersion': 3,
         'subjectSettingsVersion': _subjectSettingsVersion,
+        'bundledVocabularyVersion': _bundledVocabularyVersion,
         'entries': _entries.values.map((c) => c.toJson()).toList(),
         'decks': _decks.map((d) => d.toJson()).toList(),
         'categories': _categories.map((c) => c.toJson()).toList(),
@@ -942,6 +1017,7 @@ class RecallStore extends ChangeNotifier {
           )
       ];
       _dailyGoal = data['dailyGoal'] as int;
+      _bundledVocabularyVersion = data['bundledVocabularyVersion'] as int? ?? 0;
       _reviewsToday = data['reviewsToday'] as int;
       _tutorialCompleted = data['tutorialCompleted'] as bool;
       _reviewDay = data['reviewDay'] as String;

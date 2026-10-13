@@ -138,10 +138,16 @@ class RecallBackup {
         'tutorialCompleted',
         'reviewDay'
       };
-      if (data.keys.toSet().difference(keys).isNotEmpty ||
-          data.length != keys.length) {
+      final allowedKeys = {...keys, 'bundledVocabularyVersion'};
+      if (data.keys.toSet().difference(allowedKeys).isNotEmpty ||
+          keys.difference(data.keys.toSet()).isNotEmpty) {
         _invalid();
       }
+      final catalogVersion = data.containsKey('bundledVocabularyVersion')
+          ? data['bundledVocabularyVersion']
+          : 0;
+      if (catalogVersion is! int || catalogVersion < 0) _invalid();
+      data['bundledVocabularyVersion'] = catalogVersion;
       return RecallBackup._(jsonEncode(data), entries.length, decks.length);
     } on FormatException {
       rethrow;
