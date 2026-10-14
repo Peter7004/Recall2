@@ -3,6 +3,12 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
+Current application release: **1.0.3+4**.
+
+[Web app](https://peter7004.github.io/Recall2/) |
+[Android APK](https://github.com/Peter7004/Recall-APK-Private/releases/latest/download/Recall.apk) |
+[Korean user manual (PDF)](https://github.com/Peter7004/Recall-APK-Private/releases/latest/download/Recall_User_Manual_ko.pdf)
+
 ## Features
 
 - Dictionary, Subjects, Bookmarks, Flashcards, and Collections navigation.
@@ -56,6 +62,26 @@ reveal, respecting system motion preferences. Data-load errors appear immediatel
 Platform launch screens, launcher icons, and the browser favicon are unchanged.
 
 ## Local Storage and Migration
+
+### Performance in 1.0.3
+
+Search results are retained in a bounded 16-query cache. Alphabetical ordering,
+normalized search names, category paths, and category counts are reused rather
+than recalculated on every rebuild. Collection search filters membership once
+instead of repeatedly hydrating a collection for each result. Review counts no
+longer require sorting the entire dictionary.
+
+Vocabulary, collection, or category edits invalidate derived data, including
+failed-delete rollback and successful backup restoration. Recent views and
+study settings preserve unchanged dictionary caches. An already initialized
+built-in catalog is not reloaded or parsed on subsequent starts. Storage format,
+backup compatibility, vocabulary content, and the 700 ms startup reveal remain
+unchanged.
+
+Run the optional synthetic benchmark with
+`flutter test test/performance/search_benchmark.dart`. It reports five-sample
+median timings without timing-dependent pass/fail thresholds; device performance
+and interactive latency should be evaluated separately.
 
 ### Bundled Vocabulary
 
@@ -258,7 +284,7 @@ the resulting certificate against `RECALL_CERT_SHA256` before uploading it.
 Never commit a keystore or password, include it in an artifact, or print it in logs.
 
 For each update, keep the same application ID and keystore, increase the build
-number in `pubspec.yaml` (currently `1.0.2+3`), test, then publish a newer APK.
+number in `pubspec.yaml` (currently `1.0.3+4`), test, then publish a newer APK.
 Users install it over the production app without uninstalling. The stable public
 download is the latest release's `Recall.apk`, with no GitHub login required.
 This is manual APK distribution, not an automatic updater or a

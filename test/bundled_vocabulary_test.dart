@@ -20,6 +20,46 @@ void main() {
   });
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('lazy built-in loader runs only before the catalog is persisted',
+      () async {
+    var loads = 0;
+    Future<BundledVocabulary> loader() async {
+      loads++;
+      return catalog;
+    }
+
+    final first = await RecallStore.load(loadBundledVocabulary: loader);
+    expect(loads, 1);
+    expect(first.totalCards, 276);
+    final erased = first.allCards.first.card.id;
+    await first.deleteEntries([erased]);
+    first.dispose();
+    final reloaded = await RecallStore.load(loadBundledVocabulary: loader);
+    expect(loads, 1);
+    expect(reloaded.totalCards, 275);
+    expect(reloaded.cardById(erased), isNull);
+    reloaded.dispose();
+  });
+
+  test('failed lazy asset loading leaves the persisted dictionary intact',
+      () async {
+    final original = await RecallStore.load();
+    await original.addCard(
+        deckId: '', front: 'personal', meaning: 'mine', example: '');
+    final preferences = await SharedPreferences.getInstance();
+    final before = preferences.getString('recall.data.v3');
+    original.dispose();
+    await expectLater(RecallStore.load(loadBundledVocabulary: () async {
+      throw StateError('Asset load failed');
+    }), throwsStateError);
+    expect(preferences.getString('recall.data.v3'), before);
+    final reloaded =
+        await RecallStore.load(loadBundledVocabulary: () async => catalog);
+    expect(reloaded.searchCards('personal').single.card.primaryMeaning, 'mine');
+    expect(reloaded.totalCards, 277);
+    reloaded.dispose();
+  });
+
   test('all 288 rows become 276 entries without losing alternative meanings',
       () async {
     expect(catalog.rows, hasLength(288));

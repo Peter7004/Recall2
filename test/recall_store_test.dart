@@ -1200,12 +1200,18 @@ void main() {
         example: '',
         categoryNames: ['Materials']);
     final before = preferences.getString('recall.data.v3');
+    expect(store.cardCountInCategory(subject.id), 1);
+    expect(store.cardsInCategory(subject.id), hasLength(1));
+    expect(store.categoryPath(subject.id), ['Materials']);
     preferences.failWrites = true;
     await expectLater(store.createCategory('Failed'), throwsStateError);
     expect(store.categories.any((c) => c.name == 'Failed'), isFalse);
     await expectLater(store.deleteCategory(subject.id), throwsStateError);
     expect(store.categoryById(subject.id), isNotNull);
     expect(store.allCards.single.card.categoryIds, [subject.id]);
+    expect(store.cardCountInCategory(subject.id), 1);
+    expect(store.cardsInCategory(subject.id), hasLength(1));
+    expect(store.categoryPath(subject.id), ['Materials']);
     expect(preferences.getString('recall.data.v3'), before);
     store.dispose();
     final restored = await RecallStore.load(storage: preferences);

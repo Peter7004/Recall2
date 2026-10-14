@@ -720,6 +720,40 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     store.dispose();
   });
+
+  testWidgets('collection search restricts results and opens the matching term',
+      (tester) async {
+    final initial = await RecallStore.load();
+    await initial.importCsvDeck(
+        deckName: 'Inside',
+        csvText: 'word,meaning\npower factor,inside meaning');
+    await initial.importCsvDeck(
+        deckName: 'Outside',
+        csvText: 'word,meaning\npower supply,outside meaning');
+    initial.dispose();
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('모음').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Inside'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('이 모음에서 검색'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'PoW');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'power factor'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'power supply'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'missing');
+    await tester.pumpAndSettle();
+    expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
+    await tester.tap(find.byTooltip('검색어 지우기'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'power factor'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, 'power factor'));
+    await tester.pumpAndSettle();
+    expect(find.text('inside meaning'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('fresh subjects page is empty with no mandatory roots',
       (tester) async {
     await tester.pumpWidget(_testApp());

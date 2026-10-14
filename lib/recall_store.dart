@@ -16,6 +16,14 @@ export 'csv_import.dart'
 export 'vocabulary.dart';
 
 typedef DictionaryCards = List<({RecallDeck deck, RecallCard card})>;
+typedef _DictionaryQuery = ({
+  String query,
+  String? categoryId,
+  String? deckId,
+  VocabularyType? vocabularyType,
+  LearningPriority? learningPriority,
+  bool bookmarkedOnly,
+});
 
 class RecallStore extends ChangeNotifier {
   RecallStore._(this._preferences);
@@ -44,7 +52,23 @@ class RecallStore extends ChangeNotifier {
   List<RecallCategory> _categories = [];
   List<({String cardId, DateTime viewedAt})> _recentViews = [];
   DictionaryCards? _allCardsCache;
+  DictionaryCards? _sortedCardsCache;
+  DictionaryCards? _dueCardsCache;
+  DictionaryCards? _bookmarkedCardsCache;
+  List<RecallDeck>? _decksCache;
+  List<RecallCategory>? _categoriesCache;
+  Map<String, RecallDeck>? _decksByIdCache;
+  Map<String, RecallCategory>? _categoriesByIdCache;
+  Map<String, ({RecallDeck deck, RecallCard card})>? _cardsByIdCache;
+  Map<String, int>? _categoryCountsCache;
+  int? _dueCountCache;
+  final Map<String, List<String>> _categoryPathsCache = {};
+  final Map<String, Set<String>> _categoryAncestorsCache = {};
+  final Map<String, List<String>> _searchNames = {};
   final Map<String, String> _searchText = {};
+  // Bound query retention while reusing results during selection and rebuilds.
+  static const _searchCacheLimit = 16;
+  final Map<_DictionaryQuery, DictionaryCards> _searchResults = {};
   Future<void> _pendingSave = Future.value();
   bool _restoring = false;
   int _dailyGoal = 24;
@@ -55,7 +79,8 @@ class RecallStore extends ChangeNotifier {
 
   static Future<RecallStore> load(
       {SharedPreferences? storage,
-      BundledVocabulary? bundledVocabulary}) async {
+      BundledVocabulary? bundledVocabulary,
+      Future<BundledVocabulary> Function()? loadBundledVocabulary}) async {
     final preferences = storage ?? await SharedPreferences.getInstance();
     final store = RecallStore._(preferences);
     final current = preferences.getString(_dataKey);
@@ -168,6 +193,11 @@ class RecallStore extends ChangeNotifier {
       }
     }
     store._rollReviewDay();
+    if (bundledVocabulary == null &&
+        loadBundledVocabulary != null &&
+        store._bundledVocabularyVersion < BundledVocabulary.currentVersion) {
+      bundledVocabulary = await loadBundledVocabulary();
+    }
     final seeded = bundledVocabulary != null &&
         store._seedBundledVocabulary(bundledVocabulary);
     if (seeded || migrateSubjects || (encoded != null && current == null)) {
@@ -245,13 +275,16 @@ class RecallStore extends ChangeNotifier {
     return true;
   }
 
-  List<RecallDeck> get decks => List.unmodifiable(_decks.map(_hydrateDeck));
-  List<RecallCategory> get categories => List.unmodifiable(_categories);
+  List<RecallDeck> get decks =>
+      _decksCache ??= List.unmodifiable(_decks.map(_hydrateDeck));
+  List<RecallCategory> get categories =>
+      _categoriesCache ??= List.unmodifiable(_categories);
   int get dailyGoal => _dailyGoal;
   int get reviewsToday => _reviewsToday;
   bool get tutorialCompleted => _tutorialCompleted;
   int get totalCards => _entries.length;
-  int get dueCount => dueCards.length;
+  int get dueCount => _dueCountCache ??=
+      _entries.values.where((c) => !c.isExcludedFromReview).length;
   int get remainingToday =>
       math.min(dueCount, math.max(0, dailyGoal - reviewsToday));
   RecallCard? cardById(String id) => _entries[id];
@@ -275,33 +308,30 @@ class RecallStore extends ChangeNotifier {
         ]);
       }();
   DictionaryCards get recentCards {
-    final indexed = {for (final entry in allCards) entry.card.id: entry};
+    final indexed = _cardsByIdCache ??= {
+      for (final entry in allCards) entry.card.id: entry
+    };
     return [
       for (final v in _recentViews)
         if (indexed.containsKey(v.cardId)) indexed[v.cardId]!
     ];
   }
 
-  DictionaryCards get dueCards =>
-      allCards.where((e) => !e.card.isExcludedFromReview).toList()
-        ..sort((a, b) => a.card.displayTerm
-            .toLowerCase()
-            .compareTo(b.card.displayTerm.toLowerCase()));
-  DictionaryCards get bookmarkedCards =>
-      allCards.where((e) => e.card.isBookmarked).toList();
-  RecallDeck? deckById(String id) {
-    for (final deck in _decks) {
-      if (deck.id == id) return _hydrateDeck(deck);
-    }
-    return null;
-  }
+  DictionaryCards get _sortedCards =>
+      _sortedCardsCache ??= List.unmodifiable(allCards.toList()
+        ..sort((a, b) =>
+            _namesForCard(a.card)[1].compareTo(_namesForCard(b.card)[1])));
+  DictionaryCards get dueCards => _dueCardsCache ??= List.unmodifiable(
+      _sortedCards.where((e) => !e.card.isExcludedFromReview));
+  DictionaryCards get bookmarkedCards => _bookmarkedCardsCache ??=
+      List.unmodifiable(allCards.where((e) => e.card.isBookmarked));
+  RecallDeck? deckById(String id) => (_decksByIdCache ??= {
+        for (final deck in decks.reversed) deck.id: deck
+      })[id];
 
-  RecallCategory? categoryById(String id) {
-    for (final c in _categories) {
-      if (c.id == id) return c;
-    }
-    return null;
-  }
+  RecallCategory? categoryById(String id) => (_categoriesByIdCache ??= {
+        for (final category in _categories.reversed) category.id: category
+      })[id];
 
   bool isCategoryDeletionProtected(String id) =>
       categorySubtree(id).any((category) => category.isPinned);
@@ -394,8 +424,7 @@ class RecallStore extends ChangeNotifier {
         _entries.clear();
         _entries.addAll(oldEntries);
       }
-      _allCardsCache = null;
-      _searchText.clear();
+      _invalidateDictionaryCaches();
       try {
         await _preferences.reload();
       } catch (_) {
@@ -406,17 +435,19 @@ class RecallStore extends ChangeNotifier {
     }
   }
 
-  List<String> categoryPath(String id) {
-    final names = <String>[];
-    final visited = <String>{};
-    var category = categoryById(id);
-    while (category != null && visited.add(category.id)) {
-      names.insert(0, category.name);
-      category =
-          category.parentId == null ? null : categoryById(category.parentId!);
-    }
-    return names;
-  }
+  List<String> categoryPath(String id) =>
+      _categoryPathsCache.putIfAbsent(id, () {
+        final names = <String>[];
+        final visited = <String>{};
+        var category = categoryById(id);
+        while (category != null && visited.add(category.id)) {
+          names.insert(0, category.name);
+          category = category.parentId == null
+              ? null
+              : categoryById(category.parentId!);
+        }
+        return List.unmodifiable(names);
+      });
 
   List<String> categoryPathsForCard(RecallCard card) => {
         for (final id in card.categoryIds)
@@ -426,29 +457,83 @@ class RecallStore extends ChangeNotifier {
       categoryPathsForCard(card).join(', ');
   DictionaryCards cardsInCategory(String categoryId) =>
       searchCards('', categoryId: categoryId);
-  bool _inCategory(RecallCard card, String id) =>
-      card.categoryIds.any((cardId) {
-        final visited = <String>{};
-        var category = categoryById(cardId);
-        while (category != null && visited.add(category.id)) {
-          if (category.id == id) return true;
+  int cardCountInCategory(String categoryId) =>
+      (_categoryCountsCache ??= _countCardsByCategory())[categoryId] ?? 0;
+
+  Map<String, int> _countCardsByCategory() {
+    final counts = <String, int>{};
+    for (final card in _entries.values) {
+      final ids = {
+        for (final id in card.categoryIds) ..._categoryAncestors(id),
+      };
+      for (final id in ids) {
+        counts.update(id, (count) => count + 1, ifAbsent: () => 1);
+      }
+    }
+    return counts;
+  }
+
+  Set<String> _categoryAncestors(String id) =>
+      _categoryAncestorsCache.putIfAbsent(id, () {
+        final ids = <String>{};
+        var category = categoryById(id);
+        while (category != null && ids.add(category.id)) {
           category = category.parentId == null
               ? null
               : categoryById(category.parentId!);
         }
-        return false;
+        return ids;
       });
+
+  bool _inCategory(RecallCard card, String id) =>
+      card.categoryIds.any((cardId) => _categoryAncestors(cardId).contains(id));
+
+  List<String> _namesForCard(RecallCard card) => _searchNames.putIfAbsent(
+      card.id,
+      () => [card.front, card.displayTerm, card.abbreviation]
+          .map((s) => s.toLowerCase())
+          .toList());
+
+  String _textForCard(RecallCard card) => _searchText.putIfAbsent(
+      card.id,
+      () => [
+            for (final m in card.effectiveMeanings)
+              '${m.meaningKo}\n${m.definition}\n${m.explanation}\n${m.exampleSentence}\n${m.exampleTranslation}',
+            card.meaning,
+            ...card.relatedTerms,
+          ].join('\n').toLowerCase());
+
   DictionaryCards searchCards(
     String query, {
     String? categoryId,
+    String? deckId,
     VocabularyType? vocabularyType,
     LearningPriority? learningPriority,
     bool bookmarkedOnly = false,
   }) {
     final normalized = query.trim().toLowerCase();
-    final matches = <({int score, RecallDeck deck, RecallCard card})>[];
-    for (final entry in allCards) {
+    final key = (
+      query: normalized,
+      categoryId: categoryId,
+      deckId: deckId,
+      vocabularyType: vocabularyType,
+      learningPriority: learningPriority,
+      bookmarkedOnly: bookmarkedOnly,
+    );
+    final cached = _searchResults[key];
+    if (cached != null) return cached;
+    final deckIds = deckId == null
+        ? null
+        : {
+            for (final card in deckById(deckId)?.cards ?? <RecallCard>[])
+              card.id
+          };
+    final matches =
+        List.generate(4, (_) => <({RecallDeck deck, RecallCard card})>[]);
+    // Each relevance bucket inherits alphabetical order from the shared index.
+    for (final entry in _sortedCards) {
       final card = entry.card;
+      if (deckIds != null && !deckIds.contains(card.id)) continue;
       if (categoryId != null && !_inCategory(card, categoryId)) continue;
       if (vocabularyType != null && card.vocabularyType != vocabularyType) {
         continue;
@@ -458,40 +543,31 @@ class RecallStore extends ChangeNotifier {
         continue;
       }
       if (bookmarkedOnly && !card.isBookmarked) continue;
-      final names = [card.front, card.displayTerm, card.abbreviation]
-          .map((s) => s.toLowerCase());
-      final text = _searchText.putIfAbsent(
-          card.id,
-          () => [
-                for (final m in card.effectiveMeanings)
-                  '${m.meaningKo}\n${m.definition}\n${m.explanation}\n${m.exampleSentence}\n${m.exampleTranslation}',
-                card.meaning,
-                ...card.relatedTerms,
-              ].join('\n').toLowerCase());
-      final score = normalized.isEmpty
-          ? 5
-          : names.contains(normalized)
-              ? 0
-              : names.any((s) => s.startsWith(normalized))
-                  ? 1
-                  : names.any((s) => s.contains(normalized))
-                      ? 2
-                      : text.contains(normalized)
-                          ? 3
-                          : null;
+      if (normalized.isEmpty) {
+        matches[0].add(entry);
+        continue;
+      }
+      final names = _namesForCard(card);
+      final score = names.contains(normalized)
+          ? 0
+          : names.any((s) => s.startsWith(normalized))
+              ? 1
+              : names.any((s) => s.contains(normalized))
+                  ? 2
+                  : _textForCard(card).contains(normalized)
+                      ? 3
+                      : null;
       if (score != null) {
-        matches.add((score: score, deck: entry.deck, card: card));
+        matches[score].add(entry);
       }
     }
-    matches.sort((a, b) {
-      final score = a.score.compareTo(b.score);
-      return score == 0
-          ? a.card.displayTerm
-              .toLowerCase()
-              .compareTo(b.card.displayTerm.toLowerCase())
-          : score;
-    });
-    return [for (final m in matches) (deck: m.deck, card: m.card)];
+    final result = List<({RecallDeck deck, RecallCard card})>.unmodifiable(
+        matches.expand((bucket) => bucket));
+    if (_searchResults.length >= _searchCacheLimit) {
+      _searchResults.remove(_searchResults.keys.first);
+    }
+    _searchResults[key] = result;
+    return result;
   }
 
   RecallCard? resolveRelatedTerm(String query) {
@@ -512,7 +588,7 @@ class RecallStore extends ChangeNotifier {
     _recentViews.removeWhere((v) => v.cardId == id);
     _recentViews.insert(0, (cardId: id, viewedAt: DateTime.now()));
     _recentViews = _recentViews.take(20).toList();
-    await _save();
+    await _save(dictionaryChanged: false);
   }
 
   CsvImportPreview previewCsvImportDetailed(String text) {
@@ -722,8 +798,7 @@ class RecallStore extends ChangeNotifier {
       _entries.addAll(oldEntries);
       _decks = oldDecks;
       _recentViews = oldVisits;
-      _allCardsCache = null;
-      _searchText.clear();
+      _invalidateDictionaryCaches();
       // Failed preferences writes can still update their in-memory cache.
       try {
         await _preferences.reload();
@@ -952,13 +1027,13 @@ class RecallStore extends ChangeNotifier {
   Future<void> completeTutorial() async {
     _assertWritable();
     _tutorialCompleted = true;
-    await _save();
+    await _save(dictionaryChanged: false);
   }
 
   Future<void> setDailyGoal(int value) async {
     _assertWritable();
     _dailyGoal = value.clamp(1, 200);
-    await _save();
+    await _save(dictionaryChanged: false);
   }
 
   Map<String, Object?> _snapshot() => {
@@ -1021,8 +1096,7 @@ class RecallStore extends ChangeNotifier {
       _reviewsToday = data['reviewsToday'] as int;
       _tutorialCompleted = data['tutorialCompleted'] as bool;
       _reviewDay = data['reviewDay'] as String;
-      _allCardsCache = null;
-      _searchText.clear();
+      _invalidateDictionaryCaches();
       _rollReviewDay();
     } catch (_) {
       try {
@@ -1041,9 +1115,27 @@ class RecallStore extends ChangeNotifier {
     if (_restoring) throw StateError('백업 복원이 진행 중입니다.');
   }
 
-  Future<void> _save() {
+  void _invalidateDictionaryCaches() {
     _allCardsCache = null;
+    _sortedCardsCache = null;
+    _dueCardsCache = null;
+    _bookmarkedCardsCache = null;
+    _decksCache = null;
+    _categoriesCache = null;
+    _decksByIdCache = null;
+    _categoriesByIdCache = null;
+    _cardsByIdCache = null;
+    _categoryCountsCache = null;
+    _dueCountCache = null;
+    _categoryPathsCache.clear();
+    _categoryAncestorsCache.clear();
+    _searchNames.clear();
     _searchText.clear();
+    _searchResults.clear();
+  }
+
+  Future<void> _save({bool dictionaryChanged = true}) {
+    if (dictionaryChanged) _invalidateDictionaryCaches();
     final encoded = jsonEncode(_snapshot());
     final save = _pendingSave.then((_) async {
       if (!await _preferences.setString(_dataKey, encoded)) {

@@ -85,7 +85,7 @@ class _HomeShellState extends State<HomeShell> {
     RecallStore store;
     try {
       store = await (widget.loadStore?.call() ??
-          RecallStore.load(bundledVocabulary: await BundledVocabulary.load()));
+          RecallStore.load(loadBundledVocabulary: BundledVocabulary.load));
     } catch (error) {
       if (mounted) {
         _startupTimer?.cancel();
@@ -2032,12 +2032,7 @@ class _CollectionSearch extends SearchDelegate<void> {
   Widget buildSuggestions(BuildContext context) => _results(context);
 
   Widget _results(BuildContext context) {
-    final matches = store
-        .searchCards(query)
-        .where((entry) =>
-            store.deckById(deckId)?.cards.any((c) => c.id == entry.card.id) ??
-            false)
-        .toList();
+    final matches = store.searchCards(query, deckId: deckId);
     if (matches.isEmpty) {
       return Center(
         child: Text(query.isEmpty ? '이 모음의 용어를 검색하세요.' : '검색 결과가 없습니다.'),
@@ -2522,7 +2517,7 @@ class _SubjectsPageState extends State<_SubjectsPage> {
   Future<void> _confirmDeleteSubject(
       BuildContext context, RecallCategory subject) async {
     final removed = store.categorySubtree(subject.id);
-    final count = store.cardsInCategory(subject.id).length;
+    final count = store.cardCountInCategory(subject.id);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -2604,7 +2599,7 @@ class _SubjectsPageState extends State<_SubjectsPage> {
                   title: Text(store.categoryPath(subject.id).join(' / '),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   subtitle:
-                      Text('${store.cardsInCategory(subject.id).length}개 용어'),
+                      Text('${store.cardCountInCategory(subject.id)}개 용어'),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     IconButton(
                         tooltip:
@@ -3783,9 +3778,9 @@ class _FlashcardLaunchPage extends StatelessWidget {
                     child: ListTile(
                       leading: const Icon(Icons.style_outlined, color: _indigo),
                       title: const Text('복습 가능한 전체 용어'),
-                      subtitle: Text('${store.dueCards.length}개'),
+                      subtitle: Text('${store.dueCount}개'),
                       trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: store.dueCards.isEmpty
+                      onTap: store.dueCount == 0
                           ? null
                           : () => onStartReview(cards: store.dueCards),
                     ),
@@ -3820,7 +3815,7 @@ class _FlashcardLaunchPage extends StatelessWidget {
                           title:
                               Text(store.categoryPath(category.id).join(' / ')),
                           subtitle: Text(
-                              '${store.cardsInCategory(category.id).length}개'),
+                              '${store.cardCountInCategory(category.id)}개'),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => onStartReview(
                             cards: store

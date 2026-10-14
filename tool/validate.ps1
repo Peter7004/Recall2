@@ -24,7 +24,7 @@ foreach ($link in @(@{ Path = $sdkLink; Target = $sdkPath }, @{ Path = $cacheLin
     }
 }
 
-foreach ($directory in @('lib', 'test', 'web')) {
+foreach ($directory in @('lib', 'test', 'web', 'assets')) {
     $sourceDirectory = Join-Path $projectRoot $directory
     foreach ($file in Get-ChildItem -LiteralPath $sourceDirectory -File -Recurse) {
         if ($file.Name -match ' - \uBCF5\uC0AC\uBCF8') { continue }
