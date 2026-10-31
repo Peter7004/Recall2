@@ -10,6 +10,7 @@ import 'package:recall/branding.dart';
 import 'package:recall/bundled_vocabulary.dart';
 import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
+import 'package:recall/reader/pdf_reader_page.dart';
 
 void main() {
   runApp(const RecallApp());
@@ -369,7 +370,12 @@ class _HomeShellState extends State<HomeShell> {
         bottom: false,
         child: Column(
           children: [
-            _TopBar(onSearch: _openDictionary, onSettings: _openSettings),
+            _TopBar(
+                onSearch: _openDictionary,
+                onSettings: _openSettings,
+                onOpenReader: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                        builder: (_) => PdfReaderPage(store: store)))),
             Expanded(
               child: _selectedIndex == 0
                   ? _DictionaryPage(
@@ -468,7 +474,11 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onSearch, required this.onSettings});
+  const _TopBar(
+      {required this.onSearch,
+      required this.onSettings,
+      required this.onOpenReader});
+  final VoidCallback onOpenReader;
 
   final VoidCallback onSearch;
   final VoidCallback onSettings;
@@ -494,6 +504,11 @@ class _TopBar extends StatelessWidget {
             tooltip: 'Search vocabulary',
             icon: const Icon(Icons.search_rounded),
             color: _muted,
+          ),
+          IconButton(
+            tooltip: 'Recall Reader',
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            onPressed: onOpenReader,
           ),
           IconButton(
             onPressed: onSettings,
