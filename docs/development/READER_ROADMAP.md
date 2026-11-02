@@ -6,8 +6,8 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
 | P0 | DONE | Repository handoff, journal, source checkpoint command. Snapshot manifest and all 30 source file hashes verified. |
-| P1 | IN PROGRESS | Right-hand document page navigator in both modes, page-number entry with bounds validation, page maintained after mode switches. Verify first/last page, drag, invalid input, persistence and existing search. |
-| P2 | PLANNED | Recent-document library and managed copies. Local native storage and web storage require separate adapters. Preserve originals, content-hash deduplication, storage failures, explicit deletion scope, Android PDF backup exclusion. |
+| P1 | VERIFIED LOCALLY; CI NEXT | Right-hand document page navigator and validated page entry. Widget tests, analyze, release web build and real PDF smoke PASS. Await full Linux CI before marking all automated checks complete. |
+| P2 | NEXT AFTER CI | Recent-document library and managed copies. Local native storage and web storage require separate adapters. Preserve originals, content-hash deduplication, storage failures, explicit deletion scope, Android PDF backup exclusion. |
 | P3 | PLANNED | Page bookmarks, PDF outline and lazy thumbnails. Keep bookmark data separate; cap thumbnail memory and distinguish PDF indices from printed page labels. |
 | P4 | PLANNED | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
 | P5 | PLANNED | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |

@@ -1,27 +1,50 @@
 # Reader handoff — start here
 
 Updated: 2026-11-02 (Asia/Seoul)
-Baseline: 6bfce4a420193d47db20961fa93d069c142b221b, branch main.
+Baseline app: 6bfce4a420193d47db20961fa93d069c142b221b, branch main.
+Handoff-system commit: 4887541. P1 implementation: ready to commit; see git log.
 
 ## Active work
 
 P0 complete: handoff, roadmap, journal and source snapshots established.
-P1 active: implement page-number dialog and right-hand document page rail.
-No P1 source changes yet.
+P1 implementation and local verification complete. Next: explicit-path commit,
+push and full Linux CI verification. P2 is the next implementation milestone.
 
 ## Next concrete action
 
-1. Implement P1 in modular navigation widgets, wire into PdfReaderPage, add tests.
-2. Snapshot before analyze/build; record actual results and commit only owned files.
-3. Continue roadmap with P2 after the P1 milestone is verified.
+1. Commit/push P1 using only lib/reader/pdf_reader_page.dart,
+   lib/reader/reader_navigation.dart, test/reader_navigation_test.dart,
+   tool/reader_navigation_smoke.cjs, tool/checkpoint-reader.ps1 and docs/development.
+2. Check GitHub Actions for that exact SHA; record full tests, web deployment and
+   Android build separately. If interrupted during CI, do not assume success.
+3. Begin P2: inspect native application-support/no-backup paths and web IndexedDB
+   options; add a document-library repository with platform adapters, then recent
+   document list/import/open/delete UI. Preserve source PDFs and study records.
+   Add native PDF-specific backup exclusions instead of disabling all app backups.
 
 ## Verification / environment
 
 - P0 PASS: executed checkpoint utility and verified the manifest and all 30 copied
   file hashes. Snapshot: build/reader-checkpoints/20261102-125609-940-c1c1c6.
-- P1: tests not run yet.
-- Prior 6bfce4a: full tests and web deployment passed in GitHub Actions. Recheck
-  prior Android run 41190835373 rather than assuming its final result.
+- P1 first widget run: FAIL. Found missing accessibility increased/decreased values
+  and cancelled drag still navigating. Fixed both; isolated widget suite PASS (3).
+  Changed files: lib/reader/reader_navigation.dart,
+  lib/reader/pdf_reader_page.dart, test/reader_navigation_test.dart.
+- P1 final analyze PASS; final web release build PASS; terminology regression PASS
+  (16), startup regression PASS (8). Complete real-PDF browser smoke PASS: invalid
+  entry, valid entry, rail preview/release, first/last page in both modes, mode
+  preservation, reload/reopen, independent documents, search navigation; no JS errors.
+- Reproduce: tool/reader_navigation_smoke.cjs with RECALL_PLAYWRIGHT_MODULE pointing
+  to installed Playwright and RECALL_READER_TEST_URL set to the served web build.
+  Defaults to localhost:5202/Recall2/. Requires the two manuals below. Screenshots:
+  build/reader-navigation-smoke. Flutter input automation needs focus/key events
+  and tooltip animation settling, not raw DOM fill alone.
+- Local source audit: C:/Users/Public/Recall-reader-navigation-20261102. Cache and
+  TEMP use ASCII paths. Native Windows SDK scaffolding is absent; do not invent tests.
+- P1 full Windows test FAIL before execution: existing missing C++ toolchain.
+- Rechecked prior Android run 41190835373: completed SUCCESS. This does not verify
+  P1 or actual Android device behavior.
+- Prior 6bfce4a: full tests and web deployment passed in GitHub Actions.
 - Flutter: C:/Users/Public/Recall-flutter-sdk. ASCII Pub cache junction:
   C:/Users/Public/Recall-reader-pub-cache.
 - Windows full Flutter tests previously blocked by missing C++ compiler for

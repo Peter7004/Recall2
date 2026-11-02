@@ -11,7 +11,7 @@ New-Item -ItemType Directory -Path $snapshotPath -Force | Out-Null
 $files = @('AGENTS.md', 'pubspec.yaml', 'pubspec.lock', 'analysis_options.yaml')
 foreach ($directory in @('lib', 'test', 'tool', 'docs\development')) {
     $files += Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -File -Recurse |
-        Where-Object { $_.Extension -in @('.dart', '.ps1', '.md') -and $_.Name -notmatch '\uBCF5\uC0AC\uBCF8' } |
+        Where-Object { $_.Extension -in @('.dart', '.ps1', '.md', '.cjs') -and $_.Name -notmatch '\uBCF5\uC0AC\uBCF8' } |
         ForEach-Object { $_.FullName.Substring($projectRoot.Length + 1) }
 }
 $records = foreach ($relativePath in ($files | Sort-Object -Unique)) {

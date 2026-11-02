@@ -9,6 +9,7 @@ import 'package:pdfrx/pdfrx.dart';
 import '../recall_store.dart';
 import 'terminology_lookup.dart';
 import 'reader_progress.dart';
+import 'reader_navigation.dart';
 
 class PdfReaderPage extends StatefulWidget {
   const PdfReaderPage({super.key, this.store});
@@ -136,6 +137,21 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     if (!mounted) return;
     setState(() => _ready = true);
     await _restorePosition();
+  }
+
+  Future<void> _navigateToPage(int page) async {
+    if (!_ready || !_controller.isReady || _pages < 1) return;
+    await _controller.goToPage(pageNumber: page.clamp(1, _pages));
+    await _save();
+  }
+
+  Future<void> _showPageDialog() async {
+    final id = _documentId;
+    final page = await showDialog<int>(
+        context: context,
+        builder: (_) => ReaderPageDialog(page: _page, pageCount: _pages));
+    if (!mounted || page == null || id != _documentId) return;
+    await _navigateToPage(page);
   }
 
   PdfPageLayout _horizontalLayout(List<PdfPage> pages, PdfViewerParams params) {
@@ -363,14 +379,18 @@ class _PdfReaderPageState extends State<PdfReaderPage>
               IconButton(
                   tooltip: '이전 페이지',
                   onPressed: _ready && _page > 1
-                      ? () => _controller.goToPage(pageNumber: _page - 1)
+                      ? () => _navigateToPage(_page - 1)
                       : null,
                   icon: const Icon(Icons.chevron_left)),
-              Text('$_page / $_pages'),
+              Tooltip(
+                  message: '페이지 번호로 이동',
+                  child: TextButton(
+                      onPressed: _ready ? _showPageDialog : null,
+                      child: Text('$_page / $_pages'))),
               IconButton(
                   tooltip: '다음 페이지',
                   onPressed: _ready && _page < _pages
-                      ? () => _controller.goToPage(pageNumber: _page + 1)
+                      ? () => _navigateToPage(_page + 1)
                       : null,
                   icon: const Icon(Icons.chevron_right)),
               IconButton(
@@ -433,6 +453,18 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                               onTextSelectionChange: _selectionChanged),
                         ),
                       )),
+                      if (_ready && _pages > 1)
+                        Positioned(
+                            right: 6,
+                            top: 12,
+                            bottom: 12,
+                            width: 48,
+                            child: ReaderPageRail(
+                                key: ValueKey(_documentId),
+                                page: _page,
+                                pageCount: _pages,
+                                onNavigate: (page) =>
+                                    unawaited(_navigateToPage(page)))),
                       if (_word != null)
                         Positioned(
                           left: 16,
