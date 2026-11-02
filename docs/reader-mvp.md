@@ -1,13 +1,28 @@
 # Recall Reader MVP
 
 The existing Flutter project, routes, file_picker, and dictionary store are
-retained. The header PDF button opens `PdfReaderPage`. PDF bytes live only in
-the reader session; vocabulary is never modified. Reading progress is stored
+retained. The header PDF button opens `PdfReaderPage` and its recent-document
+library. Import creates a managed copy; vocabulary is never modified. Reading progress is stored
 separately in `recall.reader.progress.v1.<SHA-256 of PDF contents>` preferences.
 Reopening the same file after restarting restores its page, normalized page-local
 viewport center, zoom, and viewing mode. Renamed identical files share progress;
 different contents (even with identical filenames) have independent progress.
-There is no managed-file library yet: after restart, select the PDF again.
+After restarting, open a saved document from the library without selecting the
+source file again. Content-hash duplicates share one document and reading record.
+Renaming a library title does not rename or modify the source PDF.
+
+Android stores managed files under `Context.noBackupFilesDir/recall_reader` through
+a narrow MethodChannel. PDF copies/metadata are excluded from Android system backup;
+existing dictionary/preferences backup behavior is preserved. Other native targets
+use application support storage. Web stores metadata and bytes separately in
+IndexedDB with atomic import/delete transactions. Browser storage can be cleared
+by users or eviction; keep original PDFs. No document is uploaded by the app.
+
+Deletion requires confirmation and removes the managed document and its reading
+position, preserving original PDFs and learning data. Failed deletion before the
+native logical rename restores progress. A physical cleanup failure is reported
+and the private deleted-folder cleanup retries on library listing. Future page
+bookmarks and learning occurrence links are separate roadmap work.
 
 Continuous mode lays out pages vertically. Paged mode lays them out horizontally
 and snaps a fit-scale swipe to at most one adjacent page. At increased zoom,
@@ -40,6 +55,13 @@ Longer overlapping matches take precedence. The highlight remains the selected
 PDF range, including particles; it is not trimmed to the canonical dictionary
 expression. Up to five matches are shown. AI draft/review statuses remain visible.
 
+Desktop mouse hover also highlights a recognized term/compound expression using
+the actual PDF text fragments. It is transient, handles fragments on separate
+lines and never changes native selection. Unknown text, whitespace and scanned
+images are not highlighted. Matching/geometry loads on hover per visible page;
+mouse exit, viewport change and pointer down clear the highlight. The copy
+permission flag is respected. No AI or OCR is used.
+
 The bundled 288 source rows have no empty English terms, Korean primary meanings,
 English definitions, or Korean explanations. This does not verify correctness or
 guarantee that every surface form or synonym exists in the data. No synonyms are
@@ -55,8 +77,8 @@ Single-tap word hit testing has not been implemented or device-verified. Use the
 library's default desktop text selection or mobile long-press selection handles.
 PDFs without embedded selectable text need OCR, which is not included. Encrypted
 or damaged PDFs use the viewer's existing error handling. Large documents are
-loaded into memory by the file picker; document caching and a recent-file library
-are deliberately outside this first version.
+loaded into memory by the file picker/viewer; 100MB+ memory/performance behavior
+has not been verified. Library metadata listing does not read all PDF bytes.
 
 Windows and Android are supported by pdfrx, but successful web builds do not
 prove native compatibility. Windows needs Developer Mode for dependency

@@ -4,16 +4,22 @@ import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show compute;
 import 'package:pdfrx/pdfrx.dart';
 import '../recall_store.dart';
 import 'terminology_lookup.dart';
 import 'reader_progress.dart';
 import 'reader_navigation.dart';
+import 'library/document_repository.dart';
+import 'library/document_repository_factory.dart';
+import 'library/reader_document.dart';
+import 'library/reader_library_view.dart';
+import 'term_hover_region.dart';
+import 'pdf_term_hover.dart';
 
 class PdfReaderPage extends StatefulWidget {
-  const PdfReaderPage({super.key, this.store});
+  const PdfReaderPage({super.key, this.store, this.repository});
   final RecallStore? store;
+  final DocumentRepository? repository;
 
   @override
   State<PdfReaderPage> createState() => _PdfReaderPageState();
@@ -35,13 +41,151 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   double _gestureScale = 1;
   Timer? _saveTimer;
   Future<void> _writes = Future.value();
+  Future<DocumentRepository>? _repository;
+  late DictionaryTerminologyLookup _terminology;
+
+  DictionaryTerminologyLookup _buildTerminology() =>
+      DictionaryTerminologyLookup([
+        for (final entry in widget.store?.allCards ??
+            <({RecallDeck deck, RecallCard card})>[])
+          ReaderConcept(entry.card),
+      ]);
+  void _dictionaryChanged() {
+    if (mounted) setState(() => _terminology = _buildTerminology());
+  }
+
+  Future<DocumentRepository> _getRepository() async {
+    try {
+      return await (_repository ??= widget.repository != null
+          ? Future.value(widget.repository!)
+          : createDocumentRepository());
+    } catch (_) {
+      _repository = null;
+      rethrow;
+    }
+  }
+
+  Widget _library({VoidCallback? close}) => ReaderLibraryView(
+      repository: _getRepository,
+      onImport: () async {
+        close?.call();
+        await _open();
+      },
+      onOpen: (id) async {
+        close?.call();
+        await _openManaged(id);
+      },
+      onDelete: _deleteManaged);
+
+  Future<void> _showLibrary() async {
+    await _save();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(
+            child: SizedBox(
+                height: MediaQuery.sizeOf(sheetContext).height * .85,
+                child: _library(close: () => Navigator.pop(sheetContext)))));
+  }
+
+  Future<bool> _deleteManaged(String id) async {
+    if (id == _documentId) {
+      await _save();
+      _saveTimer?.cancel();
+      _ready = false;
+    }
+    try {
+      final result = await (await _getRepository()).delete(id);
+      if (mounted && id == _documentId) {
+        _searcher.resetTextSearch();
+        _query.clear();
+        _selectionTimer?.cancel();
+        _selectionRequest++;
+        setState(() {
+          _bytes = null;
+          _documentId = null;
+          _name = 'Recall Reader';
+          _searchVisible = false;
+          _word = null;
+          _page = 1;
+          _pages = 0;
+        });
+      }
+      return result;
+    } catch (_) {
+      if (mounted && id == _documentId) setState(() => _ready = true);
+      rethrow;
+    }
+  }
+
+  Future<void> _openManaged(String id) async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    try {
+      await _save();
+      final opened = await (await _getRepository()).open(id);
+      await _activate(opened.document, opened.bytes);
+    } catch (error) {
+      _storageError(error);
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  void _storageError(Object error) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error is DocumentStorageException
+            ? error.message
+            : 'PDF를 보관하거나 열지 못했습니다. 저장 공간과 파일 접근 권한을 확인해 주세요.')));
+  }
+
+  Future<void> _activate(ReaderDocument doc, Uint8List bytes) async {
+    if (!mounted) return;
+    if (_documentId == doc.id) {
+      setState(() => _name = doc.title);
+      return;
+    }
+    final progress = await ReaderProgress.load(doc.id);
+    if (!mounted) return;
+    _searcher.resetTextSearch();
+    _query.clear();
+    _selectionTimer?.cancel();
+    _selectionRequest++;
+    setState(() {
+      _bytes = bytes;
+      _documentId = doc.id;
+      _restore = progress;
+      _paged = progress?.paged ?? false;
+      _saveErrorShown = false;
+      _searchVisible = false;
+      _name = doc.title;
+      _word = null;
+      _ready = false;
+      _page = 1;
+      _pages = 0;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _terminology = _buildTerminology();
+    widget.store?.addListener(_dictionaryChanged);
     _controller.addListener(_positionChanged);
     _searcher.addListener(_searchChanged);
+  }
+
+  @override
+  void didUpdateWidget(PdfReaderPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.store != widget.store) {
+      oldWidget.store?.removeListener(_dictionaryChanged);
+      widget.store?.addListener(_dictionaryChanged);
+      _terminology = _buildTerminology();
+    }
   }
 
   void _searchChanged() {
@@ -240,12 +384,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Timer? _selectionTimer;
 
   Widget _lookupContent(String text) {
-    final lookup = DictionaryTerminologyLookup([
-      for (final entry
-          in widget.store?.allCards ?? <({RecallDeck deck, RecallCard card})>[])
-        ReaderConcept(entry.card),
-    ]);
-    final matches = lookup.lookup(text);
+    final matches = _terminology.lookup(text);
     return ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 240),
         child: SingleChildScrollView(
@@ -286,32 +425,16 @@ class _PdfReaderPageState extends State<PdfReaderPage>
         throw const FormatException('PDF 파일을 읽을 수 없습니다.');
       }
       await _save();
-      final id = await compute(ReaderProgress.documentId, bytes);
-      if (id == _documentId) return;
-      final progress = await ReaderProgress.load(id);
-      if (!mounted) return;
-      _searcher.resetTextSearch();
-      _query.clear();
-      _selectionTimer?.cancel();
-      _selectionRequest++;
-      setState(() {
-        _bytes = bytes;
-        _documentId = id;
-        _restore = progress;
-        _paged = progress?.paged ?? false;
-        _saveErrorShown = false;
-        _searchVisible = false;
-        _name = file.name;
-        _word = null;
-        _ready = false;
-        _page = 1;
-        _pages = 0;
-      });
-    } catch (_) {
-      if (mounted) {
+      final repo = await _getRepository();
+      final imported = await repo.importPdf(bytes, file.name);
+      final opened = await repo.open(imported.document.id);
+      await _activate(opened.document, opened.bytes);
+      if (mounted && imported.duplicate) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PDF를 열지 못했습니다. 파일을 확인해 주세요.')));
+            const SnackBar(content: Text('이미 보관된 PDF입니다. 기존 문서를 열었습니다.')));
       }
+    } catch (error) {
+      _storageError(error);
     } finally {
       if (mounted) setState(() => _opening = false);
     }
@@ -339,6 +462,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   void dispose() {
     unawaited(_save());
     WidgetsBinding.instance.removeObserver(this);
+    widget.store?.removeListener(_dictionaryChanged);
     _controller.removeListener(_positionChanged);
     _searcher.removeListener(_searchChanged);
     _searcher.dispose();
@@ -366,6 +490,11 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                         ? Icons.view_agenda_outlined
                         : Icons.view_carousel_outlined),
                     onPressed: _ready ? _switchMode : null),
+              if (_bytes != null)
+                IconButton(
+                    tooltip: '문서 목록',
+                    onPressed: _opening ? null : _showLibrary,
+                    icon: const Icon(Icons.folder_open_outlined)),
               IconButton(
                   tooltip: 'PDF 열기',
                   onPressed: _opening ? null : _open,
@@ -404,11 +533,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
             ]),
           Expanded(
               child: _bytes == null
-                  ? Center(
-                      child: FilledButton.icon(
-                          onPressed: _opening ? null : _open,
-                          icon: const Icon(Icons.file_open_outlined),
-                          label: const Text('PDF 열기')))
+                  ? _library()
                   : Stack(children: [
                       Positioned.fill(
                           child: PdfViewer.data(
@@ -431,13 +556,40 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           pagePaintCallbacks: [
                             _searcher.pageTextMatchPaintCallback
                           ],
+                          pageOverlaysBuilder: (context, rect, page) => [
+                            Positioned.fill(
+                                child: TermHoverRegion(
+                                    key: ValueKey(
+                                        (_documentId, page.pageNumber)),
+                                    cacheKey: (
+                                      _documentId,
+                                      page.pageNumber,
+                                      _terminology
+                                    ),
+                                    viewToken: _controller.isReady
+                                        ? (
+                                            _controller.centerPosition,
+                                            _controller.currentZoom
+                                          )
+                                        : null,
+                                    loadAreas: () =>
+                                        loadPdfHoverAreas(page, _terminology))),
+                          ],
                           onViewerReady: (document, controller) {
-                            if (mounted) {
+                            if (mounted && document.sourceName == _documentId) {
                               setState(() {
                                 _ready = true;
                                 _pages = document.pages.length;
                               });
                               unawaited(_restorePosition());
+                              final id = _documentId;
+                              if (id != null) {
+                                unawaited(_getRepository()
+                                    .then((repo) => repo.setPageCount(
+                                        id, document.pages.length))
+                                    .catchError((Object error) =>
+                                        _storageError(error)));
+                              }
                               if (_query.text.trim().isNotEmpty) {
                                 _searcher.startTextSearch(_query.text.trim(),
                                     goToFirstMatch: false);

@@ -1,5 +1,33 @@
 # Reader development journal
 
+## 2026-11-02 — P2 and desktop hover local verification complete
+
+- Full real-PDF library smoke PASS, including IDB rollback after queued bytes,
+  restart/reopen, duplicate detection, title change, cancel/confirm deletion and
+  exact preservation of vocabulary JSON. Navigation/search regression smoke PASS.
+- Real hover highlight pixel verification PASS: 0 -> 1137 -> 0. Native selection
+  and Korean lookup popup remain functional. Normalization regression test added.
+- Fixed list-refresh Future-returning setState callback; isolated 11-test suite PASS.
+- Final analyze and release web build PASS. Windows full Flutter tests remain
+  blocked by the existing C++ hook environment; full Linux CI is next.
+- Detailed results, constraints and reproduction commands in P2_VERIFICATION.md.
+
+## 2026-11-02 — P2 and requested desktop hover implementation
+
+- Confirmed P1 web deployment and Android APK run both succeeded.
+- Implemented separate document repository, native private/no-backup storage,
+  browser IndexedDB metadata/bytes transactions, recent list/search/rename/delete.
+- Added Android noBackupFilesDir MethodChannel without new permissions/minSdk changes.
+- Added non-intercepting mouse hover overlay using longest dictionary matches and
+  real PDF fragment geometry; existing native selection remains intact.
+- Found/fixed independent X/Y normalization in real PDF test; actual hover pixel
+  check PASS (0/1137/0) and selection popup still works.
+- Isolated 11-test suite PASS, including native managed copy/restart/original
+  preservation, write/delete failures and rollback, hover cancellation/cache and UI.
+- Windows full tests blocked before test execution by missing PDFium C++ compiler.
+- Real browser restart/reopen, duplicate prevention and injected IDB transaction
+  rollback PASS. Full rename/delete smoke and final release rebuild still underway.
+
 ## 2026-11-02 — P0 started
 
 - User authorized a resumable work system followed by the Reader roadmap.

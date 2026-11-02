@@ -33,10 +33,9 @@ fs.mkdirSync(output, { recursive: true });
     await settle(800); // Dismiss a tooltip left over from a previous import.
     await button('PDF 열기').last().waitFor();
     await settle(500); // Wait for route/tooltip animations before pointer input.
-    const initial = await button('PDF 열기').count() > 1;
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.mouse.click(initial ? 550 : 1080, initial ? 453 : 28),
+      button('PDF 열기').last().click(),
     ]);
     await chooser.setFiles(path.join(fixtures, `Recall_User_Manual_v${version}_ko.pdf`));
     await button('본문 검색').waitFor();
@@ -76,7 +75,7 @@ fs.mkdirSync(output, { recursive: true });
     await page.mouse.up();
     await at(5);
     await settle(600);
-    await page.mouse.click(1040, 28);
+    await page.mouse.click(1000, 28);
     await settle(1200);
     await at(5);
     await page.mouse.click(1070, 140);
