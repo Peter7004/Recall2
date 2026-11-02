@@ -44,8 +44,9 @@ PDF 텍스트 조각만 노란색으로 강조한다. 줄이 나뉜 용어의 �
 | 페이지 이동·모드·검색 회귀 | PASS | 기존 탐색 스모크 검사 전체 통과 |
 | 기존 학습 데이터 보존 | PASS | 브라우저 전체 사전 JSON이 문서 삭제 전후 동일, 기본 CSV SHA-256도 기존 값 유지 |
 | Windows 전체 flutter test | FAIL | pdfium_dart 빌드 훅에 필요한 Windows C++ 컴파일러 없음. 테스트 실행 전 중단 |
-| 원격 전체 Flutter 테스트 | PENDING | 커밋 후 정확한 SHA의 Actions 결과를 HANDOFF에 기록 |
-| Android 네이티브 빌드 | PENDING | MethodChannel이 추가되었으므로 새 CI 빌드 결과 필요 |
+| 원격 전체 Flutter 테스트 | PASS | 826ed80의 웹·Android 두 Linux 작업에서 모두 통과 |
+| 공개 웹앱 배포·재검사 | PASS | 웹 run 41404851026 SUCCESS, 공개 주소에서 전체 라이브러리 스모크와 호버 픽셀 검사 재실행 통과 |
+| Android 네이티브 빌드 | PASS | 826ed80의 run 41404851004에서 컴파일·서명 검사·아티팩트 업로드 성공. 2026-11-03 최종 상태 재확인 |
 | Android 실기기·백업 복원·100MB/500쪽·암호화/복사 제한 PDF | NOT TESTED | 실제 기기와 해당 테스트 파일로 검증하지 않음 |
 
 테스트에서 발견하여 수정한 오류: PDF 좌표의 가로·세로 독립 정규화,

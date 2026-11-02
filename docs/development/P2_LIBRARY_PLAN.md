@@ -1,6 +1,9 @@
 # P2 document library — implementation starting point
 
-Investigated 2026-11-02 while P1 CI runs. This is a plan, not implemented behavior.
+Original investigation 2026-11-02. This plan has now been implemented in 826ed80;
+see P2_VERIFICATION.md and HANDOFF.md for actual results and remaining limits.
+Historical investigation/design notes are preserved below. The chosen Android
+adapter uses noBackupFilesDir, so PDF-specific backup XML was not needed.
 
 ## Confirmed from current code
 

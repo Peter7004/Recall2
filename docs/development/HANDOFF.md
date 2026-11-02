@@ -1,16 +1,19 @@
 # Reader handoff — start here
 
-Updated: 2026-11-02 (Asia/Seoul)
+Updated: 2026-11-03 (Asia/Seoul)
 Baseline app: 6bfce4a420193d47db20961fa93d069c142b221b, branch main.
 Handoff-system commit: 4887541.
 P1 implementation commit: 1c2f113b74ec496c319acd5ad053072945b45bc6 (pushed to main).
+P2 + desktop hover commit: 826ed802d878722b35933ffc36c52c49a2260f86 (pushed).
+P2 web CI 41404851026 and Android CI 41404851004 both completed SUCCESS,
+confirmed again 2026-11-03. Public library/hover smoke and pixel verification PASS.
 
 ## Active work
 
 P0 complete: handoff, roadmap, journal and source snapshots established.
 P1 implementation, local verification and full Linux CI tests complete.
 P1 web deployment and Android test APK compilation both confirmed SUCCESS.
-P2 ACTIVE: managed copies (Android noBackupFilesDir, native private folder,
+P2 COMPLETE: managed copies (Android noBackupFilesDir, native private folder,
 web IndexedDB), recent list/open/rename/delete. MainActivity added to checkpoints.
 Additional authorized request: desktop mouse hover highlights recognized dictionary
 words/compound terms on actual PDF geometry, without changing selection behavior.
@@ -25,11 +28,18 @@ without picker and injected IndexedDB transaction failure rollback PASS.
 Complete library smoke now PASS, including rename/cancel/confirm deletion and
 unchanged vocabulary JSON. Navigation regression smoke also PASS on the new UI.
 Full Windows Flutter test still fails before tests (existing missing C++ hook).
-Next: explicit-path commit/push, then check full Linux tests / Android native build.
+P3 ACTIVE: separate per-document page bookmarks, embedded outline, lazy thumbnails.
+P3 runtime code not yet written. Existing APIs confirmed: PdfDocument.loadOutline,
+PdfDest/goToDest and PdfPage.renderForDisplay with cancellation and image disposal.
 
 ## Next concrete action
 
-1. Commit P2/hover and check exact SHA CI runs. Unit tests, analyze, web build,
+1. Implement P3: bookmark JSON namespace via existing repository queue, delete
+   cleanup/rollback, navigation bottom sheet with outline/bookmark/thumbnail tabs.
+   Thumbnails: visible cells only, max 160x210 pixels, 2 concurrent tasks, cancel
+   disposed work and dispose all images; constrain sheet to 640x900 maximum.
+   P2 exact SHA 826ed80: web 41404851026, Android 41404851004 both SUCCESS.
+   Unit tests, analyze, web build,
    real library smoke, navigation smoke and hover pixel checks PASS. Use
    C:/Users/Public/Recall-reader-library-20261102. Sync changed source first.
    tool/reader_library_smoke.cjs and tool/check_reader_hover.py for reproduction;
@@ -69,7 +79,7 @@ Next: explicit-path commit/push, then check full Linux tests / Android native bu
   TEMP use ASCII paths. Native Windows SDK scaffolding is absent; do not invent tests.
 - P1 full Windows test FAIL before execution: existing missing C++ toolchain.
 - P1 full Linux Flutter tests PASS in both web and Android CI workflows. Remote
-  analyze also PASS. Android compilation and web deployment not yet final.
+  analyze also PASS. Android compilation and web deployment confirmed SUCCESS.
 - Rechecked prior Android run 41190835373: completed SUCCESS. This does not verify
   P1 or actual Android device behavior.
 - Prior 6bfce4a: full tests and web deployment passed in GitHub Actions.

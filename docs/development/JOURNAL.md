@@ -1,5 +1,26 @@
 # Reader development journal
 
+## 2026-11-03 — P2 closed / P3 started
+
+- Rechecked 826ed80: web run 41404851026 and Android run 41404851004 both SUCCESS.
+- Android device/backup behavior still NOT TESTED; build is not a device test.
+- P3: separate page bookmarks with deletion rollback, embedded outline, bounded
+  visible-only thumbnails. Installed pdfrx APIs inspected before implementation.
+
+## 2026-11-02 — Public web release verified
+
+- Web run 41404851026 completed SUCCESS for 826ed80.
+- Full library/hover smoke and real hover pixel assertions PASS at the public
+  peter7004.github.io/Recall2 URL, including rollback and vocabulary preservation.
+- Android test APK compilation still running; device behavior remains NOT TESTED.
+
+## 2026-11-02 — P2 pushed / full Linux tests PASS
+
+- Implementation pushed as 826ed802d878722b35933ffc36c52c49a2260f86.
+- Web run 41404851026 and Android run 41404851004: full test steps PASS in both.
+- Web deployment finalization and Android compilation still running at this point.
+- No Android device is visible in ADB; native device behavior remains NOT TESTED.
+
 ## 2026-11-02 — P2 and desktop hover local verification complete
 
 - Full real-PDF library smoke PASS, including IDB rollback after queued bytes,
