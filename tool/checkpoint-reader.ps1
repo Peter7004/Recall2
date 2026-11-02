@@ -39,7 +39,11 @@ try {
         handoff = 'docs/development/HANDOFF.md'
         files = @($records)
     }
-    $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $snapshotPath 'manifest.json') -Encoding utf8
+    $pendingManifest = Join-Path $snapshotPath 'manifest.pending.json'
+    $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $pendingManifest -Encoding utf8
+    # Publish the manifest last. An interrupted snapshot has no final manifest
+    # and must be skipped by a future resume instead of appearing complete.
+    Move-Item -LiteralPath $pendingManifest -Destination (Join-Path $snapshotPath 'manifest.json')
 } finally { Pop-Location }
 Write-Output "Checkpoint saved: $snapshotPath"
 Write-Output "Source files: $(@($records).Count). No staging, commits, resets or restoration performed."

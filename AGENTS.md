@@ -18,6 +18,8 @@ The handoff is a checkpoint, not proof that unverified work passed.
   do not prove Android device behavior. Never claim quota-reset auto-resumption.
 - If interrupted, inspect differences from the recorded commit and local snapshot,
   continue the first unfinished step, and do not blindly overwrite newer files.
+  Choose the latest complete manifest with verified hashes; ignore partial
+  snapshot folders that have no final manifest.json or fail verification.
 
 User instructions take precedence. This file does not require extra approvals
 for the already authorized roadmap or routine reversible implementation work.
