@@ -130,3 +130,13 @@
 - Pixel check: cursor away 0; hover 1137; exit 0; always-on 1137; hover-only 0.
   Native PDF selection and meaning popup also PASS while always-on enabled.
 - Term checks 16/startup checks 8 PASS; CSV unchanged. No Android device test.
+
+## 2026-11-03 — Reader controls deployed and verified
+
+- Source 97443f16b3c21e5b9550e586497b0a9bd93840f2 pushed.
+- Web 41558021272 and Android test APK 41558021226 both completed SUCCESS.
+  Both full Linux test steps and analyze PASS. Production signed APK unchanged.
+- Public controls/bookmark/filter/outline/delete and library/always-on selection
+  smoke PASS. Public highlight pixel toggle check PASS (0/1137/0/1137/0).
+- Next P4 term occurrence storage remains planned; device/large PDF checks remain
+  NOT TESTED. Prior narrow web semantics pointer issue remains unverified.

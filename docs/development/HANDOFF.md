@@ -10,7 +10,7 @@ confirmed again 2026-11-03. Public library/hover smoke and pixel verification PA
 
 ## Current module — user-requested Reader controls (2026-11-03)
 
-ACTIVE: direct preview/bookmark grid plus separate outline button; keep current-page
+COMPLETE: direct preview/bookmark grid plus separate outline button; keep current-page
 bookmark shortcut. Add toggle between always-on dictionary highlights and hover-only.
 Reuse actual PDF geometry and read-only dictionary matching; no vocabulary writes.
 Runtime implemented in document_navigator.dart, pdf_reader_page.dart, term_hover_region.dart.
@@ -22,7 +22,14 @@ Final analyze and final release web build PASS. Actual PDF direct preview/bookma
 stars/filter/restart/outline/deletion smoke PASS. Library/navigation regressions PASS.
 Always-on highlight pixel check PASS: hover 0/1137/0; always 1137; hover-only 0.
 Text selection and dictionary popup PASS even while always-on. CSV unchanged.
-Next: commit explicit control files, push and record CI runs; verify deployment.
+Pushed as 97443f16b3c21e5b9550e586497b0a9bd93840f2.
+Web 41558021272 full tests/analyze/build/deployment SUCCESS.
+Android 41558021226 full tests/analyze/test APK build SUCCESS.
+Public controls/highlight smokes and pixel assertions PASS, including star/filter/
+restart/delete and selection while always-on. Both exact-SHA workflows SUCCESS.
+Next implementation milestone: P4 term occurrence storage, still not implemented.
+Verify exact-SHA full tests/builds and public controls/highlight smoke before closure.
+Do not assume completion. Production signed APK is unchanged.
 P4 occurrence storage remains planned. See READER_CONTROLS_VERIFICATION.md.
 
 ## Active work
