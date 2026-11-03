@@ -70,7 +70,13 @@ const hash=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(fi
    await new Promise((resolve,reject)=>{const tx=db.transaction('documents','readwrite');tx.objectStore('documents').put('{broken',id);tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error)});db.close();
   },bad);
   await start();await button('문서 열기: source-b.pdf').waitFor();await button('문서 열기: source-b.pdf').click();await at(3);
-  console.log('PASS: corrupted IndexedDB metadata is isolated; healthy PDF reopens.');
+  await importPdf('source-a.pdf');await at(3);
+  const corruptRaw=await page.evaluate(async id=>{
+   const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('recall.reader.library.v1');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+   const value=await new Promise((resolve,reject)=>{const r=db.transaction('documents').objectStore('documents').get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});db.close();return value;
+  },bad);
+  assert.equal(corruptRaw,'{broken','reimport must not overwrite corrupted metadata');
+  console.log('PASS: corrupted IndexedDB metadata is isolated; healthy PDF reopens; reimport never overwrites damaged records.');
   await importPdf('image-only.pdf');await button('1 / 1').waitFor();await settle(1200);
   await page.waitForFunction(()=>document.body.textContent.includes('이 페이지에서 텍스트를 읽을 수 없습니다.')||Array.from(document.querySelectorAll('[aria-label]')).some(e=>e.getAttribute('aria-label').includes('이 페이지에서 텍스트를 읽을 수 없습니다.')));
   await page.screenshot({path:path.join(output,'image-only-state.png')});

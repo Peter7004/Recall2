@@ -162,3 +162,14 @@
 - Native device/large/rotated/encrypted/restricted-PDF scenarios NOT TESTED.
 - Manual unknown-term creation, Reader export and native path-based large-PDF
   opening remain later work. No AI/OCR/server/package/minSdk changes.
+
+## 2026-11-03 — P4/P5 deployment verified
+
+- Runtime 55937793390517cfef02f410a8b65260e45e6633 pushed. Web 41595274901 and
+  Android test APK 41595274985 both SUCCESS, including full Linux tests/analyze.
+- Public exact occurrence/source/back, dictionary detail, reload, damaged metadata
+  isolation/reimport refusal, image-only guidance, PDF deletion-retained learning/
+  disabled links, library rollback and hover pixels 0/1137/0/1137/0 PASS.
+- Production signing unchanged; Android device/large-PDF behavior NOT TESTED.
+- Next P6 native/performance verification. Manual unknown terms and Reader backup
+  remain future work. Existing dictionary backup has not been expanded.

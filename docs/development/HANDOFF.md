@@ -1,180 +1,100 @@
 # Reader handoff — start here
 
-Updated: 2026-11-03 (Asia/Seoul)
-Baseline app: 6bfce4a420193d47db20961fa93d069c142b221b, branch main.
-Handoff-system commit: 4887541.
-P1 implementation commit: 1c2f113b74ec496c319acd5ad053072945b45bc6 (pushed to main).
-P2 + desktop hover commit: 826ed802d878722b35933ffc36c52c49a2260f86 (pushed).
-P2 web CI 41404851026 and Android CI 41404851004 both completed SUCCESS,
-confirmed again 2026-11-03. Public library/hover smoke and pixel verification PASS.
+Updated: 2026-11-03 (Asia/Seoul). Branch main.
+Latest runtime: 55937793390517cfef02f410a8b65260e45e6633 (pushed).
+Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
+P3a 97443f1. History is preserved in JOURNAL.md.
 
-## Active module — reliability + saved terms/source return (2026-11-03)
+## Current state — COMPLETE through P4/P5
 
-User authorized review recommendations: fix corrupt-document isolation, preview
-bookmark scroll preservation, and distinguish term analysis error/empty/unavailable.
-Then implement P4/P5 as one coherent flow: selection -> existing dictionary term
-save -> saved term/document lists -> exact original geometry -> back to prior view.
-Preserve original dictionary/storage keys. Separate Reader term/occurrence storage;
-retain learning records when PDFs are deleted and disable missing source links.
-Also show definition_en, persist Reader display settings, record tests and checkpoints.
-No AI/OCR/server/package replacement. Manual unknown-term creation and Reader export
-are subsequent roadmap extensions, not prerequisites to this P4/P5 milestone.
-Runtime complete in working tree, not committed yet. Installed pdfrx selection
-range APIs inspected; normalized source rectangles + exact char offsets are stored.
-37 isolated tests plus new bookmark-failure test PASS; analyze and release web build PASS. Actual new PDF learning
-smoke PASS for duplicate prevention, second same-page occurrence geometry, same-/
-cross-document source/back navigation, reload and highlight setting persistence,
-corrupt IndexedDB isolation and synthetic image-only unavailable state. No JS errors.
-Picker automation switched to appbar; ExpansionTile/tooltip selectors corrected.
-Final code includes bookmark-link failure cache rollback, source-jump guard,
-human-readable link tooltips and PDF sources from existing dictionary/review cards.
-Final analyze and web build PASS; isolated suite PASS (38), including browser-only
-library test correctly skipped on VM. Browser-only unit still NOT TESTED; real
-IndexedDB corruption injection via web application PASS. HTTP localhost:5205/Recall2/ from
-C:/Users/Public/Recall-reader-learning-20261103/serve (server may need restart).
-Final learning smoke PASS including actual dictionary card -> PDF source -> exact
-initial position, app deletion-retained/disabled source links, IndexedDB corruption
-and image-only text-unavailable state; no JS errors. Existing three regression
-smokes all PASS sequentially (file picker automation is not reliably parallel).
-Vocabulary checks 16/startup checks 8 PASS; original CSV SHA256 unchanged.
-Local verification COMPLETE: actual learning/dictionary source/deletion smoke,
-library/hover, navigation/search and preview/bookmark regression PASS. Pixel check
-PASS (0/1137/0/1137/0). Added PDF adapter tests for absent geometry/unavailable vs
-zero matches; static analysis initially found an invalid mock of a pdfrx extension method;
-corrected by separating pure text-to-geometry mapping. Final analyze PASS;
-adapter-test execution awaits full Linux CI. Normal synthetic
-PDF/source return already verified in real browser. Last adapter guard ensures
-recognized text with unusable geometry is not mislabeled zero dictionary matches.
-Next: explicit owned-file commit/push, record exact-SHA CI IDs and public verification.
-No P4/P5 implementation commit yet. Source audit: C:/Users/Public/Recall-reader-learning-20261103.
-App source/csv/dependencies preserved except intentional existing-word bookmark
-activation and additive Reader UI. Test APK uses temporary signer, not release APK.
-Initial widget test finder typo was fixed; no application failure hidden by it.
-Previous module results below are historical.
+- Damaged native/web PDF metadata is isolated and reported. Healthy documents
+  remain usable; damaged records are never automatically deleted or overwritten.
+  Reimport of a damaged record is explicitly refused.
+- Preview star refresh retains scroll and mounted thumbnails.
+- Highlight state distinguishes loading, successful zero matches, unavailable
+  text/geometry and errors with explicit retry. Copy restrictions are respected.
+- Known-term saving separates a card snapshot from exact occurrences: document
+  hash/title, page, actual text/context, char offsets and normalized fragment
+  rectangles. Duplicate saves deduplicate; different same-text locations remain.
+- Saved fragments remain green after reopening. Reader lists, dictionary detail
+  and flashcard pages link to source geometry. One-step source return history is
+  current-session-only; saved terms/occurrences and document progress persist.
+- PDF deletion retains learning/context and disables missing links. Original card
+  deletion still leaves a readable saved snapshot. English definitions are shown;
+  highlight/default view settings persist. Existing-word bookmarking is idempotent
+  with failure rollback. Reader/dictionary writes are separate; partial failure is reported.
 
-## Current module — user-requested Reader controls (2026-11-03)
+## Final verification
 
-COMPLETE: direct preview/bookmark grid plus separate outline button; keep current-page
-bookmark shortcut. Add toggle between always-on dictionary highlights and hover-only.
-Reuse actual PDF geometry and read-only dictionary matching; no vocabulary writes.
-Runtime implemented in document_navigator.dart, pdf_reader_page.dart, term_hover_region.dart.
-Combined grid has per-page stars and bookmark-only filter; saved pages restore their
-saved viewport on opening. Outline opens directly without loading thumbnails.
-Always-on loads PDF geometry for viewer cache-extent pages, no full-document scan.
-19 isolated tests PASS after fixing Future-returning setState in bookmark refresh.
-Final analyze and final release web build PASS. Actual PDF direct preview/bookmark
-stars/filter/restart/outline/deletion smoke PASS. Library/navigation regressions PASS.
-Always-on highlight pixel check PASS: hover 0/1137/0; always 1137; hover-only 0.
-Text selection and dictionary popup PASS even while always-on. CSV unchanged.
-Pushed as 97443f16b3c21e5b9550e586497b0a9bd93840f2.
-Web 41558021272 full tests/analyze/build/deployment SUCCESS.
-Android 41558021226 full tests/analyze/test APK build SUCCESS.
-Public controls/highlight smokes and pixel assertions PASS, including star/filter/
-restart/delete and selection while always-on. Both exact-SHA workflows SUCCESS.
-Next implementation milestone: P4 term occurrence storage, still not implemented.
-Verify exact-SHA full tests/builds and public controls/highlight smoke before closure.
-Do not assume completion. Production signed APK is unchanged.
-P4 occurrence storage remains planned. See READER_CONTROLS_VERIFICATION.md.
-
-## Active work
-
-P0 complete: handoff, roadmap, journal and source snapshots established.
-P1 implementation, local verification and full Linux CI tests complete.
-P1 web deployment and Android test APK compilation both confirmed SUCCESS.
-P2 COMPLETE: managed copies (Android noBackupFilesDir, native private folder,
-web IndexedDB), recent list/open/rename/delete. MainActivity added to checkpoints.
-Additional authorized request: desktop mouse hover highlights recognized dictionary
-words/compound terms on actual PDF geometry, without changing selection behavior.
-P2 and hover runtime files/tests complete locally. Analyze and release web build PASS.
-Isolated unit harness PASS (11: repository/native filesystem, library UI, hover,
-navigation). Fixed a debug-only setState callback returning Future in list refresh.
-Real PDF hover pixel check initially FAIL: pdfrx toRect uses uniform height scale;
-fixed by converting to natural page rect then normalizing X/width and Y/height.
-Added regression test. Real hover pixel check now PASS (0 -> 1137 -> 0 gold pixels),
-and actual text selection/lookup PASS. Browser duplicate detection, restart/reopen
-without picker and injected IndexedDB transaction failure rollback PASS.
-Complete library smoke now PASS, including rename/cancel/confirm deletion and
-unchanged vocabulary JSON. Navigation regression smoke also PASS on the new UI.
-Full Windows Flutter test still fails before tests (existing missing C++ hook).
-P3 runtime COMPLETE locally: separate page bookmarks, embedded outline and lazy
-thumbnails. Isolated tests PASS (17); analyze and release web build PASS.
-Real 5-page PDF browser smoke PASS: bookmark page-relative restoration, mode
-preservation, nested outline destination, rendered thumbnail navigation, restart,
-independent documents, absent outline, delete warning/cancel/cleanup and unchanged
-vocabulary JSON. Existing navigation/library/hover regression smoke PASS.
-Full Windows tests FAIL before execution (missing native C++ toolchain).
-P3 full Linux tests and analyze PASS in both CI workflows. Web deployment
-41550906107 and Android test APK 41550905838 both completed SUCCESS.
-Android device behavior NOT TESTED. Public P3 smoke PASS (same complete flow).
-360px web: physical canvas star click/navigation sheet PASS; automated semantics
-pointer click intercepted by another semantics node. Narrow semantics issue remains
-unresolved; not an Android result. Record in P3_VERIFICATION.md.
+Exact runtime 55937793390517cfef02f410a8b65260e45e6633:
+- PASS: web 41595274901 full Linux tests/analyze/build/deployment.
+- PASS: Android test APK 41595274985 full Linux tests/analyze/build/artifact.
+  Temporary test signer; NOT the permanently signed production download APK.
+- PASS: public peter7004.github.io/Recall2 learning/library smokes: selection/save,
+  duplicate prevention, SECOND same-page occurrence, cross-document source/back,
+  restart/settings, dictionary card source route, damaged IDB isolation/reimport
+  refusal, image-only guidance, deletion-retained records/disabled links and
+  injected write rollback. No JS runtime errors.
+- PASS: local 38 isolated tests, analyze/web build. PDF adapter tests passed in
+  both full Linux jobs. Existing navigation/search and preview/bookmark smokes PASS.
+- PASS: public/local hover pixels 0/1137/0/1137/0; selection with always-on works.
+  Dictionary checks 16/startup 8 PASS. CSV unchanged:
+  2a3a7a6ea639ecc7a9ac600e7c6666f5bf4a159e90c90aa72457e4802209ec0e.
+- NOT TESTED: Android device/backup (ADB had no devices), large/rotated/encrypted/
+  copy-restricted native PDFs and Windows native build. Prior narrow-web semantics
+  pointer issue remains unresolved/unverified.
+- NOT TESTED: browser-only Flutter corruption unit (loading interrupted). Actual
+  application IndexedDB injection passed separately.
+- Existing Windows full Flutter tests fail BEFORE cases: missing C++ compiler for
+  pdfium_dart. Linux tests/builds do not prove device behavior.
+See P4_P5_VERIFICATION.md for scope and limitations.
 
 ## Next concrete action
 
-1. P3 COMPLETE: feecf59980b9562fa8c3ce30af89a6fbe1ece7b0. Web run 41550906107
-   and Android test APK run 41550905838 both SUCCESS. Full Linux tests and analyze
-   PASS in both; public P3 smoke PASS. Production signed APK is not updated here.
-2. Before P4 read this record, roadmap and actual git/code. Ignore unrelated staged
-   Korean copies. Keep dictionary and occurrence storage separate. No AI or OCR.
-3. P4 next: save selected dictionary terms with document/page/geometry, separating
-   word identity from occurrences. No P4 runtime implemented yet. Preserve existing
-   dictionary key recall.data.v3 and all learning records. See P3_VERIFICATION.md.
-4. Local audit C:/Users/Public/Recall-reader-navigator-20261103; isolated harness
-   C:/Users/Public/Recall-p3-unit-20261103. Smoke URL localhost:5204/Recall2/.
-   Recreate controlled fixtures using tool/make_reader_outline_fixture.py.
-   No large-PDF/device performance claims: 500-page widget test is virtual only.
+1. Inspect git status, actual code and latest complete checkpoint hashes. Do not
+   redo P4/P5. No deployment or build remains pending.
+2. P6: Galaxy S25 Ultra verification; obtain representative large/scanned/encrypted/
+   restricted PDFs, profile import/render/search/highlights/memory. No real
+   500-page/100MB result exists. Virtual widget tests are not PDF performance tests.
+   Keep Android 10+ target; do not change minSdk without compatibility checks.
+3. Subsequent product work: manual unknown-term creation, Reader export/restore,
+   native managed-file path opening. These are NOT implemented. Existing vocabulary
+   backup does NOT include Reader records. No AI/OCR/accounts/cloud/server/FSRS.
 
-## Verification / environment
+## Data and environment
 
-- P0 PASS: executed checkpoint utility and verified the manifest and all 30 copied
-  file hashes. Snapshot: build/reader-checkpoints/20261102-125609-940-c1c1c6.
-- P1 first widget run: FAIL. Found missing accessibility increased/decreased values
-  and cancelled drag still navigating. Fixed both; isolated widget suite PASS (3).
-  Changed files: lib/reader/reader_navigation.dart,
-  lib/reader/pdf_reader_page.dart, test/reader_navigation_test.dart.
-- P1 final analyze PASS; final web release build PASS; terminology regression PASS
-  (16), startup regression PASS (8). Complete real-PDF browser smoke PASS: invalid
-  entry, valid entry, rail preview/release, first/last page in both modes, mode
-  preservation, reload/reopen, independent documents, search navigation; no JS errors.
-- Reproduce: tool/reader_navigation_smoke.cjs with RECALL_PLAYWRIGHT_MODULE pointing
-  to installed Playwright and RECALL_READER_TEST_URL set to the served web build.
-  Defaults to localhost:5202/Recall2/. Requires the two manuals below. Screenshots:
-  build/reader-navigation-smoke. Flutter input automation needs focus/key events
-  and tooltip animation settling, not raw DOM fill alone.
-- Local source audit: C:/Users/Public/Recall-reader-navigation-20261102. Cache and
-  TEMP use ASCII paths. Native Windows SDK scaffolding is absent; do not invent tests.
-- P1 full Windows test FAIL before execution: existing missing C++ toolchain.
-- P1 full Linux Flutter tests PASS in both web and Android CI workflows. Remote
-  analyze also PASS. Android compilation and web deployment confirmed SUCCESS.
-- Rechecked prior Android run 41190835373: completed SUCCESS. This does not verify
-  P1 or actual Android device behavior.
-- Prior 6bfce4a: full tests and web deployment passed in GitHub Actions.
-- Flutter: C:/Users/Public/Recall-flutter-sdk. ASCII Pub cache junction:
-  C:/Users/Public/Recall-reader-pub-cache.
-- Windows full Flutter tests previously blocked by missing C++ compiler for
-  pdfium_dart. Linux CI can run them. Do not change packages to hide this.
-- Use isolated ASCII validation copy, excluding Korean copy files. See tool/validate.ps1.
-- Android device behavior NOT TESTED. Existing SDK is under
-  C:/Users/Public/BeforeAfterAndroidToolchain/sdk; do not touch another app's source.
-- Real fixtures: output/pdf/Recall_User_Manual_v1.0.2_ko.pdf and v1.0.3 (5 pages each).
-  Large, scanned, encrypted and restricted PDF scenarios need real fixtures.
+- Preserve recall.data.v3 dictionary/bookmarks/flashcards. Only explicit user save
+  activates the corresponding word bookmark. No dictionary migration.
+- Reader keys: recall.reader.progress.v1.<hash>, recall.reader.pageBookmarks.v1.<hash>,
+  recall.reader.learning.v1, recall.reader.settings.v1.
+- Managed PDFs: Android noBackupFilesDir/recall_reader; web IndexedDB
+  recall.reader.library.v1. Original PDFs are never modified.
+- SDK C:/Users/Public/Recall-flutter-sdk (3.47.6); cache
+  C:/Users/Public/Recall-reader-pub-cache; Android SDK
+  C:/Users/Public/BeforeAfterAndroidToolchain/sdk. No Windows platform scaffold.
+- Full audit C:/Users/Public/Recall-reader-learning-20261103; isolated no-pdfrx
+  harness C:/Users/Public/Recall-p3-unit-20261103 is not a whole-app build.
+- Local localhost:5205/Recall2 server was stopped. Recreate from audit/serve;
+  Recall2 junction points to audit/build/web. Exclude Korean copy files when syncing.
+- Scripts: reader_learning_smoke.cjs, reader_library_smoke.cjs,
+  reader_navigation_smoke.cjs, reader_document_navigator_smoke.cjs,
+  check_reader_hover.py. External Playwright via RECALL_PLAYWRIGHT_MODULE;
+  RECALL_READER_TEST_URL selects local/public URL. Run picker smokes sequentially;
+  appbar import is more reliable for semantics automation.
+- Fixtures: original two 5-page manuals under output/pdf (never modify). Synthetic
+  5-page source-a/source-b, 1-page image-only via make_reader_learning_fixture.py;
+  outline/plain via make_reader_outline_fixture.py. Generated PDFs stay ignored.
 
 ## Safety and recovery
 
-Unrelated pre-staged copy files and untracked automation/output/tmp are user work.
-Do not reset/clean/stage them. Never use `git add .` or a blanket commit.
-No credentials, signing keys, PDFs or user data belong in snapshots or handoffs.
+Unrelated staged Korean copies and untracked automation/output/tmp are user work.
+Never commit/reset/clean them. Commit only explicit owned paths.
+Update HANDOFF/JOURNAL and run tool/checkpoint-reader.ps1 -Note 'implemented / next'
+before long verification and after meaningful fixes.
+Snapshots: ignored build/reader-checkpoints/<timestamp>/source and manifest.json.
+Choose the latest COMPLETE manifest and verify every hash; ignore partial/invalid
+snapshots. Compare base commit and diffs; never overwrite newer files blindly.
+No keys/PDF/user content in handoffs. Checkpoints do not stage/restore automatically.
+Quota reset does not auto-resume development.
 
-Snapshots: build/reader-checkpoints/<timestamp>/manifest.json and source/.
-Last verified complete snapshot: 20261102-130834-438-813e24 (35 files, atomic
-manifest publication and comparison against current source PASS). Newer complete
-snapshots may exist; verify them instead of assuming this is always the latest.
-Read the latest manifest, compare its base commit and files with current git/code,
-then resume. Snapshots do not overwrite files or run git commands on restoration.
-Choose the latest complete manifest whose hashes verify. Ignore partial folders
-without manifest.json; the utility publishes that file only after all source copies.
-Disk writes already completed survive a usage-limit interruption; unsaved editor
-buffers or work after the latest checkpoint cannot be promised recoverable.
-
-User resume message: **“개발 인계 기록을 읽고 마지막 미완료 작업부터 계속해 줘.”**
+Resume: **“개발 인계 기록을 읽고 마지막 미완료 작업부터 계속해 줘.”**

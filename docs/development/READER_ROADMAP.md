@@ -10,8 +10,8 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 | P2 | DONE; DEPLOYMENT TRACKED IN HANDOFF | Managed PDF library, native no-backup/web IndexedDB. Real browser CRUD/rollback, 11 isolated tests and both full Linux test jobs PASS. Desktop hover/selection verified. Android build and web deployment tracked separately; device behavior NOT TESTED. |
 | P3 | DONE | Page bookmarks, embedded outline and lazy thumbnails. Separate keys, document-deletion cleanup/rollback. Visible cells only, 160x210 thumbnails, 2 render tasks, explicit cancellation/disposal. Both full Linux CI tests, web deployment and Android test APK build PASS; public PDF smoke PASS. Device/large-PDF behavior NOT TESTED. |
 | P3a | DONE | Direct preview/bookmark grid with per-page stars/filter, separate outline entry, toggle always-on dictionary highlights versus hover-only. 19 isolated tests, full Linux CI, web deployment/public smoke and Android test APK build PASS; device tests NOT TESTED. |
-| P4 | IMPLEMENTED; FINAL VERIFICATION | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
-| P5 | IMPLEMENTED; FINAL VERIFICATION | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |
+| P4 | DONE | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
+| P5 | DONE | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |
 | P6 | PLANNED | Large-document performance and accessibility. Obtain real PDF fixtures and test Galaxy S25 Ultra; do not invent device or 100MB/500-page results. |
 
 Existing baseline 6bfce4a: text PDF selection/lookup, continuous and horizontal
@@ -36,3 +36,7 @@ preserve preview scroll on star updates; distinguish highlight errors/unavailabl
 zero matches with retry. Known-term source saving and return are implemented in
 separate Reader preferences; no migration of dictionary data. Reader export and
 manual unknown-term creation remain subsequent extensions after P4/P5 validation.
+
+P4/P5 source 5593779 verified: web 41595274901 and Android test APK 41595274985
+SUCCESS, including full Linux tests/analyze. Public learning/library/pixel smoke
+PASS. P6 native/large-PDF checks remain NOT TESTED. Return history is session-only.
