@@ -99,4 +99,50 @@ void main() {
     expect(loads, 1);
     await mouse.removePointer();
   });
+  testWidgets(
+      'always-on loads without pointer, survives exit, returns to hover; stale dictionary ignored',
+      (tester) async {
+    var all = true;
+    var key = 1;
+    final late = Completer<List<TermHoverArea>>();
+    const term = TermHoverArea('Known', [Rect.fromLTWH(.1, .1, .2, .2)]);
+    Future<List<TermHoverArea>> load() =>
+        key == 1 ? Future.value([term]) : late.future;
+    Widget view() => MaterialApp(
+        home: Center(
+            child: SizedBox(
+                width: 200,
+                height: 200,
+                child: TermHoverRegion(
+                    cacheKey: key, highlightAll: all, loadAreas: load))));
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(painter(tester).areas, [term]);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await tester.pump();
+    expect(painter(tester).areas, [term]);
+    all = false;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(painter(tester).areas, isEmpty);
+    expect(painter(tester).area, isNull);
+    final box = tester.getRect(find.byType(TermHoverRegion));
+    await mouse.moveTo(box.topLeft + const Offset(30, 30));
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump();
+    expect(painter(tester).area, term);
+    key = 2;
+    all = true;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(painter(tester).areas, isEmpty);
+    all = false;
+    await tester.pumpWidget(view());
+    late.complete([term]);
+    await tester.pump();
+    expect(painter(tester).areas, isEmpty);
+    expect(painter(tester).area, isNull);
+    await mouse.removePointer();
+  });
 }

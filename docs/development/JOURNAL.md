@@ -116,3 +116,17 @@
   web semantics pointer click is intercepted; accessibility path remains unresolved.
 - Android device, large PDF and production release signing NOT TESTED/unchanged.
 - P4 selected-word occurrence storage is next; no P4 source implemented yet.
+
+## 2026-11-03 — Direct Reader controls and dictionary highlight toggle
+
+- User steering: direct preview/bookmark grid and separate outline, retaining the
+  current-page bookmark shortcut. Grid stars add/remove bookmarks; filter shows
+  bookmarked pages. Existing bookmark locations and keys preserved.
+- Highlight button toggles always-on dictionary terms vs mouse hover. Reuses PDF
+  geometry and nearby-page cache; ignores obsolete results. No dictionary writes.
+- Fixed Future-returning setState callback found by widget tests. Final 19 isolated
+  tests, analyze and release web build PASS. Real PDF controls/filter/restart/delete
+  smoke PASS; library/navigation/search regressions PASS.
+- Pixel check: cursor away 0; hover 1137; exit 0; always-on 1137; hover-only 0.
+  Native PDF selection and meaning popup also PASS while always-on enabled.
+- Term checks 16/startup checks 8 PASS; CSV unchanged. No Android device test.

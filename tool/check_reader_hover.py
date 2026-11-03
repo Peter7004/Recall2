@@ -10,7 +10,10 @@ args = parser.parse_args()
 point = json.loads((args.directory / 'hover-point.json').read_text(encoding='utf-8'))
 x, y = int(point['x']), int(point['y'])
 counts = {}
-for name in ('hover-before', 'hover-known', 'hover-cleared'):
+names = ['hover-before', 'hover-known', 'hover-cleared']
+if (args.directory / 'highlight-always.png').exists():
+    names += ['highlight-always', 'highlight-hover-only']
+for name in names:
     with Image.open(args.directory / f'{name}.png') as source:
         image = source.convert('RGB')
         pixels = image.load()
@@ -25,3 +28,8 @@ print('Gold pixels near recognized term:', counts)
 assert counts['hover-known'] > counts['hover-before'] + 150, 'Expected visible hover highlight'
 assert abs(counts['hover-cleared'] - counts['hover-before']) < 40, 'Hover highlight did not clear'
 print('PASS: real PDF hover adds a visible highlight and leaving the term removes it')
+
+if 'highlight-always' in counts:
+    assert counts['highlight-always'] > counts['hover-before'] + 150, 'Always-on must highlight with cursor away'
+    assert counts['highlight-hover-only'] <= counts['hover-before'] + 20, 'Hover-only must clear with cursor away'
+    print('PASS: dictionary highlight toggle paints without hover, then clears in hover-only mode')

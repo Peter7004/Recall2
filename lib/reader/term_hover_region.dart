@@ -22,7 +22,9 @@ class TermHoverRegion extends StatefulWidget {
       {super.key,
       required this.cacheKey,
       required this.loadAreas,
-      this.viewToken});
+      this.viewToken,
+      this.highlightAll = false});
+  final bool highlightAll;
   final Object cacheKey;
   final Object? viewToken;
   final Future<List<TermHoverArea>> Function() loadAreas;
@@ -35,6 +37,29 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
   TermHoverArea? _active;
   Timer? _timer;
   int _request = 0;
+  int _allRequest = 0;
+  List<TermHoverArea> _all = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.highlightAll) _loadAll();
+  }
+
+  Future<void> _loadAll() async {
+    final request = ++_allRequest;
+    try {
+      final areas = await (_areas ??= widget.loadAreas());
+      if (mounted && widget.highlightAll && request == _allRequest) {
+        setState(() => _all = areas);
+      }
+    } catch (_) {
+      if (mounted && request == _allRequest) {
+        _areas = null;
+        setState(() => _all = const []);
+      }
+    }
+  }
 
   void _clear() {
     _timer?.cancel();
@@ -51,11 +76,24 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
       _request++;
       _active = null;
     }
-    if (oldWidget.cacheKey != widget.cacheKey) _areas = null;
+    if (oldWidget.cacheKey != widget.cacheKey ||
+        oldWidget.highlightAll != widget.highlightAll) {
+      _allRequest++;
+      _all = const [];
+      _active = null;
+      _timer?.cancel();
+      _request++;
+      if (oldWidget.cacheKey != widget.cacheKey) _areas = null;
+      if (widget.highlightAll) _loadAll();
+    }
   }
 
   void _hover(PointerHoverEvent event, Size size) {
-    if (event.kind != PointerDeviceKind.mouse || size.isEmpty) return;
+    if (widget.highlightAll ||
+        event.kind != PointerDeviceKind.mouse ||
+        size.isEmpty) {
+      return;
+    }
     _timer?.cancel();
     final request = ++_request;
     final point = Offset(event.localPosition.dx / size.width,
@@ -83,6 +121,7 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
   void dispose() {
     _timer?.cancel();
     _request++;
+    _allRequest++;
     super.dispose();
   }
 
@@ -100,12 +139,16 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
                 onPointerDown: (_) => _clear(),
                 child: IgnorePointer(
                     child: CustomPaint(
-                        painter: TermHoverPainter(_active), size: size))));
+                        painter: TermHoverPainter(
+                            widget.highlightAll ? null : _active,
+                            areas: widget.highlightAll ? _all : const []),
+                        size: size))));
       });
 }
 
 class TermHoverPainter extends CustomPainter {
-  const TermHoverPainter(this.area);
+  const TermHoverPainter(this.area, {this.areas = const []});
+  final List<TermHoverArea> areas;
   final TermHoverArea? area;
   @override
   void paint(Canvas canvas, Size size) {
@@ -114,7 +157,8 @@ class TermHoverPainter extends CustomPainter {
       ..color = const Color(0xFFCB9200)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    for (final rect in area?.rects ?? <Rect>[]) {
+    for (final rect
+        in [...areas, if (area != null) area!].expand((item) => item.rects)) {
       final scaled = Rect.fromLTRB(
           rect.left * size.width,
           rect.top * size.height,
@@ -127,5 +171,6 @@ class TermHoverPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(TermHoverPainter oldDelegate) =>
-      !identical(area, oldDelegate.area);
+      !identical(area, oldDelegate.area) ||
+      !identical(areas, oldDelegate.areas);
 }

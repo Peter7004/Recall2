@@ -26,8 +26,10 @@ occurrence links remain separate roadmap work.
 
 The page star saves one bookmark per page, including normalized viewport center
 and zoom, under recall.reader.pageBookmarks.v1.<document SHA-256>. Returning to a
-bookmark preserves the current viewing mode. The document navigator provides
-bookmarks, the PDF's embedded outline (if any), and lazy rendered thumbnails.
+bookmark preserves the current viewing mode. The direct preview/bookmark button
+opens a lazy thumbnail grid with a star on each page and a bookmark-only filter.
+Opening a saved page restores its bookmarked viewport. The separate outline
+button opens the PDF's embedded outline directly (if any), without a tab switch.
 Outline destinations use the library's destination API with a page fallback.
 Thumbnail output is capped at 160x210 pixels with two concurrent render jobs;
 offscreen/pending work is cancelled and images explicitly disposed. This bounds
@@ -70,7 +72,13 @@ the actual PDF text fragments. It is transient, handles fragments on separate
 lines and never changes native selection. Unknown text, whitespace and scanned
 images are not highlighted. Matching/geometry loads on hover per visible page;
 mouse exit, viewport change and pointer down clear the highlight. The copy
-permission flag is respected. No AI or OCR is used.
+permission flag is respected. The highlight toolbar button toggles between
+hover-only (default) and always-on dictionary highlights. Always-on works without
+a mouse, survives pointer exit/selection, and loads geometry for the viewer's
+nearby cached pages rather than scanning the full document. Changing the document
+or dictionary invalidates old results. This mode lasts for the Reader session;
+it does not write dictionary data. No AI or OCR is used. Missing/broken PDF text
+maps and unrecognized word forms can still leave a registered term unhighlighted.
 
 The bundled 288 source rows have no empty English terms, Korean primary meanings,
 English definitions, or Korean explanations. This does not verify correctness or

@@ -8,6 +8,23 @@ P2 + desktop hover commit: 826ed802d878722b35933ffc36c52c49a2260f86 (pushed).
 P2 web CI 41404851026 and Android CI 41404851004 both completed SUCCESS,
 confirmed again 2026-11-03. Public library/hover smoke and pixel verification PASS.
 
+## Current module — user-requested Reader controls (2026-11-03)
+
+ACTIVE: direct preview/bookmark grid plus separate outline button; keep current-page
+bookmark shortcut. Add toggle between always-on dictionary highlights and hover-only.
+Reuse actual PDF geometry and read-only dictionary matching; no vocabulary writes.
+Runtime implemented in document_navigator.dart, pdf_reader_page.dart, term_hover_region.dart.
+Combined grid has per-page stars and bookmark-only filter; saved pages restore their
+saved viewport on opening. Outline opens directly without loading thumbnails.
+Always-on loads PDF geometry for viewer cache-extent pages, no full-document scan.
+19 isolated tests PASS after fixing Future-returning setState in bookmark refresh.
+Final analyze and final release web build PASS. Actual PDF direct preview/bookmark
+stars/filter/restart/outline/deletion smoke PASS. Library/navigation regressions PASS.
+Always-on highlight pixel check PASS: hover 0/1137/0; always 1137; hover-only 0.
+Text selection and dictionary popup PASS even while always-on. CSV unchanged.
+Next: commit explicit control files, push and record CI runs; verify deployment.
+P4 occurrence storage remains planned. See READER_CONTROLS_VERIFICATION.md.
+
 ## Active work
 
 P0 complete: handoff, roadmap, journal and source snapshots established.

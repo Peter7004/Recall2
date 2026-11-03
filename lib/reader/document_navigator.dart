@@ -11,6 +11,7 @@ class ReaderOutlineEntry {
   final VoidCallback? onNavigate;
 }
 
+/// Two direct entry points: outline only, or one combined preview/bookmark grid.
 class ReaderDocumentNavigator extends StatefulWidget {
   const ReaderDocumentNavigator(
       {super.key,
@@ -19,14 +20,16 @@ class ReaderDocumentNavigator extends StatefulWidget {
       required this.loadBookmarks,
       required this.loadOutline,
       required this.onBookmark,
-      required this.removeBookmark,
+      required this.toggleBookmark,
       required this.onPage,
-      required this.thumbnailBuilder});
+      required this.thumbnailBuilder,
+      this.outlineOnly = false});
   final int pageCount, currentPage;
+  final bool outlineOnly;
   final Future<List<ReaderPageBookmark>> Function() loadBookmarks;
   final Future<List<ReaderOutlineEntry>> Function() loadOutline;
   final ValueChanged<ReaderPageBookmark> onBookmark;
-  final Future<void> Function(int page) removeBookmark;
+  final Future<void> Function(int page) toggleBookmark;
   final ValueChanged<int> onPage;
   final Widget Function(BuildContext context, int page) thumbnailBuilder;
   @override
@@ -34,40 +37,35 @@ class ReaderDocumentNavigator extends StatefulWidget {
       _ReaderDocumentNavigatorState();
 }
 
-class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator>
-    with SingleTickerProviderStateMixin {
-  late final _tabs = TabController(length: 3, vsync: this)
-    ..addListener(_tabChanged);
-  late Future<List<ReaderPageBookmark>> _bookmarks = widget.loadBookmarks();
+class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator> {
+  late Future<List<ReaderPageBookmark>> _bookmarks;
   Future<List<ReaderOutlineEntry>>? _outline;
-  int _tab = 0;
-  bool _busy = false;
-
-  void _tabChanged() {
-    if (!mounted || _tab == _tabs.index) return;
-    if (_tabs.index == 1 && _outline == null) {
+  bool _busy = false, _onlyBookmarks = false;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.outlineOnly) {
       _outline = widget.loadOutline();
-      _outline!.ignore();
+    } else {
+      _bookmarks = widget.loadBookmarks();
     }
-    setState(() => _tab = _tabs.index);
   }
 
   void _reloadBookmarks() {
     final next = widget.loadBookmarks();
-    next.ignore();
     setState(() {
       _bookmarks = next;
     });
   }
 
-  Future<void> _remove(int page) async {
+  Future<void> _toggle(int page) async {
     setState(() => _busy = true);
     try {
-      await widget.removeBookmark(page);
+      await widget.toggleBookmark(page);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('페이지 북마크를 삭제하지 못했습니다.')));
+            const SnackBar(content: Text('페이지 북마크를 변경하지 못했습니다.')));
       }
     } finally {
       if (mounted) {
@@ -82,8 +80,7 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator>
         Text(message),
         TextButton(onPressed: retry, child: const Text('다시 시도'))
       ]));
-
-  Widget _bookmarkList() => FutureBuilder<List<ReaderPageBookmark>>(
+  Widget _preview() => FutureBuilder<List<ReaderPageBookmark>>(
       future: _bookmarks,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -93,30 +90,42 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator>
           return _failure(
               '페이지 북마크를 읽지 못했습니다. 기록은 변경하지 않았습니다.', _reloadBookmarks);
         }
-        final bookmarks = snapshot.data!;
-        if (bookmarks.isEmpty) {
-          return const Center(
-              child: Text('저장한 페이지가 없습니다. 읽기 화면의 북마크 버튼으로 추가하세요.'));
-        }
-        return ListView.builder(
-            itemCount: bookmarks.length,
-            itemBuilder: (context, index) {
-              final bookmark = bookmarks[index];
-              return ListTile(
-                  title: Text('${bookmark.page}쪽'),
-                  leading: IconButton(
-                      tooltip: '북마크로 이동: ${bookmark.page}쪽',
-                      icon: const Icon(Icons.bookmark),
-                      onPressed:
-                          _busy ? null : () => widget.onBookmark(bookmark)),
-                  onTap: _busy ? null : () => widget.onBookmark(bookmark),
-                  trailing: IconButton(
-                      tooltip: '${bookmark.page}쪽 북마크 삭제',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: _busy ? null : () => _remove(bookmark.page)));
-            });
+        final bookmarks = {for (final b in snapshot.data!) b.page: b};
+        return Column(children: [
+          Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilterChip(
+                    label: Text('북마크만 (${bookmarks.length})'),
+                    selected: _onlyBookmarks,
+                    onSelected: (value) =>
+                        setState(() => _onlyBookmarks = value)),
+                const Text('각 페이지의 별표로 저장·해제'),
+              ]),
+          Expanded(
+              child: _onlyBookmarks && bookmarks.isEmpty
+                  ? const Center(child: Text('저장한 페이지가 없습니다.'))
+                  : _ThumbnailGrid(
+                      key: ValueKey(_onlyBookmarks),
+                      pages: _onlyBookmarks
+                          ? bookmarks.keys.toList()
+                          : List.generate(widget.pageCount, (i) => i + 1),
+                      currentPage: widget.currentPage,
+                      builder: widget.thumbnailBuilder,
+                      bookmarks: bookmarks,
+                      busy: _busy,
+                      onToggle: _toggle,
+                      onPage: (page) {
+                        final bookmark = bookmarks[page];
+                        if (bookmark != null) {
+                          widget.onBookmark(bookmark);
+                        } else {
+                          widget.onPage(page);
+                        }
+                      })),
+        ]);
       });
-
   Widget _outlineList() => FutureBuilder<List<ReaderOutlineEntry>>(
       future: _outline,
       builder: (context, snapshot) {
@@ -159,57 +168,41 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator>
       });
 
   @override
-  void dispose() {
-    _tabs.removeListener(_tabChanged);
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) => Column(children: [
         Row(children: [
-          const Expanded(
+          Expanded(
               child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('문서 탐색',
-                      style: TextStyle(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(widget.outlineOnly ? '문서 목차' : '미리보기·북마크',
+                      style: const TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold)))),
           IconButton(
-              tooltip: '문서 탐색 닫기',
+              tooltip: widget.outlineOnly ? '문서 목차 닫기' : '미리보기·북마크 닫기',
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.close))
         ]),
         const Text('PDF 파일 기준 페이지 번호입니다.'),
-        TabBar(controller: _tabs, tabs: const [
-          Tab(text: '내 북마크'),
-          Tab(text: '문서 목차'),
-          Tab(text: '미리보기')
-        ]),
         if (_busy) const LinearProgressIndicator(),
-        Expanded(
-            child: TabBarView(controller: _tabs, children: [
-          _bookmarkList(),
-          _tab == 1 ? _outlineList() : const SizedBox.shrink(),
-          _tab == 2
-              ? _ThumbnailGrid(
-                  pageCount: widget.pageCount,
-                  currentPage: widget.currentPage,
-                  builder: widget.thumbnailBuilder,
-                  onPage: widget.onPage)
-              : const SizedBox.shrink(),
-        ])),
+        Expanded(child: widget.outlineOnly ? _outlineList() : _preview()),
       ]);
 }
 
 class _ThumbnailGrid extends StatefulWidget {
   const _ThumbnailGrid(
-      {required this.pageCount,
+      {super.key,
+      required this.pages,
       required this.currentPage,
       required this.builder,
-      required this.onPage});
-  final int pageCount, currentPage;
+      required this.onPage,
+      required this.bookmarks,
+      required this.busy,
+      required this.onToggle});
+  final List<int> pages;
+  final int currentPage;
+  final Map<int, ReaderPageBookmark> bookmarks;
+  final bool busy;
   final Widget Function(BuildContext, int) builder;
-  final ValueChanged<int> onPage;
+  final ValueChanged<int> onPage, onToggle;
   @override
   State<_ThumbnailGrid> createState() => _ThumbnailGridState();
 }
@@ -226,21 +219,23 @@ class _ThumbnailGridState extends State<_ThumbnailGrid> {
   Widget build(BuildContext context) =>
       LayoutBuilder(builder: (context, constraints) {
         final columns = (constraints.maxWidth / 180).floor().clamp(1, 3);
+        final index = widget.pages.indexOf(widget.currentPage);
         _scroll ??= ScrollController(
-            initialScrollOffset: ((widget.currentPage - 1) ~/ columns) * 250.0);
+            initialScrollOffset: (index < 0 ? 0 : index ~/ columns) * 250.0);
         return GridView.builder(
             controller: _scroll,
             scrollCacheExtent: const ScrollCacheExtent.pixels(0),
             addAutomaticKeepAlives: false,
             padding: const EdgeInsets.all(12),
-            itemCount: widget.pageCount,
+            itemCount: widget.pages.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
                 mainAxisExtent: 240,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10),
             itemBuilder: (context, index) {
-              final page = index + 1;
+              final page = widget.pages[index];
+              final saved = widget.bookmarks.containsKey(page);
               return Card(
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -249,17 +244,27 @@ class _ThumbnailGridState extends State<_ThumbnailGrid> {
                               ? Theme.of(context).colorScheme.primary
                               : Colors.transparent,
                           width: 2)),
-                  child: InkWell(
-                      onTap: () => widget.onPage(page),
-                      child: Column(children: [
-                        Expanded(
+                  child: Column(children: [
+                    Expanded(
+                        child: InkWell(
+                            onTap: () => widget.onPage(page),
                             child: Padding(
                                 padding: const EdgeInsets.all(6),
-                                child: widget.builder(context, page))),
-                        TextButton(
-                            onPressed: () => widget.onPage(page),
-                            child: Text('$page쪽으로 이동')),
-                      ])));
+                                child: widget.builder(context, page)))),
+                    Row(children: [
+                      Expanded(
+                          child: TextButton(
+                              onPressed: () => widget.onPage(page),
+                              child: Text('$page쪽으로 이동'))),
+                      IconButton(
+                          tooltip: '$page쪽 북마크 ${saved ? '해제' : '추가'}',
+                          isSelected: saved,
+                          icon: const Icon(Icons.star_border),
+                          selectedIcon: const Icon(Icons.star),
+                          onPressed:
+                              widget.busy ? null : () => widget.onToggle(page))
+                    ]),
+                  ]));
             });
       });
 }

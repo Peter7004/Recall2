@@ -51,6 +51,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   List<ReaderPageBookmark> _pageBookmarks = [];
   bool _bookmarksReadable = false;
   bool _bookmarkBusy = false;
+  bool _highlightAll = false;
 
   Future<List<ReaderPageBookmark>> _bookmarksFor(String id) async {
     final bookmarks = await (await _getRepository()).pageBookmarks(id);
@@ -82,9 +83,19 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     }
   }
 
-  Future<void> _removePageBookmark(String id, int page) async {
-    final bookmarks =
-        await (await _getRepository()).removePageBookmark(id, page);
+  Future<void> _togglePreviewBookmark(String id, int page) async {
+    if (!mounted || id != _documentId || !_controller.isReady) return;
+    final position = page == _page
+        ? _capture()
+        : ReaderProgress(
+            page: page,
+            x: .5,
+            y: .5,
+            zoom: _controller.minScale,
+            paged: _paged);
+    if (position == null) return;
+    final bookmarks = await (await _getRepository())
+        .togglePageBookmark(id, ReaderPageBookmark.fromProgress(position));
     if (mounted && id == _documentId) {
       setState(() => _pageBookmarks = bookmarks);
     }
@@ -115,7 +126,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     }
   }
 
-  Future<void> _showDocumentNavigator() async {
+  Future<void> _showDocumentNavigator({bool outlineOnly = false}) async {
     if (!_ready || !_controller.isReady) return;
     final id = _documentId!;
     final document = _controller.document;
@@ -134,8 +145,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                     child: ReaderDocumentNavigator(
                       pageCount: document.pages.length,
                       currentPage: _page,
+                      outlineOnly: outlineOnly,
                       loadBookmarks: () => _bookmarksFor(id),
-                      removeBookmark: (page) => _removePageBookmark(id, page),
+                      toggleBookmark: (page) =>
+                          _togglePreviewBookmark(id, page),
                       onBookmark: (bookmark) {
                         close();
                         unawaited(_goBookmark(id, bookmark));
@@ -696,9 +709,25 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           ? Icons.bookmark
                           : Icons.bookmark_border)),
                   IconButton(
-                      tooltip: '문서 탐색',
-                      onPressed: _ready ? _showDocumentNavigator : null,
-                      icon: const Icon(Icons.menu_book_outlined)),
+                      tooltip: '미리보기·북마크',
+                      onPressed: _ready ? () => _showDocumentNavigator() : null,
+                      icon: const Icon(Icons.grid_view_outlined)),
+                  IconButton(
+                      tooltip: '문서 목차',
+                      onPressed: _ready
+                          ? () => _showDocumentNavigator(outlineOnly: true)
+                          : null,
+                      icon: const Icon(Icons.format_list_bulleted)),
+                  IconButton(
+                      tooltip: _highlightAll
+                          ? '커서를 올릴 때만 강조로 전환'
+                          : '사전 단어 항상 강조로 전환',
+                      isSelected: _highlightAll,
+                      onPressed: _ready
+                          ? () => setState(() => _highlightAll = !_highlightAll)
+                          : null,
+                      icon: const Icon(Icons.highlight_alt_outlined),
+                      selectedIcon: const Icon(Icons.highlight)),
                 ]),
           Expanded(
               child: _bytes == null
@@ -728,6 +757,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           pageOverlaysBuilder: (context, rect, page) => [
                             Positioned.fill(
                                 child: TermHoverRegion(
+                                    highlightAll: _highlightAll,
                                     key: ValueKey(
                                         (_documentId, page.pageNumber)),
                                     cacheKey: (
