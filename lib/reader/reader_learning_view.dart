@@ -7,12 +7,14 @@ class ReaderLearningView extends StatefulWidget {
   const ReaderLearningView(
       {super.key,
       required this.store,
-      required this.documentIds,
+      required this.availableDocumentIds,
       required this.cardById,
       required this.onSource,
-      this.currentDocumentId});
+      this.currentDocumentId,
+      this.dictionaryChanges});
   final ReaderLearningStore store;
-  final Set<String> documentIds;
+  final Set<String> availableDocumentIds;
+  final Listenable? dictionaryChanges;
   final String? currentDocumentId;
   final RecallCard? Function(String id) cardById;
   final ValueChanged<ReaderOccurrence> onSource;
@@ -63,7 +65,7 @@ class _ReaderLearningViewState extends State<ReaderLearningView> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-      listenable: widget.store,
+      listenable: Listenable.merge([widget.store, widget.dictionaryChanges]),
       builder: (context, _) {
         final terms = widget.store.terms
             .where((term) =>
@@ -107,6 +109,12 @@ class _ReaderLearningViewState extends State<ReaderLearningView> {
                       itemBuilder: (context, index) {
                         final term = terms[index];
                         final card = widget.cardById(term.cardId);
+                        // Use one coherent source, including deliberately empty
+                        // current fields. Never fill gaps with obsolete text.
+                        final definition =
+                            card?.definitionEn ?? term.definition;
+                        final explanation =
+                            card?.explanationKo ?? term.explanation;
                         final sources = widget.store.occurrencesFor(term.cardId,
                             documentId:
                                 _onlyCurrent ? widget.currentDocumentId : null);
@@ -114,30 +122,36 @@ class _ReaderLearningViewState extends State<ReaderLearningView> {
                             key: ValueKey(term.cardId),
                             maintainState: false,
                             title: Text(card?.displayTerm ?? term.term),
-                            subtitle: Text(card?.meaning ?? term.meaning),
+                            subtitle:
+                                Text(card?.primaryMeaning ?? term.meaning),
                             leading: const Icon(Icons.school_outlined),
                             children: [
-                              if (term.definition.isNotEmpty)
+                              Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Text(card == null
+                                      ? '현재 사전 항목을 찾을 수 없어 저장 당시 정보를 표시합니다.'
+                                      : '현재 사전 정보')),
+                              if (definition.isNotEmpty)
                                 Padding(
                                     padding: const EdgeInsets.all(12),
-                                    child: Text(term.definition)),
-                              if (term.explanation.isNotEmpty)
+                                    child: Text(definition)),
+                              if (explanation.isNotEmpty)
                                 Padding(
                                     padding: const EdgeInsets.all(12),
-                                    child: Text(term.explanation)),
+                                    child: Text(explanation)),
                               for (final (index, source) in sources.indexed)
                                 ListTile(
                                     title: Text(
                                         '${source.documentTitle} · ${source.page}쪽'),
                                     subtitle: Text(
-                                        '${source.context}${widget.documentIds.contains(source.documentId) ? '' : '\n문서가 삭제되었거나 접근할 수 없습니다.'}'),
+                                        '${source.context}${widget.availableDocumentIds.contains(source.documentId) ? '' : '\n문서가 삭제되었거나 접근할 수 없습니다.'}'),
                                     trailing: IconButton(
                                         key: ValueKey(
                                             'reader-source-${source.id}'),
                                         tooltip:
                                             '원문으로 이동: ${source.documentTitle} · ${source.page}쪽 · 위치 ${index + 1}',
                                         icon: const Icon(Icons.open_in_new),
-                                        onPressed: widget.documentIds
+                                        onPressed: widget.availableDocumentIds
                                                 .contains(source.documentId)
                                             ? () => widget.onSource(source)
                                             : null)),

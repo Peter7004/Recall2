@@ -5,6 +5,30 @@ Latest runtime: bd3ee40ae63f4a3916ac64e48dfea90fa14093f4 (pushed; web/Android CI
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
+## Active module — S2 definition and source consistency
+
+Authorized continuation 2026-11-03. Scope: learning list shows all current primary
+meaning/definition/explanation fields together when dictionary entry exists; otherwise
+show explicitly labeled saved snapshot. Preserve stored snapshots and dictionary keys.
+Share managed-file availability checks between Reader list and card sources; recheck
+before source navigation. Missing bytes/damaged metadata disable links; no full-PDF
+validation/performance claim. No backup feature in this module.
+Expected files: reader_learning_view.dart, pdf_reader_page.dart,
+reader_card_sources_page.dart, library/document_repository.dart, reader_learning_store.dart; focused tests/docs.
+Implementation complete; 29 isolated tests PASS, analyze and release web build PASS.
+Existing full PDF learning/source regression PASS. Focused browser consistency smoke PASS: persisted dictionary edits/deletion and
+missing-byte navigation race; no JS errors, raw Reader snapshot unchanged.
+Initial test harness failures fixed: ASCII TEMP/TMP needed for Windows tester; grouped
+source scenarios avoid cross-test fake-clock/common-queue interference; use IconButton
+predicate rather than RawTooltip cast. Windows full native hook still lacks C++.
+Final source: retry repository creation after failure; one-pass source document IDs.
+29 tests re-PASS. Final analyze/release web build PASS (session 61410).
+Final same-source consistency browser smoke PASS (including snapshot fallback).
+Next: explicit commit/push and exact-SHA full Linux CI/public consistency smoke.
+See CONSISTENCY_VERIFICATION.md.
+For isolated tests set TEMP/TMP=C:/Users/Public/Recall-reader-test-temp. Native
+Android device testing needs connected hardware. Preserve unrelated staged copies.
+
 ## Latest completed module — S1 storage collision safety (2026-11-03)
 
 User authorized prioritization of proposed/screenshot learning features and starting

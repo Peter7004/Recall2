@@ -102,6 +102,8 @@ class ReaderLearningStore extends ChangeNotifier {
   }
 
   List<ReaderSavedTerm> get terms => List.unmodifiable(_terms.values);
+  Set<String> get sourceDocumentIds =>
+      _occurrences.values.map((source) => source.documentId).toSet();
   List<ReaderOccurrence> occurrencesFor(String cardId, {String? documentId}) =>
       List.unmodifiable(_occurrences.values.where((o) =>
           o.cardId == cardId &&

@@ -31,6 +31,26 @@ class DocumentRepository {
         return docs;
       });
 
+  /// Metadata alone is insufficient: a managed PDF may have been removed.
+  /// Check only referenced documents without reading entire PDF payloads.
+  Future<Set<String>> availableDocumentIds(Iterable<String> ids) {
+    final requested = ids.toSet();
+    return _serial(() async {
+      final docs = await storage.list();
+      final damaged = damagedEntries.map((entry) => entry.id).toSet();
+      final available = <String>{};
+      for (final doc in docs) {
+        if (!requested.contains(doc.id) || damaged.contains(doc.id)) continue;
+        try {
+          if (await storage.available(doc.id)) available.add(doc.id);
+        } catch (_) {
+          // One inaccessible file must not hide healthy sources or erase data.
+        }
+      }
+      return available;
+    });
+  }
+
   Future<({ReaderDocument document, bool duplicate})> importPdf(
           Uint8List bytes, String filename) =>
       _serial(() async {

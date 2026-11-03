@@ -11,6 +11,7 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues({});
     final store = await ReaderLearningStore.load();
+    addTearDown(store.dispose);
     final date = DateTime(2026);
     final docA = 'a' * 64, docB = 'b' * 64;
     final term = ReaderSavedTerm(
@@ -37,7 +38,7 @@ void main() {
         home: Scaffold(
             body: ReaderLearningView(
                 store: store,
-                documentIds: {docA},
+                availableDocumentIds: {docA},
                 cardById: (_) => null,
                 onSource: (s) => selected = s,
                 currentDocumentId: docA))));

@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'reader_learning.dart';
 import 'reader_learning_store.dart';
 import 'library/document_repository_factory.dart';
+import 'library/document_repository.dart';
 
 class ReaderCardSourcesPage extends StatefulWidget {
   const ReaderCardSourcesPage(
-      {super.key, required this.cardId, required this.onOpen});
+      {super.key, required this.cardId, required this.onOpen, this.repository});
   final String cardId;
+  final DocumentRepository? repository;
   final Future<void> Function(ReaderOccurrence) onOpen;
   @override
   State<ReaderCardSourcesPage> createState() => _ReaderCardSourcesPageState();
 }
 
 class _ReaderCardSourcesPageState extends State<ReaderCardSourcesPage> {
+  Future<DocumentRepository> _getRepository() async =>
+      widget.repository ?? await createDocumentRepository();
+  bool _opening = false;
   late Future<({List<ReaderOccurrence> sources, Set<String> available})> _data =
       _load();
   Future<({List<ReaderOccurrence> sources, Set<String> available})>
@@ -21,16 +26,37 @@ class _ReaderCardSourcesPageState extends State<ReaderCardSourcesPage> {
     final sources = learning.occurrencesFor(widget.cardId);
     learning.dispose();
     if (sources.isEmpty) return (sources: sources, available: <String>{});
-    final repo = await createDocumentRepository();
-    final docs = await repo.list();
-    final available = <String>{};
-    for (final doc in docs) {
-      if (sources.any((s) => s.documentId == doc.id) &&
-          await repo.storage.available(doc.id)) {
-        available.add(doc.id);
+    final repo = await _getRepository();
+    final available = await repo
+        .availableDocumentIds(sources.map((source) => source.documentId));
+    return (sources: sources, available: available);
+  }
+
+  Future<void> _open(ReaderOccurrence source) async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    try {
+      final repo = await _getRepository();
+      if (!(await repo.availableDocumentIds([source.documentId]))
+          .contains(source.documentId)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('문서가 삭제되었거나 접근할 수 없습니다. 원본 PDF를 다시 가져와 주세요.')));
+        }
+        return;
+      }
+      if (mounted) await widget.onOpen(source);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('원문을 열지 못했습니다. 기존 학습 기록은 유지했습니다.')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _opening = false);
+        _reload();
       }
     }
-    return (sources: sources, available: available);
   }
 
   void _reload() {
@@ -75,13 +101,8 @@ class _ReaderCardSourcesPageState extends State<ReaderCardSourcesPage> {
                       trailing: IconButton(
                           tooltip: 'PDF 원문 열기: 위치 ${index + 1}',
                           icon: const Icon(Icons.open_in_new),
-                          onPressed: available
-                              ? () async {
-                                  await widget.onOpen(source);
-                                  if (mounted) {
-                                    _reload();
-                                  }
-                                }
+                          onPressed: available && !_opening
+                              ? () => _open(source)
                               : null));
                 });
           }));

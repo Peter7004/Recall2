@@ -203,3 +203,14 @@
 - Permanent release APK unchanged; CI APK uses temporary test signer.
 - Next first unfinished module: P1 latest/snapshot definition and source availability
   consistency; not implemented yet. Full learning-feature plan preserves all ten suggestions.
+
+## 2026-11-03 — S2 consistency local implementation
+
+- Current dictionary primary meaning/definition/explanation shown together; missing
+  entries use labeled saved snapshots. Empty edits never revive outdated fields.
+- Shared managed-file availability, isolated per-file failures, navigation recheck,
+  duplicate-click guard and reported open failures. No storage key/data migration.
+- 29 isolated tests and existing real PDF learning smoke PASS. Focused browser
+  persisted edit/delete + IndexedDB missing bytes flow PASS; snapshots unchanged.
+- Initial tester/temp/fake-clock/locator issues resolved and documented. Final
+  analyze/build then scoped source commit and CI/public validation remain.

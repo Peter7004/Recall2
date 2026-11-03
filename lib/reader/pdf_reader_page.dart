@@ -155,7 +155,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     try {
       final learning = await _getLearning();
       await learning.refresh();
-      final docs = await (await _getRepository()).list();
+      final available = await (await _getRepository())
+          .availableDocumentIds(learning.sourceDocumentIds);
       if (!mounted) return;
       await showModalBottomSheet<void>(
           context: context,
@@ -167,7 +168,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                       MediaQuery.sizeOf(sheetContext).height * .85, 900),
                   child: ReaderLearningView(
                       store: learning,
-                      documentIds: docs.map((d) => d.id).toSet(),
+                      availableDocumentIds: available,
+                      dictionaryChanges: widget.store,
                       currentDocumentId: _documentId,
                       cardById: (id) => widget.store?.cardById(id),
                       onSource: (source) {
@@ -251,6 +253,13 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     if (_opening || _pendingSource != null) return;
     final originId = _documentId, origin = _capture();
     try {
+      final repo = await _getRepository();
+      if (!(await repo.availableDocumentIds([source.documentId]))
+          .contains(source.documentId)) {
+        throw const DocumentStorageException(
+            '문서가 삭제되었거나 접근할 수 없습니다. 원본 PDF를 다시 가져와 주세요.');
+      }
+      if (!mounted) return;
       await _save();
       if (source.documentId != _documentId) {
         setState(() => _opening = true);
