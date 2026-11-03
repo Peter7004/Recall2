@@ -106,3 +106,13 @@
   screenshot showed correct UI. Corrected aria-label assertion now PASS.
 - Full Windows tests blocked before cases by missing C++ toolchain. Full Linux CI
   pending push; Android physical-device and large-PDF behavior NOT TESTED.
+
+## 2026-11-03 — P3 shipped and builds confirmed
+
+- Source feecf59980b9562fa8c3ce30af89a6fbe1ece7b0 pushed to main.
+- Web 41550906107 and Android test APK 41550905838 both SUCCESS, including full
+  Linux tests and analyze. Public P3 real PDF smoke PASS in the deployed app.
+- Narrow 360px canvas physical click saves bookmark and opens navigator. Activated
+  web semantics pointer click is intercepted; accessibility path remains unresolved.
+- Android device, large PDF and production release signing NOT TESTED/unchanged.
+- P4 selected-word occurrence storage is next; no P4 source implemented yet.

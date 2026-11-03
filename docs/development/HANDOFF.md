@@ -35,15 +35,20 @@ preservation, nested outline destination, rendered thumbnail navigation, restart
 independent documents, absent outline, delete warning/cancel/cleanup and unchanged
 vocabulary JSON. Existing navigation/library/hover regression smoke PASS.
 Full Windows tests FAIL before execution (missing native C++ toolchain).
-Android device behavior NOT TESTED. Full Linux CI/builds pending P3 push.
+P3 full Linux tests and analyze PASS in both CI workflows. Web deployment
+41550906107 and Android test APK 41550905838 both completed SUCCESS.
+Android device behavior NOT TESTED. Public P3 smoke PASS (same complete flow).
+360px web: physical canvas star click/navigation sheet PASS; automated semantics
+pointer click intercepted by another semantics node. Narrow semantics issue remains
+unresolved; not an Android result. Record in P3_VERIFICATION.md.
 
 ## Next concrete action
 
-1. Commit only explicit P3 source/test/tool/docs paths and push main. Preserve all
-   unrelated staged Korean copy files. Do not commit generated PDF fixtures.
-2. Record exact source SHA and GitHub web/Android run IDs here. Confirm full Linux
-   tests, web deployment and Android test-APK compilation separately. Build success
-   does not prove device behavior; production signed APK is not updated by this CI.
+1. P3 COMPLETE: feecf59980b9562fa8c3ce30af89a6fbe1ece7b0. Web run 41550906107
+   and Android test APK run 41550905838 both SUCCESS. Full Linux tests and analyze
+   PASS in both; public P3 smoke PASS. Production signed APK is not updated here.
+2. Before P4 read this record, roadmap and actual git/code. Ignore unrelated staged
+   Korean copies. Keep dictionary and occurrence storage separate. No AI or OCR.
 3. P4 next: save selected dictionary terms with document/page/geometry, separating
    word identity from occurrences. No P4 runtime implemented yet. Preserve existing
    dictionary key recall.data.v3 and all learning records. See P3_VERIFICATION.md.
