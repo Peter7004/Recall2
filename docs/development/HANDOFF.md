@@ -1,11 +1,11 @@
 # Reader handoff — start here
 
 Updated: 2026-11-03 (Asia/Seoul). Branch main.
-Latest runtime: 55937793390517cfef02f410a8b65260e45e6633 (pushed).
+Latest runtime: bd3ee40ae63f4a3916ac64e48dfea90fa14093f4 (pushed; web/Android CI verified).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
-## Active module — storage collision safety (2026-11-03)
+## Latest completed module — S1 storage collision safety (2026-11-03)
 
 User authorized prioritization of proposed/screenshot learning features and starting
 highest priority. P0 is preventing Reader record loss/resurrection across independently
@@ -15,22 +15,30 @@ Web Locks for cooperative cross-tab writers, explicit refusal when safe locking 
 unavailable, and refresh other instances/tabs. Preserve deletion semantics: no blind
 merging stale snapshots. Validate two-store concurrent saves, deletion resurrection,
 write failure, corrupt snapshot, real two-tab browser scenarios and existing workflows.
-Priority review in LEARNING_FEATURE_PRIORITIES.md (being drafted independently).
+Priority review complete in LEARNING_FEATURE_PRIORITIES.md.
 Guard/coordinator + read-latest mutation and cross-instance refresh implemented.
 Existing key/schema retained. Web unsupported-lock writes explicitly refused.
 Reader auto-bookmark link also refuses stale dictionary snapshots, avoiding v3
 clobbering during simultaneous Reader saves. This does NOT serialize every legacy
 manual dictionary edit across tabs; that remains outside this scoped repair.
-45 isolated regression tests PASS; analyze/release web build PASS (new test-only
-style cleanup being rechecked). Real two-tab test PASS for held-lock serialized
+45 isolated regression tests PASS; analyze/release web build PASS. Real two-tab test PASS for held-lock serialized
 writes, suppression-resistant deletion handling and unsupported lock refusal.
 An already open learning list also receives storage-event removal/addition live.
 Final two-tab + existing learning/source-return flow PASS on localhost:5206.
 See STORAGE_SAFETY_VERIFICATION.md for guarantees and limits.
-Next: explicit owned-file commit/push, exact-SHA full Linux CI and public
-two-tab safety smoke. Keep historical results separate from new CI results. Reload old app tabs before relying on
-new protocol: old code ignoring the lock cannot be coordinated.
-Old runtime verification below is historical until new source/builds pass.
+Source committed/pushed as bd3ee40ae63f4a3916ac64e48dfea90fa14093f4.
+Exact-SHA CI: web 41653024597 SUCCESS (full tests/analyze/build/deploy).
+Android 41653024525 SUCCESS: full tests/analyze/build and test APK artifact.
+Temporary test signer only; permanent production download APK unchanged.
+Public two-tab safety smoke PASS: held lock, live removal/addition, stale-tab
+delete preservation, retry bookmark and unsupported-lock refusal. No JS errors.
+adb devices reports no device; native device behavior NOT TESTED.
+Next concrete action: inspect ReaderLearningView definition resolution and
+ReaderCardSourcesPage document availability checks, then implement P1 definition/
+snapshot and source-availability consistency as a separate module. Not started.
+No unfinished S1 source changes remain. Reload ALL old app tabs before using the new protocol.
+Old code ignoring the lock cannot be coordinated.
+Historical P4/P5 verification below is preserved separately from S1 results.
 
 ## Current state — COMPLETE through P4/P5
 
@@ -99,9 +107,9 @@ See P4_P5_VERIFICATION.md for scope and limitations.
 - SDK C:/Users/Public/Recall-flutter-sdk (3.47.6); cache
   C:/Users/Public/Recall-reader-pub-cache; Android SDK
   C:/Users/Public/BeforeAfterAndroidToolchain/sdk. No Windows platform scaffold.
-- Full audit C:/Users/Public/Recall-reader-learning-20261103; isolated no-pdfrx
+- Current full audit C:/Users/Public/Recall-reader-safety-20261103; isolated no-pdfrx
   harness C:/Users/Public/Recall-p3-unit-20261103 is not a whole-app build.
-- Local localhost:5205/Recall2 server was stopped. Recreate from audit/serve;
+- Local localhost:5206/Recall2 server was stopped. Recreate from audit/serve;
   Recall2 junction points to audit/build/web. Exclude Korean copy files when syncing.
 - Scripts: reader_learning_smoke.cjs, reader_library_smoke.cjs,
   reader_navigation_smoke.cjs, reader_document_navigator_smoke.cjs,

@@ -189,3 +189,17 @@
   live refresh, suppressed-event stale save, unsupported lock refusal and existing
   PDF learning/source-return workflow PASS. Initial inactive-tab automation fixed.
 - Commit/push and exact-SHA full Linux CI/public verification next.
+
+## 2026-11-03 — S1 storage safety deployed / verified
+
+- Source bd3ee40ae63f4a3916ac64e48dfea90fa14093f4 pushed. Web 41653024597 and
+  Android test APK 41653024525 SUCCESS: full Linux tests/analyze and platform builds.
+- Public two-tab safety smoke PASS: held-lock serialization, live additions/removals,
+  no stale deletion resurrection, safe bookmark retry and unsupported-lock refusal.
+  No JS runtime errors. Local existing PDF learning/source-return regression PASS.
+- 45 isolated tests, 8 startup tests and CSV hash preservation PASS. Final snapshot
+  manifests verified. Android device NOT TESTED (adb empty); native multi-process,
+  large PDFs and mixed old/new writer versions NOT TESTED. Old tabs must reload.
+- Permanent release APK unchanged; CI APK uses temporary test signer.
+- Next first unfinished module: P1 latest/snapshot definition and source availability
+  consistency; not implemented yet. Full learning-feature plan preserves all ten suggestions.

@@ -12,7 +12,7 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 | P3a | DONE | Direct preview/bookmark grid with per-page stars/filter, separate outline entry, toggle always-on dictionary highlights versus hover-only. 19 isolated tests, full Linux CI, web deployment/public smoke and Android test APK build PASS; device tests NOT TESTED. |
 | P4 | DONE | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
 | P5 | DONE | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |
-| S1 | LOCAL VERIFICATION COMPLETE; CI PENDING | Priority P0 Reader store/tab collision safety, live refresh and stale dictionary auto-bookmark refusal. See STORAGE_SAFETY_VERIFICATION.md. |
+| S1 | DONE | Priority P0 Reader store/tab collision safety, live refresh and stale dictionary auto-bookmark refusal. 45 isolated tests, full Linux CI web 41653024597 / Android test APK 41653024525 and public two-tab smoke PASS. Device NOT TESTED. See STORAGE_SAFETY_VERIFICATION.md. |
 | P6 | PLANNED | Large-document performance and accessibility. Obtain real PDF fixtures and test Galaxy S25 Ultra; do not invent device or 100MB/500-page results. |
 
 Existing baseline 6bfce4a: text PDF selection/lookup, continuous and horizontal

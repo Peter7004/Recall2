@@ -61,3 +61,14 @@ reader_storage_safety_smoke.cjs 실행. 외부 Playwright는 RECALL_PLAYWRIGHT_M
 
 GitHub 전체 테스트/배포 및 공개 웹 확인은 정확한 소스 SHA와 실행 번호로
 HANDOFF.md에 이어 기록한다. 완료 전에는 성공으로 추정하지 않는다.
+
+## 소스 및 공개 웹 검증
+
+- 소스: `bd3ee40ae63f4a3916ac64e48dfea90fa14093f4`
+- PASS: [웹 CI 41653024597](https://github.com/Peter7004/Recall2/actions/runs/41653024597): 전체 Flutter 테스트·analyze·빌드·Pages 배포.
+- PASS: 공개 웹 주소에서도 실제 공유 컨텍스트 두 탭의 모든 안전성 시나리오 및 JS 오류 없음 확인.
+- PASS: 기존 시작 화면 Node 테스트 8개, 기본 CSV SHA-256 기존 값 유지.
+- NOT TESTED: 현재 adb에 연결된 기기 없음. Windows 전체 Flutter 테스트는 Visual Studio C++ 네이티브 도구 미설치로 실행 불가; 격리 테스트와 Linux 전체 테스트를 구분한다.
+
+- PASS: [Android CI 41653024525](https://github.com/Peter7004/Recall2/actions/runs/41653024525): 같은 소스의 전체 Flutter 테스트·analyze·테스트 APK 빌드·artifact 업로드. 임시 테스트 서명이며 영구 서명 APK 다운로드는 변경하지 않음.
+- 다음 미완료 작업: 정의/스냅샷 및 원문 링크 접근 판정 통일(P1).
