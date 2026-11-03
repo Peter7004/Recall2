@@ -20,9 +20,16 @@ import 'page_bookmark.dart';
 import 'document_navigator.dart';
 import 'pdf_thumbnail.dart';
 import 'thumbnail_queue.dart';
+import 'reader_learning.dart';
+import 'reader_learning_store.dart';
+import 'reader_learning_view.dart';
+import 'reader_source.dart';
+import 'reader_settings.dart';
 
 class PdfReaderPage extends StatefulWidget {
-  const PdfReaderPage({super.key, this.store, this.repository});
+  const PdfReaderPage(
+      {super.key, this.store, this.repository, this.initialSource});
+  final ReaderOccurrence? initialSource;
   final RecallStore? store;
   final DocumentRepository? repository;
 
@@ -52,6 +59,305 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   bool _bookmarksReadable = false;
   bool _bookmarkBusy = false;
   bool _highlightAll = false;
+  bool _defaultPaged = false;
+  int _settingsEpoch = 0;
+  Future<void> _settingsWrites = Future.value();
+  Future<ReaderLearningStore>? _learningFuture;
+  ReaderLearningStore? _learning;
+  Map<int, List<ReaderOccurrence>> _savedByPage = {};
+  final Map<int, TermAnalysisState> _analysis = {};
+  int _analysisRetry = 0;
+  int _restoreGeneration = 0;
+  bool _termSaving = false;
+  List<PdfPageTextRange> _selectionRanges = const [];
+  ReaderOccurrence? _pendingSource;
+  ({String id, ReaderProgress position})? _returnPoint;
+
+  Future<void> _loadSettings() async {
+    final epoch = _settingsEpoch;
+    try {
+      final settings = await ReaderSettings.load();
+      if (!mounted || epoch != _settingsEpoch) return;
+      setState(() {
+        _highlightAll = settings.highlightAll;
+        _defaultPaged = settings.paged;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('표시 설정을 읽지 못했습니다. 기본 설정으로 표시합니다.')));
+      }
+    }
+  }
+
+  void _saveSettings() {
+    _settingsEpoch++;
+    final settings =
+        ReaderSettings(highlightAll: _highlightAll, paged: _defaultPaged);
+    _settingsWrites =
+        _settingsWrites.then((_) => settings.save()).catchError((Object _) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('표시 설정을 저장하지 못했습니다.')));
+      }
+    });
+  }
+
+  void _toggleHighlight() {
+    setState(() {
+      _highlightAll = !_highlightAll;
+      _analysis.clear();
+    });
+    _saveSettings();
+  }
+
+  Future<void> _initializeLearning() async {
+    try {
+      await _getLearning();
+    } catch (_) {
+      /* Explicit access reports errors without overwriting records. */
+    }
+  }
+
+  Future<ReaderLearningStore> _getLearning() async {
+    try {
+      final learning = await (_learningFuture ??= ReaderLearningStore.load());
+      if (mounted && !identical(_learning, learning)) {
+        _learning = learning;
+        learning.addListener(_learningChanged);
+        _learningChanged();
+      }
+      return learning;
+    } catch (_) {
+      _learningFuture = null;
+      rethrow;
+    }
+  }
+
+  void _learningChanged() {
+    if (!mounted) return;
+    final byPage = <int, List<ReaderOccurrence>>{};
+    if (_documentId != null) {
+      for (final source in _learning?.occurrencesForDocument(_documentId!) ??
+          <ReaderOccurrence>[]) {
+        (byPage[source.page] ??= []).add(source);
+      }
+    }
+    setState(() => _savedByPage = byPage);
+  }
+
+  Future<void> _showLearning() async {
+    try {
+      final learning = await _getLearning();
+      final docs = await (await _getRepository()).list();
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          constraints: const BoxConstraints(maxWidth: 720),
+          builder: (sheetContext) => SafeArea(
+              child: SizedBox(
+                  height: math.min(
+                      MediaQuery.sizeOf(sheetContext).height * .85, 900),
+                  child: ReaderLearningView(
+                      store: learning,
+                      documentIds: docs.map((d) => d.id).toSet(),
+                      currentDocumentId: _documentId,
+                      cardById: (id) => widget.store?.cardById(id),
+                      onSource: (source) {
+                        Navigator.pop(sheetContext);
+                        unawaited(_openSource(source));
+                      }))));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('저장한 단어 기록을 읽지 못했습니다. 기존 기록은 변경하지 않았습니다.')));
+      }
+    }
+  }
+
+  Future<void> _saveTerm(ReaderTermMatch match) async {
+    if (_termSaving || !_ready || !_controller.isReady || _documentId == null) {
+      return;
+    }
+    final id = _documentId!;
+    List<ReaderOccurrence> sources;
+    try {
+      sources = captureReaderOccurrences(
+          ranges: _selectionRanges,
+          document: _controller.document,
+          lookup: _terminology,
+          cardId: match.concept.card.id,
+          documentId: id,
+          documentTitle: _name);
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('원문 위치를 읽지 못했습니다. 해당 용어를 다시 선택해 주세요.')));
+      return;
+    }
+    if (sources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('정확한 원문 위치를 확인하지 못했습니다. 해당 용어를 다시 선택해 주세요.')));
+      return;
+    }
+    final card = match.concept.card;
+    setState(() => _termSaving = true);
+    try {
+      final learning = await _getLearning();
+      await learning.save(
+          ReaderSavedTerm(
+              cardId: card.id,
+              term: card.displayTerm,
+              meaning: card.meaning,
+              definition: card.definitionEn,
+              explanation: card.explanationKo,
+              createdAt: DateTime.now()),
+          sources);
+      try {
+        await widget.store?.ensureBookmarked(card.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('단어와 원문 위치를 저장했습니다.')));
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'Reader 단어와 출처는 저장됐지만 기존 단어 북마크를 저장하지 못했습니다. 다시 저장해 주세요.')));
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('단어를 저장하지 못했습니다. 기존 학습 기록은 변경하지 않았습니다.')));
+      }
+    } finally {
+      if (mounted) setState(() => _termSaving = false);
+    }
+  }
+
+  Future<void> _openSource(ReaderOccurrence source) async {
+    if (_opening || _pendingSource != null) return;
+    final originId = _documentId, origin = _capture();
+    try {
+      await _save();
+      if (source.documentId != _documentId) {
+        setState(() => _opening = true);
+        final opened = await (await _getRepository()).open(source.documentId);
+        if (!mounted) return;
+        _pendingSource = source;
+        await _activate(opened.document, opened.bytes);
+      } else {
+        await _jumpToSource(source);
+      }
+      if (mounted && originId != null && origin != null) {
+        setState(() => _returnPoint = (id: originId, position: origin));
+      }
+    } catch (error) {
+      _pendingSource = null;
+      _storageError(error);
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  Future<void> _jumpToSource(ReaderOccurrence source) async {
+    if (!mounted || !_controller.isReady || _documentId != source.documentId) {
+      return;
+    }
+    if (source.page > _pages || source.rects.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('원문 위치를 표시할 수 없습니다.')));
+      return;
+    }
+    final id = _documentId;
+    await _controller.goToPage(
+        pageNumber: source.page, duration: Duration.zero);
+    if (!mounted || id != _documentId || !_controller.isReady) return;
+    final layout = _controller.layout.pageLayouts[source.page - 1];
+    final point = source.rects.first.center;
+    await _controller.goTo(
+        _controller.calcMatrixFor(
+            Offset(layout.left + layout.width * point.dx,
+                layout.top + layout.height * point.dy),
+            zoom: _controller.currentZoom),
+        duration: Duration.zero);
+    if (mounted && id == _documentId) {
+      setState(() {
+        _page = source.page;
+        _word = null;
+        _selectionRanges = const [];
+      });
+      await _save();
+    }
+  }
+
+  Future<void> _finishRestore() async {
+    try {
+      await _restorePosition();
+      final pending = _pendingSource;
+      if (pending != null && pending.documentId == _documentId) {
+        _pendingSource = null;
+        await _jumpToSource(pending);
+      }
+    } catch (error) {
+      _pendingSource = null;
+      _storageError(error);
+    }
+  }
+
+  Future<void> _returnToReading() async {
+    final point = _returnPoint;
+    if (point == null || _opening) return;
+    try {
+      await _save();
+      if (_documentId != point.id) {
+        setState(() => _opening = true);
+        final opened = await (await _getRepository()).open(point.id);
+        if (!mounted) return;
+        await _activate(opened.document, opened.bytes);
+      }
+      if (!mounted) return;
+      _restore = point.position;
+      setState(() {
+        _paged = point.position.paged;
+        _returnPoint = null;
+      });
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted && _controller.isReady && _ready) await _restorePosition();
+    } catch (error) {
+      _storageError(error);
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  Widget _analysisStatus() {
+    final state =
+        _analysis[_page] ?? const TermAnalysisState(TermAnalysisStatus.idle);
+    final text = switch (state.status) {
+      TermAnalysisStatus.idle => '커서를 올리면 사전 단어를 확인합니다.',
+      TermAnalysisStatus.loading => '현재 페이지의 사전 단어 분석 중…',
+      TermAnalysisStatus.ready =>
+        '현재 페이지 사전 매칭 ${state.matchCount}곳 · 저장한 위치는 초록색',
+      TermAnalysisStatus.unavailable =>
+        state.message ?? '이 페이지의 텍스트를 읽을 수 없습니다.',
+      TermAnalysisStatus.error => '단어 분석에 실패했습니다. 사전에 없는 것으로 판단하지 마세요.',
+    };
+    return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(children: [
+          Expanded(
+              child: Text(text,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis)),
+          if (state.status == TermAnalysisStatus.error)
+            TextButton(
+                onPressed: () => setState(() => _analysisRetry++),
+                child: const Text('단어 분석 재시도')),
+        ]));
+  }
 
   Future<List<ReaderPageBookmark>> _bookmarksFor(String id) async {
     final bookmarks = await (await _getRepository()).pageBookmarks(id);
@@ -204,7 +510,12 @@ class _PdfReaderPageState extends State<PdfReaderPage>
           ReaderConcept(entry.card),
       ]);
   void _dictionaryChanged() {
-    if (mounted) setState(() => _terminology = _buildTerminology());
+    if (mounted) {
+      setState(() {
+        _terminology = _buildTerminology();
+        _analysis.clear();
+      });
+    }
   }
 
   Future<DocumentRepository> _getRepository() async {
@@ -250,6 +561,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     }
     try {
       final result = await (await _getRepository()).delete(id);
+      if (mounted && _returnPoint?.id == id) {
+        setState(() => _returnPoint = null);
+      }
+      if (_pendingSource?.documentId == id) _pendingSource = null;
       if (mounted && id == _documentId) {
         _searcher.resetTextSearch();
         _query.clear();
@@ -265,6 +580,9 @@ class _PdfReaderPageState extends State<PdfReaderPage>
           _pages = 0;
           _pageBookmarks = [];
           _bookmarksReadable = false;
+          _selectionRanges = const [];
+          _savedByPage = {};
+          _analysis.clear();
         });
       }
       return result;
@@ -276,6 +594,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
 
   Future<void> _openManaged(String id) async {
     if (_opening) return;
+    _pendingSource = null;
     setState(() => _opening = true);
     try {
       await _save();
@@ -320,17 +639,22 @@ class _PdfReaderPageState extends State<PdfReaderPage>
       _bytes = bytes;
       _documentId = doc.id;
       _restore = progress;
-      _paged = progress?.paged ?? false;
+      _paged = progress?.paged ?? _defaultPaged;
       _saveErrorShown = false;
       _searchVisible = false;
       _name = doc.title;
       _word = null;
+      _selectionRanges = const [];
+      _analysis.clear();
+      _restoreGeneration++;
+      _restoring = false;
       _ready = false;
       _page = 1;
       _pages = 0;
       _pageBookmarks = bookmarks;
       _bookmarksReadable = bookmarksReadable;
     });
+    _learningChanged();
   }
 
   @override
@@ -341,6 +665,13 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     widget.store?.addListener(_dictionaryChanged);
     _controller.addListener(_positionChanged);
     _searcher.addListener(_searchChanged);
+    unawaited(_loadSettings());
+    unawaited(_initializeLearning());
+    if (widget.initialSource != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_openSource(widget.initialSource!));
+      });
+    }
   }
 
   @override
@@ -400,11 +731,18 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Future<void> _restorePosition() async {
     final progress = _restore;
     if (progress == null || !_controller.isReady) return;
+    final id = _documentId;
+    final generation = ++_restoreGeneration;
     _restoring = true;
     try {
       final page = progress.page.clamp(1, _pages);
       await _controller.goToPage(pageNumber: page, duration: Duration.zero);
-      if (!mounted || !_controller.isReady) return;
+      if (!mounted ||
+          !_controller.isReady ||
+          id != _documentId ||
+          generation != _restoreGeneration) {
+        return;
+      }
       final rect = _controller.layout.pageLayouts[page - 1];
       final zoom =
           progress.zoom.clamp(_controller.minScale, _controller.maxScale);
@@ -416,9 +754,11 @@ class _PdfReaderPageState extends State<PdfReaderPage>
           duration: Duration.zero);
       if (mounted) setState(() => _page = page);
     } finally {
-      _restore = null;
-      _restoring = false;
-      if (mounted) unawaited(_save());
+      if (id == _documentId && generation == _restoreGeneration) {
+        _restore = null;
+        _restoring = false;
+        if (mounted) unawaited(_save());
+      }
     }
   }
 
@@ -437,9 +777,11 @@ class _PdfReaderPageState extends State<PdfReaderPage>
         paged: !_paged);
     setState(() {
       _paged = !_paged;
+      _defaultPaged = _paged;
       _ready = false;
       _word = null;
     });
+    _saveSettings();
     // Keep the viewer/controller attached. Replacing the keyed viewer can let
     // the old viewer detach the shared controller after the new one attaches.
     await WidgetsBinding.instance.endOfFrame;
@@ -549,7 +891,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Timer? _selectionTimer;
 
   Widget _lookupContent(String text) {
-    final matches = _terminology.lookup(text);
+    final matches = {
+      for (final match in _terminology.lookup(text))
+        match.concept.card.id: match
+    }.values;
     return ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 240),
         child: SingleChildScrollView(
@@ -567,8 +912,19 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                             : match.concept.korean)
                         .join(' / ')),
                     for (final meaning in match.concept.card.effectiveMeanings)
-                      if (meaning.explanationKo.isNotEmpty)
-                        Text(meaning.explanationKo),
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (meaning.definitionEn.isNotEmpty)
+                              Text(meaning.definitionEn),
+                            if (meaning.explanationKo.isNotEmpty)
+                              Text(meaning.explanationKo),
+                          ]),
+                    TextButton.icon(
+                        onPressed: _termSaving ? null : () => _saveTerm(match),
+                        icon: const Icon(Icons.playlist_add),
+                        label:
+                            Text('단어 저장: ${match.concept.card.displayTerm}')),
                     if (match.concept.card.verificationStatus !=
                         VerificationStatus.verified)
                       Text(match.concept.card.verificationStatus.label),
@@ -579,6 +935,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   }
 
   Future<void> _open() async {
+    if (_opening) return;
+    _pendingSource = null;
     setState(() => _opening = true);
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -608,18 +966,27 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   void _selectionChanged(PdfTextSelection selection) {
     _selectionTimer?.cancel();
     final request = ++_selectionRequest;
+    final id = _documentId;
+    _selectionRanges = const [];
     // Keep the native selection and its highlight; do not steal focus with a dialog.
     _selectionTimer = Timer(const Duration(milliseconds: 180), () async {
       String? word;
+      var ranges = <PdfPageTextRange>[];
       try {
         if (selection.isCopyAllowed) {
-          final text = (await selection.getSelectedText()).trim();
+          ranges = await selection.getSelectedTextRanges();
+          final text = ranges.map((r) => r.text).join().trim();
           if (text.isNotEmpty && text.length <= 2000) word = text;
         }
       } catch (_) {
         word = null;
       }
-      if (mounted && request == _selectionRequest) setState(() => _word = word);
+      if (mounted && request == _selectionRequest && id == _documentId) {
+        setState(() {
+          _word = word;
+          _selectionRanges = word == null ? const [] : ranges;
+        });
+      }
     });
   }
 
@@ -634,6 +1001,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     _query.dispose();
     _selectionTimer?.cancel();
     _selectionRequest++;
+    _learning?.removeListener(_learningChanged);
+    _learning?.dispose();
     super.dispose();
   }
 
@@ -642,6 +1011,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
         appBar: AppBar(
             title: Text(_name, maxLines: 1, overflow: TextOverflow.ellipsis),
             actions: [
+              IconButton(
+                  tooltip: '저장한 단어·출처',
+                  onPressed: _opening ? null : _showLearning,
+                  icon: const Icon(Icons.school_outlined)),
               if (_ready)
                 IconButton(
                     tooltip: '본문 검색',
@@ -718,17 +1091,22 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           ? () => _showDocumentNavigator(outlineOnly: true)
                           : null,
                       icon: const Icon(Icons.format_list_bulleted)),
+                  if (_returnPoint != null)
+                    IconButton(
+                        tooltip: '이전 읽던 위치로 돌아가기',
+                        onPressed:
+                            _opening || !_ready ? null : _returnToReading,
+                        icon: const Icon(Icons.undo)),
                   IconButton(
                       tooltip: _highlightAll
                           ? '커서를 올릴 때만 강조로 전환'
                           : '사전 단어 항상 강조로 전환',
                       isSelected: _highlightAll,
-                      onPressed: _ready
-                          ? () => setState(() => _highlightAll = !_highlightAll)
-                          : null,
+                      onPressed: _ready ? _toggleHighlight : null,
                       icon: const Icon(Icons.highlight_alt_outlined),
                       selectedIcon: const Icon(Icons.highlight)),
                 ]),
+          if (_bytes != null) _analysisStatus(),
           Expanded(
               child: _bytes == null
                   ? _library()
@@ -758,6 +1136,16 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                             Positioned.fill(
                                 child: TermHoverRegion(
                                     highlightAll: _highlightAll,
+                                    retryToken: _analysisRetry,
+                                    onAnalysisChanged: (state) {
+                                      if (mounted &&
+                                          page.document.sourceName ==
+                                              _documentId &&
+                                          _analysis[page.pageNumber] != state) {
+                                        setState(() =>
+                                            _analysis[page.pageNumber] = state);
+                                      }
+                                    },
                                     key: ValueKey(
                                         (_documentId, page.pageNumber)),
                                     cacheKey: (
@@ -773,6 +1161,13 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                         : null,
                                     loadAreas: () =>
                                         loadPdfHoverAreas(page, _terminology))),
+                            if (_savedByPage[page.pageNumber] != null)
+                              Positioned.fill(
+                                  child: IgnorePointer(
+                                      child: CustomPaint(
+                                          painter: ReaderSourcePainter(
+                                              _savedByPage[
+                                                  page.pageNumber]!)))),
                           ],
                           onViewerReady: (document, controller) {
                             if (mounted && document.sourceName == _documentId) {
@@ -780,7 +1175,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                 _ready = true;
                                 _pages = document.pages.length;
                               });
-                              unawaited(_restorePosition());
+                              unawaited(_finishRestore());
                               final id = _documentId;
                               if (id != null) {
                                 unawaited(_getRepository()

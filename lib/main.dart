@@ -11,6 +11,7 @@ import 'package:recall/bundled_vocabulary.dart';
 import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
 import 'package:recall/reader/pdf_reader_page.dart';
+import 'package:recall/reader/reader_card_sources_page.dart';
 
 void main() {
   runApp(const RecallApp());
@@ -1174,6 +1175,18 @@ class _ReviewPageState extends State<ReviewPage> {
             style: TextStyle(
                 color: _ink, fontSize: 18, fontWeight: FontWeight.w700)),
         actions: [
+          IconButton(
+              tooltip: 'PDF 학습 출처',
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => ReaderCardSourcesPage(
+                          cardId: current.card.id,
+                          onOpen: (source) async => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                  builder: (_) => PdfReaderPage(
+                                      store: widget.store,
+                                      initialSource: source))))))),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: TextButton.icon(
@@ -2931,6 +2944,18 @@ class _DictionaryTermPageState extends State<_DictionaryTermPage> {
                               for (final meaning in term.effectiveMeanings)
                                 _MeaningView(meaning),
                             ])),
+                    TextButton.icon(
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('PDF 학습 출처'),
+                        onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) => ReaderCardSourcesPage(
+                                    cardId: term.id,
+                                    onOpen: (source) => Navigator.of(context)
+                                        .push(MaterialPageRoute<void>(
+                                            builder: (_) => PdfReaderPage(
+                                                store: widget.store,
+                                                initialSource: source))))))),
                     if (sources.isNotEmpty)
                       _TermSection(
                           title: '출처',

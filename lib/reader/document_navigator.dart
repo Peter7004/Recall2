@@ -40,6 +40,7 @@ class ReaderDocumentNavigator extends StatefulWidget {
 class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator> {
   late Future<List<ReaderPageBookmark>> _bookmarks;
   Future<List<ReaderOutlineEntry>>? _outline;
+  List<ReaderPageBookmark>? _lastBookmarks;
   bool _busy = false, _onlyBookmarks = false;
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator> {
 
   void _reloadBookmarks() {
     final next = widget.loadBookmarks();
+    next.ignore();
     setState(() {
       _bookmarks = next;
     });
@@ -83,15 +85,24 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator> {
   Widget _preview() => FutureBuilder<List<ReaderPageBookmark>>(
       future: _bookmarks,
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
+        if (snapshot.connectionState != ConnectionState.done &&
+            _lastBookmarks == null) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasError) {
+        if (snapshot.hasError && _lastBookmarks == null) {
           return _failure(
               '페이지 북마크를 읽지 못했습니다. 기록은 변경하지 않았습니다.', _reloadBookmarks);
         }
-        final bookmarks = {for (final b in snapshot.data!) b.page: b};
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData) {
+          _lastBookmarks = snapshot.data;
+        }
+        final bookmarks = {for (final b in _lastBookmarks!) b.page: b};
         return Column(children: [
+          if (snapshot.hasError)
+            TextButton(
+                onPressed: _reloadBookmarks,
+                child: const Text('북마크 새로고침 실패 · 다시 시도')),
           Wrap(
               spacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -182,7 +193,8 @@ class _ReaderDocumentNavigatorState extends State<ReaderDocumentNavigator> {
               icon: const Icon(Icons.close))
         ]),
         const Text('PDF 파일 기준 페이지 번호입니다.'),
-        if (_busy) const LinearProgressIndicator(),
+        SizedBox(
+            height: 4, child: _busy ? const LinearProgressIndicator() : null),
         Expanded(child: widget.outlineOnly ? _outlineList() : _preview()),
       ]);
 }

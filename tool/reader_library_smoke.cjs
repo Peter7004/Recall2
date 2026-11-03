@@ -22,7 +22,7 @@ const filename='Recall_User_Manual_v1.0.3_ko.pdf';
  }
  async function importPdf(version='1.0.3'){
   await page.mouse.move(700,700);await settle(700);
-  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button('PDF 열기').last().click()]);
+  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button('PDF 열기').first().click()]);
   await chooser.setFiles(path.join(fixtures,`Recall_User_Manual_v${version}_ko.pdf`));
   await button('문서 목록').waitFor();await settle(1200);
  }

@@ -10,8 +10,8 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 | P2 | DONE; DEPLOYMENT TRACKED IN HANDOFF | Managed PDF library, native no-backup/web IndexedDB. Real browser CRUD/rollback, 11 isolated tests and both full Linux test jobs PASS. Desktop hover/selection verified. Android build and web deployment tracked separately; device behavior NOT TESTED. |
 | P3 | DONE | Page bookmarks, embedded outline and lazy thumbnails. Separate keys, document-deletion cleanup/rollback. Visible cells only, 160x210 thumbnails, 2 render tasks, explicit cancellation/disposal. Both full Linux CI tests, web deployment and Android test APK build PASS; public PDF smoke PASS. Device/large-PDF behavior NOT TESTED. |
 | P3a | DONE | Direct preview/bookmark grid with per-page stars/filter, separate outline entry, toggle always-on dictionary highlights versus hover-only. 19 isolated tests, full Linux CI, web deployment/public smoke and Android test APK build PASS; device tests NOT TESTED. |
-| P4 | PLANNED | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
-| P5 | PLANNED | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |
+| P4 | IMPLEMENTED; FINAL VERIFICATION | Save selected dictionary terms with document ID, page, selected text and geometry. Separate word identity from multiple occurrences; prevent duplicate learning entries. |
+| P5 | IMPLEMENTED; FINAL VERIFICATION | Return from word card to source, persistent highlights, return-to-previous-reading-position. Deleted documents must disable source navigation while retaining learning records. |
 | P6 | PLANNED | Large-document performance and accessibility. Obtain real PDF fixtures and test Galaxy S25 Ultra; do not invent device or 100MB/500-page results. |
 
 Existing baseline 6bfce4a: text PDF selection/lookup, continuous and horizontal
@@ -30,3 +30,9 @@ whole-app redesign. Preserve all prior user data and minimum-SDK policy.
 
 The statuses describe development, not automatic scheduling. No automatic action
 is scheduled at quota reset. The user resumes the chat when access is available.
+
+2026-11-03 review follow-up: isolate corrupt document metadata without writes;
+preserve preview scroll on star updates; distinguish highlight errors/unavailable/
+zero matches with retry. Known-term source saving and return are implemented in
+separate Reader preferences; no migration of dictionary data. Reader export and
+manual unknown-term creation remain subsequent extensions after P4/P5 validation.

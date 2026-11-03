@@ -5,6 +5,169 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recall/reader/term_hover_region.dart';
 
 void main() {
+  testWidgets(
+      'dictionary changes discard old analysis notifications and highlights',
+      (tester) async {
+    var dictionary = 1;
+    final states = <TermAnalysisState>[];
+    final old = Completer<List<TermHoverArea>>();
+    const term = TermHoverArea('Old', [Rect.fromLTWH(0, 0, 1, 1)]);
+    Widget view() => MaterialApp(
+        home: SizedBox(
+            width: 200,
+            height: 200,
+            child: TermHoverRegion(
+                cacheKey: dictionary,
+                highlightAll: true,
+                onAnalysisChanged: states.add,
+                loadAreas: () =>
+                    dictionary == 1 ? old.future : Future.value([]))));
+    await tester.pumpWidget(view());
+    dictionary = 2;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    old.complete([term]);
+    await tester.pump();
+    await tester.pump();
+    expect(states.last, const TermAnalysisState(TermAnalysisStatus.ready));
+    expect(states.where((state) => state.matchCount != 0), isEmpty);
+    final paint = tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<TermHoverPainter>()
+        .single;
+    expect(paint.areas, isEmpty);
+  });
+  testWidgets('zero matches, unavailable, error and explicit hover-only retry',
+      (tester) async {
+    final states = <TermAnalysisState>[];
+    var retry = 0;
+    var loads = 0;
+    var outcome = 0;
+    const term = TermHoverArea('Known', [Rect.fromLTWH(0, 0, 1, 1)]);
+    Widget view() => MaterialApp(
+        home: SizedBox(
+            width: 200,
+            height: 200,
+            child: TermHoverRegion(
+                cacheKey: 1,
+                retryToken: retry,
+                onAnalysisChanged: states.add,
+                loadAreas: () async {
+                  loads++;
+                  if (outcome == 1) throw const TermTextUnavailable('텍스트 없음');
+                  if (outcome == 2) throw StateError('native failure');
+                  return outcome == 3 ? [term] : [];
+                })));
+    await tester.pumpWidget(view());
+    expect(states.last.status, TermAnalysisStatus.idle);
+    expect(loads, 0);
+    retry++;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(states.last, const TermAnalysisState(TermAnalysisStatus.ready));
+    expect(states.any((s) => s.status == TermAnalysisStatus.loading), isTrue);
+    outcome = 1;
+    retry++;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(states.last.status, TermAnalysisStatus.unavailable);
+    expect(states.last.message, '텍스트 없음');
+    outcome = 2;
+    retry++;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(states.last.status, TermAnalysisStatus.error);
+    expect(states.last.message, contains('다시 시도'));
+    outcome = 3;
+    retry++;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(states.last,
+        const TermAnalysisState(TermAnalysisStatus.ready, matchCount: 1));
+    final paints = tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<TermHoverPainter>()
+        .single;
+    expect(paints.area, isNull);
+    expect(paints.areas, isEmpty);
+    expect(loads, 4);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('retry clears highlights and ignores stale success and failure',
+      (tester) async {
+    var retry = 0;
+    final states = <TermAnalysisState>[];
+    final oldSuccess = Completer<List<TermHoverArea>>();
+    final oldFailure = Completer<List<TermHoverArea>>();
+    final fresh = Completer<List<TermHoverArea>>();
+    const term = TermHoverArea('Known', [Rect.fromLTWH(0, 0, 1, 1)]);
+    Widget view() => MaterialApp(
+        home: SizedBox(
+            width: 200,
+            height: 200,
+            child: TermHoverRegion(
+                cacheKey: 1,
+                retryToken: retry,
+                highlightAll: true,
+                onAnalysisChanged: states.add,
+                loadAreas: () => switch (retry) {
+                      0 => Future.value([term]),
+                      1 => oldSuccess.future,
+                      2 => oldFailure.future,
+                      _ => fresh.future
+                    })));
+    TermHoverPainter paint() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<TermHoverPainter>()
+        .single;
+    await tester.pumpWidget(view());
+    await tester.pump();
+    expect(paint().areas, [term]);
+    retry = 1;
+    await tester.pumpWidget(view());
+    expect(paint().areas, isEmpty);
+    retry = 2;
+    await tester.pumpWidget(view());
+    retry = 3;
+    await tester.pumpWidget(view());
+    oldSuccess.complete([term]);
+    oldFailure.completeError(StateError('stale'));
+    await tester.pump();
+    expect(paint().areas, isEmpty);
+    expect(states.last.status, TermAnalysisStatus.loading);
+    fresh.complete([]);
+    await tester.pump();
+    await tester.pump();
+    expect(states.last, const TermAnalysisState(TermAnalysisStatus.ready));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'post-frame callback can rebuild parent without notification loop',
+      (tester) async {
+    var callbacks = 0;
+    await tester.pumpWidget(
+        MaterialApp(home: StatefulBuilder(builder: (context, update) {
+      return SizedBox(
+          width: 200,
+          height: 200,
+          child: TermHoverRegion(
+              cacheKey: 1,
+              highlightAll: true,
+              loadAreas: () async => [],
+              onAnalysisChanged: (_) {
+                callbacks++;
+                update(() {});
+              }));
+    })));
+    await tester.pumpAndSettle();
+    expect(callbacks, inInclusiveRange(2, 3));
+    expect(tester.takeException(), isNull);
+  });
   test('PDF rectangles normalize width and height independently', () {
     expect(
         normalizedPageRect(

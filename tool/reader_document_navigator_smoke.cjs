@@ -22,7 +22,7 @@ const hash=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(fi
  }
  async function importPdf(name){
   await away();
-  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button('PDF 열기').last().click()]);
+  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button('PDF 열기').first().click()]);
   await chooser.setFiles(path.join(fixtures,name));await button('미리보기·북마크').waitFor();await settle(1000);
  }
  async function goto(n,current){

@@ -35,7 +35,7 @@ fs.mkdirSync(output, { recursive: true });
     await settle(500); // Wait for route/tooltip animations before pointer input.
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      button('PDF 열기').last().click(),
+      button('PDF 열기').first().click(),
     ]);
     await chooser.setFiles(path.join(fixtures, `Recall_User_Manual_v${version}_ko.pdf`));
     await button('본문 검색').waitFor();

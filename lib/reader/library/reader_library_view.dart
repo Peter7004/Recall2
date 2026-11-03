@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'document_repository.dart';
 import 'reader_document.dart';
+import 'document_storage.dart';
 
 class ReaderLibraryView extends StatefulWidget {
   const ReaderLibraryView(
@@ -21,8 +22,36 @@ class _ReaderLibraryViewState extends State<ReaderLibraryView> {
   late Future<List<ReaderDocument>> _documents = _load();
   bool _busy = false;
   String _filter = '';
-  Future<List<ReaderDocument>> _load() async =>
-      (await widget.repository()).list();
+  List<DamagedDocumentEntry> _damaged = [];
+  Future<List<ReaderDocument>> _load() async {
+    final repository = await widget.repository();
+    final docs = await repository.list();
+    _damaged = repository.damagedEntries;
+    return docs;
+  }
+
+  Widget _withDiagnostics(Widget child) => Column(children: [
+        if (_damaged.isNotEmpty)
+          ExpansionTile(
+            title: Text('문서 기록 ${_damaged.length}개를 읽지 못했습니다.'),
+            subtitle: const Text('정상 문서는 열 수 있습니다. 손상된 파일과 기록은 보존했습니다.'),
+            children: [
+              const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                      '손상 항목은 자동 복구하거나 삭제하지 않습니다. 원본 PDF를 보관하고 저장 공간과 접근 설정을 확인해 주세요.')),
+              SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                      itemCount: _damaged.length,
+                      itemBuilder: (_, index) => ListTile(
+                          title: Text(_damaged[index].id,
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          subtitle: const Text('문서 기록 확인 필요')))),
+            ],
+          ),
+        Expanded(child: child),
+      ]);
   void _reload() {
     if (!mounted) return;
     final next = _load();
@@ -87,7 +116,8 @@ class _ReaderLibraryViewState extends State<ReaderLibraryView> {
         context: context,
         builder: (context) => AlertDialog(
               title: const Text('PDF를 삭제할까요?'),
-              content: Text('“${doc.title}”의 앱 관리 복사본, 읽기 기록과 페이지 북마크를 삭제합니다.\n\n'
+              content: Text(
+                  '“${doc.title}”의 앱 관리 복사본, 읽기 기록과 페이지 북마크를 삭제합니다.\n\n'
                   '원본 PDF와 학습 단어·단어 북마크·플래시카드는 유지합니다. 삭제된 문서로 돌아가는 기능은 사용할 수 없습니다.'),
               actions: [
                 TextButton(
@@ -162,12 +192,12 @@ class _ReaderLibraryViewState extends State<ReaderLibraryView> {
                       .where((doc) => doc.title.toLowerCase().contains(_filter))
                       .toList();
                   if (docs.isEmpty) {
-                    return Center(
+                    return _withDiagnostics(Center(
                         child: Text(_filter.isEmpty
                             ? 'PDF를 가져오면 여기에 표시됩니다.'
-                            : '제목이 일치하는 문서가 없습니다.'));
+                            : '제목이 일치하는 문서가 없습니다.')));
                   }
-                  return ListView.builder(
+                  return _withDiagnostics(ListView.builder(
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         final doc = docs[index];
@@ -197,7 +227,7 @@ class _ReaderLibraryViewState extends State<ReaderLibraryView> {
                                         value: 'delete', child: Text('삭제'))
                                   ]),
                         );
-                      });
+                      }));
                 })),
       ]);
 }

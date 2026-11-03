@@ -1007,6 +1007,28 @@ class RecallStore extends ChangeNotifier {
     await _save();
   }
 
+  /// Reader saves are idempotent: repeated source saves must not unbookmark a card.
+  Future<void> ensureBookmarked(String id) async {
+    _assertWritable();
+    final previous = _entries[id];
+    if (previous == null || previous.isBookmarked) return;
+    final updated = previous.copyWith(isBookmarked: true);
+    _entries[id] = updated;
+    try {
+      await _save();
+    } catch (_) {
+      try {
+        await _preferences.reload();
+      } catch (_) {/* Keep original save error. */}
+      if (identical(_entries[id], updated)) {
+        _entries[id] = previous;
+        _invalidateDictionaryCaches();
+        notifyListeners();
+      }
+      rethrow;
+    }
+  }
+
   Future<void> toggleBookmark(String id) async {
     _assertWritable();
     final card = _entries[id];

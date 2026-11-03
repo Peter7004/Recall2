@@ -107,3 +107,28 @@ existing Android SDK/JDK setup and permanent release signing configuration.
 No OCR, AI calls, summaries, generated questions, or terminology migration is
 included. Future lookup services can replace the placeholder without changing
 the dictionary store or PDF rendering layer.
+
+
+Reader learning now stores known dictionary terms and exact source occurrences in
+recall.reader.learning.v1. Saving is idempotent by card ID and content-hash/page/
+character range, so repeated identical words at different positions remain distinct.
+The popup includes English definitions and an explicit save action; saved source
+fragments are painted green without intercepting PDF selection.
+
+The saved-term list filters by current document and links to exact normalized PDF
+geometry. Source jumps provide a return-to-prior-reading-position action. Existing
+dictionary detail and flashcard screens can also open PDF source lists, whose
+links launch Reader at that occurrence. PDF deletion retains these learning records
+and quotes while disabling unavailable document links. The saved snapshot remains
+readable after deletion of the original dictionary card.
+
+Existing dictionary bookmarking is enabled idempotently on user save. Reader
+learning and the dictionary are separate writes; partial failures are reported.
+Display preferences (always-on highlighting/default page mode) use the separate
+recall.reader.settings.v1 key. This does not extend the existing vocabulary backup
+format to Reader records; manual unknown terms and Reader export remain future work.
+
+The highlight status distinguishes successful zero matches from text-unavailable
+(including synthetic image-only pages/copy restrictions) and actual errors with
+retry. Corrupt document metadata is isolated and reported, never automatically
+replaced/deleted. Preview star updates retain the mounted grid and scroll offset.

@@ -24,9 +24,14 @@ Future<DocumentStorage> createDocumentStorage() async {
 
 /// Each managed directory has immutable PDF bytes and a small atomic metadata
 /// file. Imports are published only after both files are written successfully.
-class FileDocumentStorage implements DocumentStorage {
+class FileDocumentStorage
+    implements DocumentStorage, DocumentStorageDiagnostics {
   FileDocumentStorage(Directory root) : root = root.absolute;
   final Directory root;
+  List<DamagedDocumentEntry> _damagedEntries = [];
+  @override
+  List<DamagedDocumentEntry> get damagedEntries =>
+      List.unmodifiable(_damagedEntries);
   String get _sep => Platform.pathSeparator;
   int _sequence = 0;
   String _unique(String prefix) =>
@@ -66,6 +71,7 @@ class FileDocumentStorage implements DocumentStorage {
   Future<List<ReaderDocument>> list() async {
     await root.create(recursive: true);
     final documents = <ReaderDocument>[];
+    final damaged = <DamagedDocumentEntry>[];
     await for (final entry in root.list(followLinks: false)) {
       final id = entry.path.split(_sep).last;
       if (entry is Directory && RegExp(r'^\.deleted-\d+-\d+$').hasMatch(id)) {
@@ -75,14 +81,15 @@ class FileDocumentStorage implements DocumentStorage {
         continue;
       }
       if (entry is! Directory || !ReaderDocument.validId(id)) continue;
-      final doc = ReaderDocument.fromJson(jsonDecode(
-              await File('${entry.path}${_sep}metadata.json').readAsString())
-          as Map<String, dynamic>);
-      if (doc.id != id) {
-        throw const DocumentStorageException('문서 기록의 식별자가 일치하지 않습니다.');
+      try {
+        await _checkDirectory(id);
+        documents.add(decodeDocumentMetadata(id,
+            await File('${entry.path}${_sep}metadata.json').readAsString()));
+      } catch (_) {
+        damaged.add(DamagedDocumentEntry(id));
       }
-      documents.add(doc);
     }
+    _damagedEntries = damaged;
     return documents;
   }
 

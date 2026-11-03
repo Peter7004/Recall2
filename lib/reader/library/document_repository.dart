@@ -12,6 +12,10 @@ class DocumentRepository {
       {Future<SharedPreferences> Function()? preferences})
       : _preferences = preferences ?? SharedPreferences.getInstance;
   final DocumentStorage storage;
+  List<DamagedDocumentEntry> get damagedEntries =>
+      storage is DocumentStorageDiagnostics
+          ? (storage as DocumentStorageDiagnostics).damagedEntries
+          : const [];
   final Future<SharedPreferences> Function() _preferences;
   Future<void> _queue = Future.value();
 
@@ -37,6 +41,10 @@ class DocumentRepository {
         final id = await compute(ReaderProgress.documentId, bytes);
         final existing =
             (await storage.list()).where((doc) => doc.id == id).firstOrNull;
+        if (damagedEntries.any((entry) => entry.id == id)) {
+          throw const DocumentStorageException(
+              '이 PDF의 문서 기록이 손상되었습니다. 기존 파일과 기록은 변경하지 않았습니다.');
+        }
         if (existing != null) {
           if (!await storage.available(id)) {
             await storage.create(existing, bytes);
@@ -85,6 +93,10 @@ class DocumentRepository {
       throw const DocumentStorageException('잘못된 문서 식별자입니다.');
     }
     final doc = (await storage.list()).where((doc) => doc.id == id).firstOrNull;
+    if (damagedEntries.any((entry) => entry.id == id)) {
+      throw const DocumentStorageException(
+          '문서 기록을 읽지 못했습니다. 기존 파일과 기록은 변경하지 않았습니다.');
+    }
     if (doc == null) throw const DocumentStorageException('문서를 찾을 수 없습니다.');
     return doc;
   }

@@ -140,3 +140,25 @@
   smoke PASS. Public highlight pixel toggle check PASS (0/1137/0/1137/0).
 - Next P4 term occurrence storage remains planned; device/large PDF checks remain
   NOT TESTED. Prior narrow web semantics pointer issue remains unverified.
+
+## 2026-11-03 — Reliability repairs and P4/P5 local completion
+
+- Fixed per-record native/IndexedDB metadata isolation without replacing corrupt
+  records; preview star refresh retains scroll/mounted thumbnails. Highlight state
+  distinguishes zero matches, unavailable text/geometry, errors and explicit retry.
+- Added separate learning snapshot and exact per-content-hash/page/character-range
+  source records, green fragment highlights, saved-term/document lists, source jump
+  and return to prior view. Existing dictionary/review cards expose PDF source links.
+- PDF deletion retains learning snapshots/context and disables missing source links.
+  Dictionary bookmarking is idempotent with failure rollback; definitions preserved.
+- Added English definitions to Reader popup; Reader display settings persist.
+- Analyze/web build and 38 isolated tests PASS. Real synthetic PDF smoke PASS for
+  same-page second occurrence, dedup, cross-document jump/back, restart, dictionary
+  detail route, corruption isolation, image-only guidance and deletion retention.
+- Existing library/hover, navigation/search and preview/bookmark smokes PASS. Pixel
+  check 0/1137/0/1137/0, term checks 16/startup checks 8 PASS; bundled CSV unchanged.
+- PDF adapter unit tests execute in Linux CI; browser-only Flutter unit test loading
+  was not successful locally. Actual app IndexedDB injection passed separately.
+- Native device/large/rotated/encrypted/restricted-PDF scenarios NOT TESTED.
+- Manual unknown-term creation, Reader export and native path-based large-PDF
+  opening remain later work. No AI/OCR/server/package/minSdk changes.

@@ -1,5 +1,27 @@
 import 'dart:typed_data';
 import 'reader_document.dart';
+import 'dart:convert';
+
+/// Optional diagnostics from the latest successful listing. No damaged entry is
+/// deleted or repaired implicitly, and the ordinary list API stays unchanged.
+abstract interface class DocumentStorageDiagnostics {
+  List<DamagedDocumentEntry> get damagedEntries;
+}
+
+class DamagedDocumentEntry {
+  const DamagedDocumentEntry(this.id);
+  final String id;
+}
+
+/// Shared native/IndexedDB validation, including storage-key identity.
+ReaderDocument decodeDocumentMetadata(String id, Object? raw) {
+  final doc = ReaderDocument.fromJson(
+      jsonDecode(raw as String) as Map<String, dynamic>);
+  if (!ReaderDocument.validId(id) || doc.id != id) {
+    throw const FormatException('Document metadata identity mismatch');
+  }
+  return doc;
+}
 
 abstract interface class DocumentStorage {
   Future<List<ReaderDocument>> list();

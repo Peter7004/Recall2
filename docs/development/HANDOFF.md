@@ -8,6 +8,50 @@ P2 + desktop hover commit: 826ed802d878722b35933ffc36c52c49a2260f86 (pushed).
 P2 web CI 41404851026 and Android CI 41404851004 both completed SUCCESS,
 confirmed again 2026-11-03. Public library/hover smoke and pixel verification PASS.
 
+## Active module — reliability + saved terms/source return (2026-11-03)
+
+User authorized review recommendations: fix corrupt-document isolation, preview
+bookmark scroll preservation, and distinguish term analysis error/empty/unavailable.
+Then implement P4/P5 as one coherent flow: selection -> existing dictionary term
+save -> saved term/document lists -> exact original geometry -> back to prior view.
+Preserve original dictionary/storage keys. Separate Reader term/occurrence storage;
+retain learning records when PDFs are deleted and disable missing source links.
+Also show definition_en, persist Reader display settings, record tests and checkpoints.
+No AI/OCR/server/package replacement. Manual unknown-term creation and Reader export
+are subsequent roadmap extensions, not prerequisites to this P4/P5 milestone.
+Runtime complete in working tree, not committed yet. Installed pdfrx selection
+range APIs inspected; normalized source rectangles + exact char offsets are stored.
+37 isolated tests plus new bookmark-failure test PASS; analyze and release web build PASS. Actual new PDF learning
+smoke PASS for duplicate prevention, second same-page occurrence geometry, same-/
+cross-document source/back navigation, reload and highlight setting persistence,
+corrupt IndexedDB isolation and synthetic image-only unavailable state. No JS errors.
+Picker automation switched to appbar; ExpansionTile/tooltip selectors corrected.
+Final code includes bookmark-link failure cache rollback, source-jump guard,
+human-readable link tooltips and PDF sources from existing dictionary/review cards.
+Final analyze and web build PASS; isolated suite PASS (38), including browser-only
+library test correctly skipped on VM. Browser-only unit still NOT TESTED; real
+IndexedDB corruption injection via web application PASS. HTTP localhost:5205/Recall2/ from
+C:/Users/Public/Recall-reader-learning-20261103/serve (server may need restart).
+Final learning smoke PASS including actual dictionary card -> PDF source -> exact
+initial position, app deletion-retained/disabled source links, IndexedDB corruption
+and image-only text-unavailable state; no JS errors. Existing three regression
+smokes all PASS sequentially (file picker automation is not reliably parallel).
+Vocabulary checks 16/startup checks 8 PASS; original CSV SHA256 unchanged.
+Local verification COMPLETE: actual learning/dictionary source/deletion smoke,
+library/hover, navigation/search and preview/bookmark regression PASS. Pixel check
+PASS (0/1137/0/1137/0). Added PDF adapter tests for absent geometry/unavailable vs
+zero matches; static analysis initially found an invalid mock of a pdfrx extension method;
+corrected by separating pure text-to-geometry mapping. Final analyze PASS;
+adapter-test execution awaits full Linux CI. Normal synthetic
+PDF/source return already verified in real browser. Last adapter guard ensures
+recognized text with unusable geometry is not mislabeled zero dictionary matches.
+Next: explicit owned-file commit/push, record exact-SHA CI IDs and public verification.
+No P4/P5 implementation commit yet. Source audit: C:/Users/Public/Recall-reader-learning-20261103.
+App source/csv/dependencies preserved except intentional existing-word bookmark
+activation and additive Reader UI. Test APK uses temporary signer, not release APK.
+Initial widget test finder typo was fixed; no application failure hidden by it.
+Previous module results below are historical.
+
 ## Current module — user-requested Reader controls (2026-11-03)
 
 COMPLETE: direct preview/bookmark grid plus separate outline button; keep current-page

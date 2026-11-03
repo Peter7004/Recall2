@@ -11,10 +11,15 @@ Future<DocumentStorage> createDocumentStorage() async =>
 
 /// Metadata and PDF bytes live in separate stores, so listing documents does not
 /// deserialize every PDF. Import/deletion use a transaction covering both stores.
-class IndexedDocumentStorage implements DocumentStorage {
+class IndexedDocumentStorage
+    implements DocumentStorage, DocumentStorageDiagnostics {
   IndexedDocumentStorage({this.databaseName = 'recall.reader.library.v1'});
   final String databaseName;
   Future<web.IDBDatabase>? _connection;
+  List<DamagedDocumentEntry> _damagedEntries = [];
+  @override
+  List<DamagedDocumentEntry> get damagedEntries =>
+      List.unmodifiable(_damagedEntries);
 
   Future<web.IDBDatabase> get _database async {
     try {
@@ -99,15 +104,41 @@ class IndexedDocumentStorage implements DocumentStorage {
   }
 
   @override
-  Future<List<ReaderDocument>> list() => _run(
-      ['documents'],
-      'readonly',
-      (tx) => tx.objectStore('documents').getAll(),
-      (value) => (value as JSArray<JSString>)
-          .toDart
-          .map((raw) => ReaderDocument.fromJson(
-              jsonDecode(raw.toDart) as Map<String, dynamic>))
-          .toList());
+  Future<List<ReaderDocument>> list() {
+    JSArray<JSAny?>? keys;
+    return _run(['documents'], 'readonly', (tx) {
+      final store = tx.objectStore('documents');
+      final request = store.getAllKeys();
+      request.onsuccess = ((web.Event _) {
+        keys = request.result as JSArray<JSAny?>;
+      }).toJS;
+      return store.getAll();
+    }, (value) {
+      final values = (value as JSArray<JSAny?>).toDart;
+      final entryKeys = keys!.toDart;
+      final docs = <ReaderDocument>[];
+      final damaged = <DamagedDocumentEntry>[];
+      for (var i = 0; i < values.length; i++) {
+        final key = entryKeys[i];
+        final id = key != null && key.typeofEquals('string')
+            ? (key as JSString).toDart
+            : 'invalid-key-$i';
+        try {
+          final raw = values[i];
+          docs.add(decodeDocumentMetadata(
+              id,
+              raw != null && raw.typeofEquals('string')
+                  ? (raw as JSString).toDart
+                  : null));
+        } catch (_) {
+          damaged.add(DamagedDocumentEntry(id));
+        }
+      }
+      _damagedEntries = damaged;
+      return docs;
+    });
+  }
+
   @override
   Future<bool> available(String id) => _run(
       ['bytes'],

@@ -2,6 +2,33 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+enum TermAnalysisStatus { idle, loading, ready, unavailable, error }
+
+@immutable
+class TermAnalysisState {
+  const TermAnalysisState(this.status, {this.matchCount = 0, this.message});
+  final TermAnalysisStatus status;
+  final int matchCount;
+  final String? message;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TermAnalysisState &&
+      other.status == status &&
+      other.matchCount == matchCount &&
+      other.message == message;
+  @override
+  int get hashCode => Object.hash(status, matchCount, message);
+}
+
+/// Extraction cannot provide usable text (not a successful zero-match lookup).
+class TermTextUnavailable implements Exception {
+  const TermTextUnavailable(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class TermHoverArea {
   const TermHoverArea(this.term, this.rects);
   final String term;
@@ -23,10 +50,14 @@ class TermHoverRegion extends StatefulWidget {
       required this.cacheKey,
       required this.loadAreas,
       this.viewToken,
+      this.retryToken,
+      this.onAnalysisChanged,
       this.highlightAll = false});
   final bool highlightAll;
   final Object cacheKey;
   final Object? viewToken;
+  final Object? retryToken;
+  final ValueChanged<TermAnalysisState>? onAnalysisChanged;
   final Future<List<TermHoverArea>> Function() loadAreas;
   @override
   State<TermHoverRegion> createState() => _TermHoverRegionState();
@@ -39,23 +70,76 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
   int _request = 0;
   int _allRequest = 0;
   List<TermHoverArea> _all = const [];
+  int _generation = 0;
+  TermAnalysisState _analysis =
+      const TermAnalysisState(TermAnalysisStatus.idle);
+
+  void _report(TermAnalysisState state) {
+    _analysis = state;
+    final generation = _generation;
+    final viewToken = widget.viewToken;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          generation == _generation &&
+          viewToken == widget.viewToken) {
+        widget.onAnalysisChanged?.call(state);
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<List<TermHoverArea>> _load() => _areas ??= _extract(_generation);
+
+  Future<List<TermHoverArea>> _extract(int generation) async {
+    _report(const TermAnalysisState(TermAnalysisStatus.loading));
+    try {
+      final areas = await widget.loadAreas();
+      if (mounted && generation == _generation) {
+        _report(TermAnalysisState(TermAnalysisStatus.ready,
+            matchCount: areas.length));
+      }
+      return areas;
+    } catch (error) {
+      if (mounted && generation == _generation) {
+        setState(() {
+          _active = null;
+          _all = const [];
+        });
+        _report(TermAnalysisState(
+          error is TermTextUnavailable
+              ? TermAnalysisStatus.unavailable
+              : TermAnalysisStatus.error,
+          message: error is TermTextUnavailable
+              ? error.message
+              : '단어 강조 분석에 실패했습니다. 다시 시도해 주세요.',
+        ));
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _retry() async {
+    try {
+      await _load();
+    } catch (_) {/* Reported by _extract. */}
+  }
 
   @override
   void initState() {
     super.initState();
+    _report(_analysis);
     if (widget.highlightAll) _loadAll();
   }
 
   Future<void> _loadAll() async {
     final request = ++_allRequest;
     try {
-      final areas = await (_areas ??= widget.loadAreas());
+      final areas = await _load();
       if (mounted && widget.highlightAll && request == _allRequest) {
         setState(() => _all = areas);
       }
     } catch (_) {
       if (mounted && request == _allRequest) {
-        _areas = null;
         setState(() => _all = const []);
       }
     }
@@ -70,21 +154,34 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
   @override
   void didUpdateWidget(TermHoverRegion oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.cacheKey != widget.cacheKey ||
-        oldWidget.viewToken != widget.viewToken) {
-      _timer?.cancel();
-      _request++;
-      _active = null;
-    }
-    if (oldWidget.cacheKey != widget.cacheKey ||
+    final invalidated = oldWidget.cacheKey != widget.cacheKey ||
+        oldWidget.retryToken != widget.retryToken;
+    if (invalidated ||
+        oldWidget.viewToken != widget.viewToken ||
         oldWidget.highlightAll != widget.highlightAll) {
-      _allRequest++;
-      _all = const [];
-      _active = null;
       _timer?.cancel();
       _request++;
-      if (oldWidget.cacheKey != widget.cacheKey) _areas = null;
-      if (widget.highlightAll) _loadAll();
+      _allRequest++;
+      _active = null;
+      if (invalidated || oldWidget.highlightAll != widget.highlightAll) {
+        _all = const [];
+      }
+      if (invalidated) {
+        _generation++;
+        _areas = null;
+        _report(const TermAnalysisState(TermAnalysisStatus.idle));
+      } else {
+        _report(_analysis);
+      }
+      if (widget.highlightAll) {
+        _loadAll();
+      } else if (oldWidget.retryToken != widget.retryToken) {
+        // Explicit retries do not require mouse movement or activate a hover.
+        _retry();
+      }
+    } else if (oldWidget.onAnalysisChanged == null &&
+        widget.onAnalysisChanged != null) {
+      _report(_analysis);
     }
   }
 
@@ -100,7 +197,7 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
         event.localPosition.dy / size.height);
     _timer = Timer(const Duration(milliseconds: 40), () async {
       try {
-        final areas = await (_areas ??= widget.loadAreas());
+        final areas = await _load();
         if (!mounted || request != _request) return;
         TermHoverArea? hit;
         for (final area in areas) {
@@ -111,7 +208,6 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
         }
         if (!identical(hit, _active)) setState(() => _active = hit);
       } catch (_) {
-        _areas = null;
         if (mounted && request == _request) setState(() => _active = null);
       }
     });
@@ -122,6 +218,7 @@ class _TermHoverRegionState extends State<TermHoverRegion> {
     _timer?.cancel();
     _request++;
     _allRequest++;
+    _generation++;
     super.dispose();
   }
 
