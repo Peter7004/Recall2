@@ -28,35 +28,29 @@ without picker and injected IndexedDB transaction failure rollback PASS.
 Complete library smoke now PASS, including rename/cancel/confirm deletion and
 unchanged vocabulary JSON. Navigation regression smoke also PASS on the new UI.
 Full Windows Flutter test still fails before tests (existing missing C++ hook).
-P3 ACTIVE: separate per-document page bookmarks, embedded outline, lazy thumbnails.
-P3 runtime code not yet written. Existing APIs confirmed: PdfDocument.loadOutline,
-PdfDest/goToDest and PdfPage.renderForDisplay with cancellation and image disposal.
+P3 runtime COMPLETE locally: separate page bookmarks, embedded outline and lazy
+thumbnails. Isolated tests PASS (17); analyze and release web build PASS.
+Real 5-page PDF browser smoke PASS: bookmark page-relative restoration, mode
+preservation, nested outline destination, rendered thumbnail navigation, restart,
+independent documents, absent outline, delete warning/cancel/cleanup and unchanged
+vocabulary JSON. Existing navigation/library/hover regression smoke PASS.
+Full Windows tests FAIL before execution (missing native C++ toolchain).
+Android device behavior NOT TESTED. Full Linux CI/builds pending P3 push.
 
 ## Next concrete action
 
-1. Implement P3: bookmark JSON namespace via existing repository queue, delete
-   cleanup/rollback, navigation bottom sheet with outline/bookmark/thumbnail tabs.
-   Thumbnails: visible cells only, max 160x210 pixels, 2 concurrent tasks, cancel
-   disposed work and dispose all images; constrain sheet to 640x900 maximum.
-   P2 exact SHA 826ed80: web 41404851026, Android 41404851004 both SUCCESS.
-   Unit tests, analyze, web build,
-   real library smoke, navigation smoke and hover pixel checks PASS. Use
-   C:/Users/Public/Recall-reader-library-20261102. Sync changed source first.
-   tool/reader_library_smoke.cjs and tool/check_reader_hover.py for reproduction;
-   set RECALL_PLAYWRIGHT_MODULE and RECALL_READER_TEST_URL=http://127.0.0.1:5203/Recall2/.
-   Tool fixtures are the real manuals in output/pdf. Start local HTTP server from
-   the audit serve folder when needed; do not assume an old server still runs.
-   Previous P1: web run 41386604083, Android run 41386604117.
-   Both full test steps, web deployment and Android build confirmed SUCCESS.
-   If interrupted during CI, do not assume success. Inspect logs and fix within
-   current scope if either fails; do not replace PDF packages or delete user data.
-2. When run status changes, update handoff records using explicit docs paths.
-   A docs-only [skip ci] message avoids launching identical builds again.
-3. Next implementation milestone P3: page bookmarks, existing PDF outline and lazy
-   thumbnails, using current document IDs/storage without touching word data.
-   Inspect actual pdfrx outline/render APIs; cap thumbnail memory and concurrency.
-   Page bookmark cleanup must be integrated into document deletion when added.
-   See P2_VERIFICATION.md for current storage and runtime limitations.
+1. Commit only explicit P3 source/test/tool/docs paths and push main. Preserve all
+   unrelated staged Korean copy files. Do not commit generated PDF fixtures.
+2. Record exact source SHA and GitHub web/Android run IDs here. Confirm full Linux
+   tests, web deployment and Android test-APK compilation separately. Build success
+   does not prove device behavior; production signed APK is not updated by this CI.
+3. P4 next: save selected dictionary terms with document/page/geometry, separating
+   word identity from occurrences. No P4 runtime implemented yet. Preserve existing
+   dictionary key recall.data.v3 and all learning records. See P3_VERIFICATION.md.
+4. Local audit C:/Users/Public/Recall-reader-navigator-20261103; isolated harness
+   C:/Users/Public/Recall-p3-unit-20261103. Smoke URL localhost:5204/Recall2/.
+   Recreate controlled fixtures using tool/make_reader_outline_fixture.py.
+   No large-PDF/device performance claims: 500-page widget test is virtual only.
 
 ## Verification / environment
 

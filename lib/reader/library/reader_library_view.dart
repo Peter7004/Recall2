@@ -87,8 +87,8 @@ class _ReaderLibraryViewState extends State<ReaderLibraryView> {
         context: context,
         builder: (context) => AlertDialog(
               title: const Text('PDF를 삭제할까요?'),
-              content: Text('“${doc.title}”의 앱 관리 복사본과 읽기 기록을 삭제합니다.\n\n'
-                  '원본 PDF와 저장한 단어·북마크·플래시카드는 유지합니다. 삭제된 문서로 돌아가는 기능은 사용할 수 없습니다.'),
+              content: Text('“${doc.title}”의 앱 관리 복사본, 읽기 기록과 페이지 북마크를 삭제합니다.\n\n'
+                  '원본 PDF와 학습 단어·단어 북마크·플래시카드는 유지합니다. 삭제된 문서로 돌아가는 기능은 사용할 수 없습니다.'),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),

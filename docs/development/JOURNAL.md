@@ -91,3 +91,18 @@
   source copies finish. Partial snapshots must be ignored on resume.
 - Verified all 35 original/copy/manifest hashes. Root AGENTS.md describes how to
   choose a complete verified snapshot and preserve unrelated staged user work.
+
+## 2026-11-03 — P3 local verification complete
+
+- Added per-document page bookmarks with normalized position/zoom and safe deletion
+  rollback; existing vocabulary/word bookmarks/flashcards are untouched.
+- Added lazy embedded outline and visible-only thumbnails with two render jobs,
+  cancellation and image disposal. No new dependency or SDK change.
+- Analyze, web build and 17 isolated tests PASS. Controlled real 5-page PDF smoke
+  PASS for bookmark restoration/restart, modes, outline, thumbnails and deletion.
+- Existing navigation/library/hover regression PASS; hover pixels 0 -> 1137 -> 0.
+  Dictionary checks 16 and startup checks 8 PASS.
+- Initial no-outline smoke selector FAIL was a Flutter semantics selector issue;
+  screenshot showed correct UI. Corrected aria-label assertion now PASS.
+- Full Windows tests blocked before cases by missing C++ toolchain. Full Linux CI
+  pending push; Android physical-device and large-PDF behavior NOT TESTED.

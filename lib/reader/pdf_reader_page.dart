@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,10 @@ import 'library/reader_document.dart';
 import 'library/reader_library_view.dart';
 import 'term_hover_region.dart';
 import 'pdf_term_hover.dart';
+import 'page_bookmark.dart';
+import 'document_navigator.dart';
+import 'pdf_thumbnail.dart';
+import 'thumbnail_queue.dart';
 
 class PdfReaderPage extends StatefulWidget {
   const PdfReaderPage({super.key, this.store, this.repository});
@@ -43,6 +48,141 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Future<void> _writes = Future.value();
   Future<DocumentRepository>? _repository;
   late DictionaryTerminologyLookup _terminology;
+  List<ReaderPageBookmark> _pageBookmarks = [];
+  bool _bookmarksReadable = false;
+  bool _bookmarkBusy = false;
+
+  Future<List<ReaderPageBookmark>> _bookmarksFor(String id) async {
+    final bookmarks = await (await _getRepository()).pageBookmarks(id);
+    if (mounted && id == _documentId) {
+      setState(() {
+        _pageBookmarks = bookmarks;
+        _bookmarksReadable = true;
+      });
+    }
+    return bookmarks;
+  }
+
+  Future<void> _togglePageBookmark() async {
+    if (_bookmarkBusy || !_bookmarksReadable) return;
+    final position = _capture();
+    final id = _documentId;
+    if (position == null || id == null) return;
+    setState(() => _bookmarkBusy = true);
+    try {
+      final bookmarks = await (await _getRepository())
+          .togglePageBookmark(id, ReaderPageBookmark.fromProgress(position));
+      if (mounted && id == _documentId) {
+        setState(() => _pageBookmarks = bookmarks);
+      }
+    } catch (error) {
+      _storageError(error);
+    } finally {
+      if (mounted) setState(() => _bookmarkBusy = false);
+    }
+  }
+
+  Future<void> _removePageBookmark(String id, int page) async {
+    final bookmarks =
+        await (await _getRepository()).removePageBookmark(id, page);
+    if (mounted && id == _documentId) {
+      setState(() => _pageBookmarks = bookmarks);
+    }
+  }
+
+  Future<void> _goBookmark(String id, ReaderPageBookmark bookmark) async {
+    if (!mounted || id != _documentId || !_ready || !_controller.isReady) {
+      return;
+    }
+    _restore = bookmark.position(paged: _paged);
+    await _restorePosition();
+  }
+
+  Future<void> _goOutline(String id, PdfDest dest) async {
+    if (!mounted || id != _documentId || !_controller.isReady) return;
+    try {
+      final moved = await _controller.goToDest(dest);
+      if (!moved && mounted && id == _documentId) {
+        await _navigateToPage(dest.pageNumber);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('정확한 위치 대신 해당 페이지로 이동했습니다.')));
+        }
+      }
+      await _save();
+    } catch (error) {
+      _storageError(error);
+    }
+  }
+
+  Future<void> _showDocumentNavigator() async {
+    if (!_ready || !_controller.isReady) return;
+    final id = _documentId!;
+    final document = _controller.document;
+    final queue = ThumbnailQueue<ui.Image>(discard: (image) => image.dispose());
+    try {
+      await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          constraints: const BoxConstraints(maxWidth: 640),
+          builder: (sheetContext) {
+            void close() => Navigator.pop(sheetContext);
+            return SafeArea(
+                child: SizedBox(
+                    height: math.min(
+                        MediaQuery.sizeOf(sheetContext).height * .85, 900),
+                    child: ReaderDocumentNavigator(
+                      pageCount: document.pages.length,
+                      currentPage: _page,
+                      loadBookmarks: () => _bookmarksFor(id),
+                      removeBookmark: (page) => _removePageBookmark(id, page),
+                      onBookmark: (bookmark) {
+                        close();
+                        unawaited(_goBookmark(id, bookmark));
+                      },
+                      onPage: (page) {
+                        close();
+                        if (id == _documentId) unawaited(_navigateToPage(page));
+                      },
+                      loadOutline: () async {
+                        final nodes = await document.loadOutline();
+                        final entries = <ReaderOutlineEntry>[];
+                        final stack = [
+                          for (final node in nodes.reversed)
+                            (node: node, depth: 0)
+                        ];
+                        while (stack.isNotEmpty) {
+                          final current = stack.removeLast();
+                          final dest = current.node.dest;
+                          final valid = dest != null &&
+                              dest.pageNumber >= 1 &&
+                              dest.pageNumber <= document.pages.length;
+                          entries.add(ReaderOutlineEntry(
+                              title: current.node.title,
+                              depth: current.depth,
+                              page: valid ? dest.pageNumber : null,
+                              onNavigate: valid
+                                  ? () {
+                                      close();
+                                      unawaited(_goOutline(id, dest));
+                                    }
+                                  : null));
+                          for (final child in current.node.children.reversed) {
+                            stack.add((node: child, depth: current.depth + 1));
+                          }
+                        }
+                        return entries;
+                      },
+                      thumbnailBuilder: (context, page) => PdfThumbnail(
+                          key: ValueKey((id, page)),
+                          page: document.pages[page - 1],
+                          queue: queue),
+                    )));
+          });
+    } finally {
+      queue.dispose();
+    }
+  }
 
   DictionaryTerminologyLookup _buildTerminology() =>
       DictionaryTerminologyLookup([
@@ -110,6 +250,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
           _word = null;
           _page = 1;
           _pages = 0;
+          _pageBookmarks = [];
+          _bookmarksReadable = false;
         });
       }
       return result;
@@ -148,6 +290,14 @@ class _PdfReaderPageState extends State<PdfReaderPage>
       return;
     }
     final progress = await ReaderProgress.load(doc.id);
+    var bookmarks = <ReaderPageBookmark>[];
+    var bookmarksReadable = true;
+    try {
+      bookmarks = await _bookmarksFor(doc.id);
+    } catch (error) {
+      bookmarksReadable = false;
+      _storageError(error);
+    }
     if (!mounted) return;
     _searcher.resetTextSearch();
     _query.clear();
@@ -165,6 +315,8 @@ class _PdfReaderPageState extends State<PdfReaderPage>
       _ready = false;
       _page = 1;
       _pages = 0;
+      _pageBookmarks = bookmarks;
+      _bookmarksReadable = bookmarksReadable;
     });
   }
 
@@ -504,33 +656,50 @@ class _PdfReaderPageState extends State<PdfReaderPage>
           if (_opening) const LinearProgressIndicator(),
           if (_searchVisible) _searchPanel(),
           if (_bytes != null)
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              IconButton(
-                  tooltip: '이전 페이지',
-                  onPressed: _ready && _page > 1
-                      ? () => _navigateToPage(_page - 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_left)),
-              Tooltip(
-                  message: '페이지 번호로 이동',
-                  child: TextButton(
-                      onPressed: _ready ? _showPageDialog : null,
-                      child: Text('$_page / $_pages'))),
-              IconButton(
-                  tooltip: '다음 페이지',
-                  onPressed: _ready && _page < _pages
-                      ? () => _navigateToPage(_page + 1)
-                      : null,
-                  icon: const Icon(Icons.chevron_right)),
-              IconButton(
-                  tooltip: '축소',
-                  onPressed: _ready ? () => _controller.zoomDown() : null,
-                  icon: const Icon(Icons.zoom_out)),
-              IconButton(
-                  tooltip: '확대',
-                  onPressed: _ready ? () => _controller.zoomUp() : null,
-                  icon: const Icon(Icons.zoom_in)),
-            ]),
+            Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  IconButton(
+                      tooltip: '이전 페이지',
+                      onPressed: _ready && _page > 1
+                          ? () => _navigateToPage(_page - 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_left)),
+                  Tooltip(
+                      message: '페이지 번호로 이동',
+                      child: TextButton(
+                          onPressed: _ready ? _showPageDialog : null,
+                          child: Text('$_page / $_pages'))),
+                  IconButton(
+                      tooltip: '다음 페이지',
+                      onPressed: _ready && _page < _pages
+                          ? () => _navigateToPage(_page + 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_right)),
+                  IconButton(
+                      tooltip: '축소',
+                      onPressed: _ready ? () => _controller.zoomDown() : null,
+                      icon: const Icon(Icons.zoom_out)),
+                  IconButton(
+                      tooltip: '확대',
+                      onPressed: _ready ? () => _controller.zoomUp() : null,
+                      icon: const Icon(Icons.zoom_in)),
+                  IconButton(
+                      tooltip: _pageBookmarks.any((b) => b.page == _page)
+                          ? '페이지 북마크 해제'
+                          : '페이지 북마크 추가',
+                      onPressed: _ready && _bookmarksReadable && !_bookmarkBusy
+                          ? _togglePageBookmark
+                          : null,
+                      icon: Icon(_pageBookmarks.any((b) => b.page == _page)
+                          ? Icons.bookmark
+                          : Icons.bookmark_border)),
+                  IconButton(
+                      tooltip: '문서 탐색',
+                      onPressed: _ready ? _showDocumentNavigator : null,
+                      icon: const Icon(Icons.menu_book_outlined)),
+                ]),
           Expanded(
               child: _bytes == null
                   ? _library()

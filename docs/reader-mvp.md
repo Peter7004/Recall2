@@ -19,10 +19,20 @@ IndexedDB with atomic import/delete transactions. Browser storage can be cleared
 by users or eviction; keep original PDFs. No document is uploaded by the app.
 
 Deletion requires confirmation and removes the managed document and its reading
-position, preserving original PDFs and learning data. Failed deletion before the
-native logical rename restores progress. A physical cleanup failure is reported
-and the private deleted-folder cleanup retries on library listing. Future page
-bookmarks and learning occurrence links are separate roadmap work.
+position and page bookmarks, preserving original PDFs and learning data. Failed
+deletion before the native logical rename restores progress and page bookmarks. A physical cleanup failure is reported
+and the private deleted-folder cleanup retries on library listing. Learning
+occurrence links remain separate roadmap work.
+
+The page star saves one bookmark per page, including normalized viewport center
+and zoom, under recall.reader.pageBookmarks.v1.<document SHA-256>. Returning to a
+bookmark preserves the current viewing mode. The document navigator provides
+bookmarks, the PDF's embedded outline (if any), and lazy rendered thumbnails.
+Outline destinations use the library's destination API with a page fallback.
+Thumbnail output is capped at 160x210 pixels with two concurrent render jobs;
+offscreen/pending work is cancelled and images explicitly disposed. This bounds
+thumbnail output, not total document/native engine memory. No page images are
+persisted. Corrupt bookmark records are reported without overwriting them.
 
 Continuous mode lays out pages vertically. Paged mode lays them out horizontally
 and snaps a fit-scale swipe to at most one adjacent page. At increased zoom,

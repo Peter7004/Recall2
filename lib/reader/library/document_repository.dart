@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../reader_progress.dart';
+import '../page_bookmark.dart';
 import 'reader_document.dart';
 import 'document_storage.dart';
 
@@ -88,21 +89,102 @@ class DocumentRepository {
     return doc;
   }
 
+  static String pageBookmarkKey(String id) =>
+      'recall.reader.pageBookmarks.v1.$id';
+
+  List<ReaderPageBookmark> _decodeBookmarks(String? raw) {
+    if (raw == null) return [];
+    try {
+      final items = (jsonDecode(raw) as List)
+          .map((value) =>
+              ReaderPageBookmark.fromJson(value as Map<String, dynamic>))
+          .toList();
+      if (items.map((b) => b.page).toSet().length != items.length) {
+        throw const FormatException('Duplicate page bookmarks');
+      }
+      items.sort((a, b) => a.page.compareTo(b.page));
+      return items;
+    } catch (_) {
+      throw const DocumentStorageException(
+          '페이지 북마크 기록을 읽지 못했습니다. 기존 기록은 변경하지 않았습니다.');
+    }
+  }
+
+  Future<List<ReaderPageBookmark>> pageBookmarks(String id) =>
+      _serial(() async {
+        await _find(id);
+        return _decodeBookmarks(
+            (await _preferences()).getString(pageBookmarkKey(id)));
+      });
+
+  Future<void> _writeBookmarks(SharedPreferences preferences, String id,
+      List<ReaderPageBookmark> bookmarks) async {
+    if (!await preferences.setString(pageBookmarkKey(id),
+        jsonEncode(bookmarks.map((b) => b.toJson()).toList()))) {
+      await preferences.reload();
+      throw const DocumentStorageException('페이지 북마크를 저장하지 못했습니다.');
+    }
+  }
+
+  Future<List<ReaderPageBookmark>> togglePageBookmark(
+          String id, ReaderPageBookmark bookmark) =>
+      _serial(() async {
+        final doc = await _find(id);
+        // Validate even caller-created objects before persisting them.
+        ReaderPageBookmark.fromJson(bookmark.toJson());
+        if (doc.pageCount != null && bookmark.page > doc.pageCount!) {
+          throw const DocumentStorageException('문서 범위를 벗어난 페이지입니다.');
+        }
+        final preferences = await _preferences();
+        final bookmarks =
+            _decodeBookmarks(preferences.getString(pageBookmarkKey(id)));
+        if (bookmarks.any((item) => item.page == bookmark.page)) {
+          bookmarks.removeWhere((item) => item.page == bookmark.page);
+        } else {
+          bookmarks.add(bookmark);
+        }
+        bookmarks.sort((a, b) => a.page.compareTo(b.page));
+        await _writeBookmarks(preferences, id, bookmarks);
+        return bookmarks;
+      });
+
+  Future<List<ReaderPageBookmark>> removePageBookmark(String id, int page) =>
+      _serial(() async {
+        await _find(id);
+        final preferences = await _preferences();
+        final bookmarks =
+            _decodeBookmarks(preferences.getString(pageBookmarkKey(id)));
+        bookmarks.removeWhere((item) => item.page == page);
+        await _writeBookmarks(preferences, id, bookmarks);
+        return bookmarks;
+      });
+
   Future<bool> delete(String id) => _serial(() async {
         await _find(id);
         final preferences = await _preferences();
-        final key = 'recall.reader.progress.v1.$id';
-        final previous = preferences.getString(key);
-        if (!await preferences.remove(key)) {
-          await preferences.reload();
-          throw const DocumentStorageException('읽기 기록을 지우지 못해 PDF 삭제를 취소했습니다.');
-        }
+        final previous = {
+          for (final key in [
+            'recall.reader.progress.v1.$id',
+            pageBookmarkKey(id)
+          ])
+            key: preferences.getString(key),
+        };
         try {
+          for (final key in previous.keys) {
+            if (!await preferences.remove(key)) {
+              throw const DocumentStorageException(
+                  '독서 기록을 지우지 못해 PDF 삭제를 취소했습니다.');
+            }
+          }
           return await storage.delete(id);
         } catch (_) {
-          if (previous != null && !await preferences.setString(key, previous)) {
-            throw const DocumentStorageException(
-                'PDF는 유지되었지만 읽기 기록을 복원하지 못했습니다.');
+          await preferences.reload();
+          for (final entry in previous.entries) {
+            if (entry.value != null &&
+                !await preferences.setString(entry.key, entry.value!)) {
+              throw const DocumentStorageException(
+                  'PDF는 유지되었지만 독서 기록 일부를 복원하지 못했습니다.');
+            }
           }
           rethrow;
         }
