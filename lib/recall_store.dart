@@ -25,6 +25,12 @@ typedef _DictionaryQuery = ({
   bool bookmarkedOnly,
 });
 
+class RecallConcurrentWriteException implements Exception {
+  const RecallConcurrentWriteException();
+  @override
+  String toString() => '다른 화면에서 사전이 변경되었습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.';
+}
+
 class RecallStore extends ChangeNotifier {
   RecallStore._(this._preferences);
   static const _legacyKey = 'recall.data.v1';
@@ -70,6 +76,7 @@ class RecallStore extends ChangeNotifier {
   static const _searchCacheLimit = 16;
   final Map<_DictionaryQuery, DictionaryCards> _searchResults = {};
   Future<void> _pendingSave = Future.value();
+  String? _persistedData;
   bool _restoring = false;
   int _dailyGoal = 24;
   int _bundledVocabularyVersion = 0;
@@ -84,6 +91,7 @@ class RecallStore extends ChangeNotifier {
     final preferences = storage ?? await SharedPreferences.getInstance();
     final store = RecallStore._(preferences);
     final current = preferences.getString(_dataKey);
+    store._persistedData = current;
     final previous = preferences.getString(_previousKey);
     final encoded = current ?? previous ?? preferences.getString(_legacyKey);
     var migrateSubjects = false;
@@ -1012,7 +1020,15 @@ class RecallStore extends ChangeNotifier {
     _assertWritable();
     final previous = _entries[id];
     if (previous == null || previous.isBookmarked) return;
-    final updated = previous.copyWith(isBookmarked: true);
+    await _pendingSave;
+    _assertWritable();
+    await _preferences.reload();
+    if (_preferences.getString(_dataKey) != _persistedData) {
+      throw const RecallConcurrentWriteException();
+    }
+    final current = _entries[id];
+    if (current == null || current.isBookmarked) return;
+    final updated = current.copyWith(isBookmarked: true);
     _entries[id] = updated;
     try {
       await _save();
@@ -1021,7 +1037,7 @@ class RecallStore extends ChangeNotifier {
         await _preferences.reload();
       } catch (_) {/* Keep original save error. */}
       if (identical(_entries[id], updated)) {
-        _entries[id] = previous;
+        _entries[id] = current;
         _invalidateDictionaryCaches();
         notifyListeners();
       }
@@ -1098,9 +1114,11 @@ class RecallStore extends ChangeNotifier {
               name: d['name'] as String,
               cards: [for (final id in d['entryIds'] as List) entries[id]!]))
           .toList();
-      if (!await _preferences.setString(_dataKey, jsonEncode(data))) {
+      final encodedData = jsonEncode(data);
+      if (!await _preferences.setString(_dataKey, encodedData)) {
         throw StateError('복원을 저장하지 못했습니다. 기존 데이터는 유지됩니다.');
       }
+      _persistedData = encodedData;
       _entries
         ..clear()
         ..addAll(entries);
@@ -1163,6 +1181,7 @@ class RecallStore extends ChangeNotifier {
       if (!await _preferences.setString(_dataKey, encoded)) {
         throw StateError('저장하지 못했습니다.');
       }
+      _persistedData = encoded;
       if (hasListeners) notifyListeners();
     });
     _pendingSave = save.catchError((Object _) {});

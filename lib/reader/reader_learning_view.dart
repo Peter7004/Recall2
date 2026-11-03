@@ -40,10 +40,23 @@ class _ReaderLearningViewState extends State<ReaderLearningView> {
     if (confirmed != true) return;
     try {
       await widget.store.removeTerm(term.cardId);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(error is ReaderLearningStorageException
+                ? error.message
+                : '학습 기록을 삭제하지 못했습니다.')));
+      }
+    }
+  }
+
+  Future<void> _refresh() async {
+    try {
+      await widget.store.refresh();
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('학습 기록을 삭제하지 못했습니다.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('최신 학습 기록을 읽지 못했습니다. 기존 기록은 유지했습니다.')));
       }
     }
   }
@@ -73,6 +86,13 @@ class _ReaderLearningViewState extends State<ReaderLearningView> {
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close))
           ]),
+          if (widget.store.synchronizationError != null)
+            Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(children: [
+                  Expanded(child: Text(widget.store.synchronizationError!)),
+                  TextButton(onPressed: _refresh, child: const Text('기록 다시 읽기'))
+                ])),
           if (widget.currentDocumentId != null)
             FilterChip(
                 label: const Text('이 문서만'),

@@ -132,3 +132,12 @@ The highlight status distinguishes successful zero matches from text-unavailable
 (including synthetic image-only pages/copy restrictions) and actual errors with
 retry. Corrupt document metadata is isolated and reported, never automatically
 replaced/deleted. Preview star updates retain the mounted grid and scroll offset.
+
+
+Reader learning updates now reload the latest persisted snapshot under a common
+UI-isolate guard or origin-wide Web Lock. Current-version tabs share the protocol;
+old tabs must be refreshed. Existing key/schema are retained. Storage events refresh
+other open Reader lists. Unsafe web write capability is refused explicitly rather
+than falling back to an unguarded write. Reader auto-bookmark linking refuses a
+stale dictionary snapshot; general legacy dictionary edits are not globally
+serialized by this scoped repair. See STORAGE_SAFETY_VERIFICATION.md.

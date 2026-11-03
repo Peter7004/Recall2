@@ -25,6 +25,7 @@ import 'reader_learning_store.dart';
 import 'reader_learning_view.dart';
 import 'reader_source.dart';
 import 'reader_settings.dart';
+import 'reader_learning_guard_factory.dart';
 
 class PdfReaderPage extends StatefulWidget {
   const PdfReaderPage(
@@ -122,6 +123,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Future<ReaderLearningStore> _getLearning() async {
     try {
       final learning = await (_learningFuture ??= ReaderLearningStore.load());
+      if (!mounted) {
+        learning.dispose();
+        return learning;
+      }
       if (mounted && !identical(_learning, learning)) {
         _learning = learning;
         learning.addListener(_learningChanged);
@@ -149,6 +154,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Future<void> _showLearning() async {
     try {
       final learning = await _getLearning();
+      await learning.refresh();
       final docs = await (await _getRepository()).list();
       if (!mounted) return;
       await showModalBottomSheet<void>(
@@ -214,22 +220,27 @@ class _PdfReaderPageState extends State<PdfReaderPage>
               createdAt: DateTime.now()),
           sources);
       try {
-        await widget.store?.ensureBookmarked(card.id);
+        await learningWriteGuard.exclusive(() async {
+          await widget.store?.ensureBookmarked(card.id);
+        });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('단어와 원문 위치를 저장했습니다.')));
         }
-      } catch (_) {
+      } catch (error) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text(
-                  'Reader 단어와 출처는 저장됐지만 기존 단어 북마크를 저장하지 못했습니다. 다시 저장해 주세요.')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(error is RecallConcurrentWriteException
+                  ? 'Reader 단어와 출처는 저장됐습니다. 다른 화면에서 사전이 변경되어 단어 북마크 연결은 중단했습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.'
+                  : 'Reader 단어와 출처는 저장됐지만 기존 단어 북마크를 저장하지 못했습니다. 다시 저장해 주세요.')));
         }
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('단어를 저장하지 못했습니다. 기존 학습 기록은 변경하지 않았습니다.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(error is ReaderLearningStorageException
+                ? error.message
+                : '단어를 저장하지 못했습니다. 기존 학습 기록은 변경하지 않았습니다.')));
       }
     } finally {
       if (mounted) setState(() => _termSaving = false);

@@ -78,4 +78,32 @@ void main() {
     expect(store.cardById(card.id)!.isBookmarked, isTrue);
     store.dispose();
   });
+  test(
+      'stale Reader bookmark link refuses to overwrite another dictionary writer',
+      () async {
+    final first = await RecallStore.load();
+    await first.addCard(
+        deckId: '', front: 'Power factor', meaning: '역률', example: '');
+    await first.addCard(
+        deckId: '', front: 'Skin effect', meaning: '표피 효과', example: '');
+    final stale = await RecallStore.load();
+    final power = first.allCards
+        .firstWhere((c) => c.card.displayTerm == 'Power factor')
+        .card;
+    final skin = first.allCards
+        .firstWhere((c) => c.card.displayTerm == 'Skin effect')
+        .card;
+    await first.ensureBookmarked(power.id);
+    final prefs = await SharedPreferences.getInstance();
+    final snapshot = prefs.getString('recall.data.v3');
+    await expectLater(stale.ensureBookmarked(skin.id),
+        throwsA(isA<RecallConcurrentWriteException>()));
+    expect(prefs.getString('recall.data.v3'), snapshot);
+    final restored = await RecallStore.load();
+    expect(restored.cardById(power.id)!.isBookmarked, isTrue);
+    expect(restored.cardById(skin.id)!.isBookmarked, isFalse);
+    first.dispose();
+    stale.dispose();
+    restored.dispose();
+  });
 }

@@ -173,3 +173,19 @@
 - Production signing unchanged; Android device/large-PDF behavior NOT TESTED.
 - Next P6 native/performance verification. Manual unknown terms and Reader backup
   remain future work. Existing dictionary backup has not been expanded.
+
+## 2026-11-03 — Learning priorities / Reader storage safety local verification
+
+- Reviewed all ten screenshot features against actual existing review/stats/domain/
+  related-term code. Recorded priority plan; data safety chosen before new records.
+- Reader learning key/schema retained. Shared UI-isolate guard, Web Locks and
+  read-latest mutation prevent stale overwrites/resurrection between new writers.
+- Live process/storage-event refresh; failures preserve last good records. Missing
+  lock support explicitly refuses mutation. Old app tabs must be refreshed.
+- Reader automatic dictionary bookmark link detects a stale persisted dictionary
+  and reports partial success rather than replacing it. Manual global dictionary
+  multi-tab editing remains outside scope.
+- 45 isolated tests, analyze and web release build PASS. Real two-tab held-lock,
+  live refresh, suppressed-event stale save, unsupported lock refusal and existing
+  PDF learning/source-return workflow PASS. Initial inactive-tab automation fixed.
+- Commit/push and exact-SHA full Linux CI/public verification next.

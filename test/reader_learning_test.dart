@@ -11,6 +11,7 @@ import 'package:shared_preferences_platform_interface/method_channel_shared_pref
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:recall/reader/reader_learning.dart';
 import 'package:recall/reader/reader_learning_store.dart';
+import 'package:recall/reader/reader_learning_guard_factory.dart';
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,12 @@ void main() {
         createdAt: at ?? time,
       );
 
+  Future<ReaderLearningStore> loadStore() async {
+    final store = await ReaderLearningStore.load();
+    addTearDown(store.dispose);
+    return store;
+  }
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     SharedPreferencesStorePlatform.instance =
@@ -79,12 +86,12 @@ void main() {
   test(
       'snapshot persists, deduplicates exact range, preserves dates and meaning',
       () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     final original = Map.of(disk);
     await store.save(term(), [source(), source(start: 50), source(doc: docB)]);
     final later = time.add(const Duration(days: 1));
     await store.save(term(at: later), [source(at: later)]);
-    final loaded = await ReaderLearningStore.load();
+    final loaded = await loadStore();
     expect(loaded.terms.single.createdAt, time);
     expect(loaded.terms.single.meaning, '역률');
     expect(loaded.occurrencesFor('card'), hasLength(3));
@@ -105,7 +112,7 @@ void main() {
 
   test('writes serialize and publish only after successful persistence',
       () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     var notifications = 0;
     store.addListener(() => notifications++);
     gate = Completer<void>();
@@ -119,13 +126,13 @@ void main() {
     await Future.wait([first, second]);
     expect(store.terms, hasLength(2));
     expect(notifications, 2);
-    expect((await ReaderLearningStore.load()).terms, hasLength(2));
+    expect((await loadStore()).terms, hasLength(2));
   });
 
   test(
       'failed setString leaves state and durable snapshot intact; queue recovers',
       () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     await store.save(term(), [source()]);
     final snapshot = Map.of(disk);
     var notifications = 0;
@@ -137,12 +144,12 @@ void main() {
     expect(disk, snapshot);
     expect(store.terms.single.cardId, 'card');
     expect(notifications, 0);
-    expect((await ReaderLearningStore.load()).terms.single.cardId, 'card');
+    expect((await loadStore()).terms.single.cardId, 'card');
     failWrite = false;
     await store.removeTerm('card');
     expect(store.terms, isEmpty);
     expect(store.occurrencesForDocument(docA), isEmpty);
-    expect((await ReaderLearningStore.load()).terms, isEmpty);
+    expect((await loadStore()).terms, isEmpty);
     expect(disk['flutter.recall.data.v3'], 'original dictionary and bookmarks');
   });
 
@@ -174,7 +181,7 @@ void main() {
       SharedPreferencesStorePlatform.instance =
           MethodChannelSharedPreferencesStore();
       disk['flutter.${ReaderLearningStore.storageKey}'] = raw;
-      await expectLater(ReaderLearningStore.load(), throwsFormatException);
+      await expectLater(loadStore(), throwsFormatException);
       expect(disk['flutter.${ReaderLearningStore.storageKey}'], raw);
     }
     expect(writes, 0);
@@ -229,7 +236,7 @@ void main() {
 
   test('queued writes complete after disposal without notifying listeners',
       () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     var notifications = 0;
     store.addListener(() => notifications++);
     gate = Completer<void>();
@@ -242,11 +249,11 @@ void main() {
     await Future.wait([first, second]);
     expect(notifications, 0);
     expect(writes, 2);
-    expect((await ReaderLearningStore.load()).terms, hasLength(2));
+    expect((await loadStore()).terms, hasLength(2));
   });
 
   test('empty sources reject the entire write without persistence', () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     await expectLater(store.save(term(), []), throwsFormatException);
     expect(store.terms, isEmpty);
     expect(writes, 0);
@@ -255,10 +262,114 @@ void main() {
   test(
       'wrong-card source rejects entire write without modifying existing terms',
       () async {
-    final store = await ReaderLearningStore.load();
+    final store = await loadStore();
     await expectLater(
         store.save(term(), [source(card: 'other')]), throwsFormatException);
     expect(store.terms, isEmpty);
     expect(writes, 0);
+  });
+  test(
+      'independent stores serialize concurrent saves without losing either term',
+      () async {
+    final first = await loadStore(), second = await loadStore();
+    await Future.wait([
+      first.save(term(card: 'A'), [source(card: 'A')]),
+      second.save(term(card: 'B'), [source(card: 'B')]),
+    ]);
+    final restored = await loadStore();
+    expect(restored.terms.map((t) => t.cardId), unorderedEquals(['A', 'B']));
+    expect(restored.occurrencesForDocument(docA), hasLength(2));
+  });
+
+  test(
+      'latest persisted state prevents resurrection even without change notification',
+      () async {
+    final first = await loadStore();
+    await first.save(term(card: 'A'), [source(card: 'A')]);
+    final stale = await loadStore();
+    disk['flutter.${ReaderLearningStore.storageKey}'] =
+        jsonEncode({'version': 1, 'terms': [], 'occurrences': []});
+    expect(stale.terms.single.cardId, 'A');
+    await stale.save(term(card: 'B'), [source(card: 'B')]);
+    expect((await loadStore()).terms.map((t) => t.cardId), ['B']);
+  });
+
+  test('stale removal preserves unrelated records added by another writer',
+      () async {
+    final store = await loadStore();
+    await store.save(term(card: 'A'), [source(card: 'A')]);
+    final stale = await loadStore();
+    disk['flutter.${ReaderLearningStore.storageKey}'] = jsonEncode({
+      'version': 1,
+      'terms': [term(card: 'A').toJson(), term(card: 'B').toJson()],
+      'occurrences': [source(card: 'A').toJson(), source(card: 'B').toJson()]
+    });
+    await stale.removeTerm('A');
+    final loaded = await loadStore();
+    expect(loaded.terms.single.cardId, 'B');
+    expect(loaded.occurrencesFor('B'), hasLength(1));
+  });
+
+  test('other loaded instances receive successful save and removal updates',
+      () async {
+    final first = await loadStore(), observer = await loadStore();
+    final saved = Completer<void>(), removed = Completer<void>();
+    observer.addListener(() {
+      if (observer.terms.isNotEmpty && !saved.isCompleted) saved.complete();
+      if (saved.isCompleted && observer.terms.isEmpty && !removed.isCompleted) {
+        removed.complete();
+      }
+    });
+    await first.save(term(), [source()]);
+    await saved.future.timeout(const Duration(seconds: 2));
+    await first.removeTerm('card');
+    await removed.future.timeout(const Duration(seconds: 2));
+    expect(observer.terms, isEmpty);
+  });
+
+  test(
+      'external corruption after load is never overwritten; later valid data recovers',
+      () async {
+    final store = await loadStore();
+    await store.save(term(), [source()]);
+    final valid = disk['flutter.${ReaderLearningStore.storageKey}'];
+    disk['flutter.${ReaderLearningStore.storageKey}'] = '{broken';
+    final beforeWrites = writes;
+    await expectLater(store.save(term(card: 'new'), [source(card: 'new')]),
+        throwsFormatException);
+    expect(writes, beforeWrites);
+    expect(disk['flutter.${ReaderLearningStore.storageKey}'], '{broken');
+    expect(store.terms.single.cardId, 'card');
+    disk['flutter.${ReaderLearningStore.storageKey}'] = valid!;
+    await store.save(term(card: 'new'), [source(card: 'new')]);
+    expect((await loadStore()).terms, hasLength(2));
+  });
+  test(
+      'external refresh failure preserves last good state and reports recovery',
+      () async {
+    final store = await loadStore();
+    await store.save(term(), [source()]);
+    final valid = disk['flutter.${ReaderLearningStore.storageKey}'];
+    final failed = Completer<void>(), recovered = Completer<void>();
+    store.addListener(() {
+      if (store.synchronizationError != null && !failed.isCompleted) {
+        failed.complete();
+      }
+      if (failed.isCompleted &&
+          store.synchronizationError == null &&
+          !recovered.isCompleted) {
+        recovered.complete();
+      }
+    });
+    disk['flutter.${ReaderLearningStore.storageKey}'] = '{broken';
+    learningWriteGuard.didChange();
+    await failed.future.timeout(const Duration(seconds: 2));
+    expect(store.terms.single.cardId, 'card');
+    final beforeWrites = writes;
+    disk['flutter.${ReaderLearningStore.storageKey}'] = valid!;
+    learningWriteGuard.didChange();
+    await recovered.future.timeout(const Duration(seconds: 2));
+    expect(store.terms.single.cardId, 'card');
+    expect(writes, beforeWrites);
   });
 }

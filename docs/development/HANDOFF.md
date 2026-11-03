@@ -5,6 +5,33 @@ Latest runtime: 55937793390517cfef02f410a8b65260e45e6633 (pushed).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
+## Active module — storage collision safety (2026-11-03)
+
+User authorized prioritization of proposed/screenshot learning features and starting
+highest priority. P0 is preventing Reader record loss/resurrection across independently
+loaded stores and browser tabs. Keep existing storage keys/data; no server/dependency.
+Plan: per-process serialized mutation, reload latest snapshot inside exclusive guard,
+Web Locks for cooperative cross-tab writers, explicit refusal when safe locking is
+unavailable, and refresh other instances/tabs. Preserve deletion semantics: no blind
+merging stale snapshots. Validate two-store concurrent saves, deletion resurrection,
+write failure, corrupt snapshot, real two-tab browser scenarios and existing workflows.
+Priority review in LEARNING_FEATURE_PRIORITIES.md (being drafted independently).
+Guard/coordinator + read-latest mutation and cross-instance refresh implemented.
+Existing key/schema retained. Web unsupported-lock writes explicitly refused.
+Reader auto-bookmark link also refuses stale dictionary snapshots, avoiding v3
+clobbering during simultaneous Reader saves. This does NOT serialize every legacy
+manual dictionary edit across tabs; that remains outside this scoped repair.
+45 isolated regression tests PASS; analyze/release web build PASS (new test-only
+style cleanup being rechecked). Real two-tab test PASS for held-lock serialized
+writes, suppression-resistant deletion handling and unsupported lock refusal.
+An already open learning list also receives storage-event removal/addition live.
+Final two-tab + existing learning/source-return flow PASS on localhost:5206.
+See STORAGE_SAFETY_VERIFICATION.md for guarantees and limits.
+Next: explicit owned-file commit/push, exact-SHA full Linux CI and public
+two-tab safety smoke. Keep historical results separate from new CI results. Reload old app tabs before relying on
+new protocol: old code ignoring the lock cannot be coordinated.
+Old runtime verification below is historical until new source/builds pass.
+
 ## Current state — COMPLETE through P4/P5
 
 - Damaged native/web PDF metadata is isolated and reported. Healthy documents

@@ -1,33 +1,61 @@
+import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'reader_learning.dart';
+import 'reader_learning_guard.dart';
+import 'reader_learning_guard_factory.dart';
+export 'reader_learning_guard.dart' show ReaderLearningStorageException;
 
-/// Separate, single-snapshot storage. PDF deletion does not affect this store.
+class _LearningSnapshot {
+  const _LearningSnapshot(this.terms, this.sources, this.raw);
+  final Map<String, ReaderSavedTerm> terms;
+  final Map<String, ReaderOccurrence> sources;
+  final String? raw;
+}
+
+/// Existing key/schema retained. Every mutation reloads inside a shared guard.
 class ReaderLearningStore extends ChangeNotifier {
-  ReaderLearningStore._(this._preferences, this._terms, this._occurrences);
-
+  ReaderLearningStore._(
+      this._preferences, this._guard, _LearningSnapshot snapshot)
+      : _terms = snapshot.terms,
+        _occurrences = snapshot.sources,
+        _lastRaw = snapshot.raw {
+    _subscription = _guard.changes.listen((_) => _changedElsewhere());
+  }
   static const storageKey = 'recall.reader.learning.v1';
   static const _maxRecords = 100000;
   static const _maxSnapshotLength = 32 * 1024 * 1024;
   final SharedPreferences _preferences;
+  final LearningWriteGuard _guard;
+  late final StreamSubscription<void> _subscription;
   Map<String, ReaderSavedTerm> _terms;
   Map<String, ReaderOccurrence> _occurrences;
-  Future<void> _tail = Future<void>.value();
-  bool _disposed = false;
+  String? _lastRaw;
+  String? _synchronizationError;
+  bool _disposed = false, _refreshing = false, _refreshPending = false;
+  String? get synchronizationError => _synchronizationError;
 
   @override
   void dispose() {
+    if (_disposed) return;
     _disposed = true;
+    unawaited(_subscription.cancel());
     super.dispose();
   }
 
   static Future<ReaderLearningStore> load(
-      {SharedPreferences? preferences}) async {
+      {SharedPreferences? preferences, LearningWriteGuard? guard}) async {
     final prefs = preferences ?? await SharedPreferences.getInstance();
-    final raw = prefs.get(storageKey);
+    final coordinator = guard ?? learningWriteGuard;
+    return coordinator.read(() async {
+      await prefs.reload();
+      return ReaderLearningStore._(
+          prefs, coordinator, _decode(prefs.get(storageKey)));
+    });
+  }
+
+  static _LearningSnapshot _decode(Object? raw) {
     final terms = <String, ReaderSavedTerm>{};
     final sources = <String, ReaderOccurrence>{};
     if (raw != null) {
@@ -70,30 +98,69 @@ class ReaderLearningStore extends ChangeNotifier {
         sources[source.id] = source;
       }
     }
-    return ReaderLearningStore._(prefs, terms, sources);
+    return _LearningSnapshot(terms, sources, raw as String?);
   }
 
   List<ReaderSavedTerm> get terms => List.unmodifiable(_terms.values);
-
   List<ReaderOccurrence> occurrencesFor(String cardId, {String? documentId}) =>
       List.unmodifiable(_occurrences.values.where((o) =>
           o.cardId == cardId &&
           (documentId == null || o.documentId == documentId)));
-
   List<ReaderOccurrence> occurrencesForDocument(String documentId) =>
       List.unmodifiable(
           _occurrences.values.where((o) => o.documentId == documentId));
 
-  Future<void> _serial(Future<void> Function() action) {
-    final result = _tail.then((_) => action());
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
-    return result;
+  void _publish(_LearningSnapshot snapshot) {
+    final changed = _lastRaw != snapshot.raw || _synchronizationError != null;
+    _terms = snapshot.terms;
+    _occurrences = snapshot.sources;
+    _lastRaw = snapshot.raw;
+    _synchronizationError = null;
+    if (changed && !_disposed) notifyListeners();
+  }
+
+  Future<void> _readLatest() async {
+    await _preferences.reload();
+    _publish(_decode(_preferences.get(storageKey)));
+  }
+
+  Future<void> refresh() => _guard.read(() async {
+        if (!_disposed) await _readLatest();
+      });
+
+  void _changedElsewhere() {
+    if (_disposed) return;
+    _refreshPending = true;
+    if (!_refreshing) {
+      _refreshing = true;
+      unawaited(_drainChanges());
+    }
+  }
+
+  Future<void> _drainChanges() async {
+    try {
+      while (_refreshPending && !_disposed) {
+        _refreshPending = false;
+        try {
+          await refresh();
+        } catch (_) {
+          if (!_disposed && _synchronizationError == null) {
+            _synchronizationError =
+                '다른 화면에서 변경된 학습 기록을 읽지 못했습니다. 기존 기록은 변경하지 않았습니다.';
+            notifyListeners();
+          }
+        }
+      }
+    } finally {
+      _refreshing = false;
+      if (_refreshPending && !_disposed) _changedElsewhere();
+    }
   }
 
   Future<void> save(ReaderSavedTerm term, List<ReaderOccurrence> sources) {
-    // Snapshot caller-owned collections before entering the asynchronous queue.
     final input = List<ReaderOccurrence>.of(sources);
-    return _serial(() async {
+    return _guard.exclusive(() async {
+      await _readLatest();
       if (input.isEmpty) {
         throw const FormatException('At least one source is required');
       }
@@ -118,11 +185,12 @@ class ReaderLearningStore extends ChangeNotifier {
     });
   }
 
-  Future<void> removeTerm(String cardId) => _serial(() async {
+  Future<void> removeTerm(String cardId) => _guard.exclusive(() async {
+        await _readLatest();
         if (!_terms.containsKey(cardId)) return;
         final terms = Map<String, ReaderSavedTerm>.of(_terms)..remove(cardId);
         final sources = Map<String, ReaderOccurrence>.of(_occurrences)
-          ..removeWhere((_, source) => source.cardId == cardId);
+          ..removeWhere((_, o) => o.cardId == cardId);
         await _persist(terms, sources);
       });
 
@@ -134,7 +202,7 @@ class ReaderLearningStore extends ChangeNotifier {
     final snapshot = jsonEncode({
       'version': 1,
       'terms': terms.values.map((t) => t.toJson()).toList(),
-      'occurrences': sources.values.map((s) => s.toJson()).toList(),
+      'occurrences': sources.values.map((o) => o.toJson()).toList()
     });
     if (snapshot.length > _maxSnapshotLength) {
       throw StateError('Reader learning snapshot limit reached');
@@ -144,15 +212,12 @@ class ReaderLearningStore extends ChangeNotifier {
         throw StateError('Reader learning snapshot could not be saved');
       }
     } catch (_) {
-      // Legacy SharedPreferences updates its cache before platform success.
-      // Refresh from durable storage without writing a rollback snapshot.
       try {
-        await _preferences.reload();
-      } catch (_) {/* Preserve save error. */}
+        await _readLatest();
+      } catch (_) {/* Preserve original save failure. */}
       rethrow;
     }
-    _terms = terms;
-    _occurrences = sources;
-    if (!_disposed) notifyListeners();
+    _publish(_LearningSnapshot(terms, sources, snapshot));
+    _guard.didChange();
   }
 }
