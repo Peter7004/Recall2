@@ -214,3 +214,12 @@
   persisted edit/delete + IndexedDB missing bytes flow PASS; snapshots unchanged.
 - Initial tester/temp/fake-clock/locator issues resolved and documented. Final
   analyze/build then scoped source commit and CI/public validation remain.
+
+
+## 2026-11-04 — S2 verified and Recall v1.0.4 distributed
+
+- S2 b3da5c2 passed both CI runs and public web consistency smoke.
+- Source e752e34 sets 1.0.4+5 and passed Pages and Android test APK CI.
+- Signed run 41791432029 published v1.0.4. Verified APK checksum, package,
+  version code and matching v1.0.3 signer. Latest APK URL responds successfully.
+- Android device install NOT TESTED. Next module is Reader backup/restore.

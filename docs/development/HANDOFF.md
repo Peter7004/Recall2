@@ -1,11 +1,11 @@
 # Reader handoff — start here
 
-Updated: 2026-11-03 (Asia/Seoul). Branch main.
-Latest runtime: bd3ee40ae63f4a3916ac64e48dfea90fa14093f4 (pushed; web/Android CI verified).
+Updated: 2026-11-04 (Asia/Seoul). Branch main.
+Latest runtime: e752e34ce9cd22e43ff4fc4a184bc820b9f44aee (v1.0.4+5).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
-## Active module — S2 definition and source consistency
+## Latest completed module — S2 definition and source consistency
 
 Authorized continuation 2026-11-03. Scope: learning list shows all current primary
 meaning/definition/explanation fields together when dictionary entry exists; otherwise
@@ -24,12 +24,15 @@ predicate rather than RawTooltip cast. Windows full native hook still lacks C++.
 Final source: retry repository creation after failure; one-pass source document IDs.
 29 tests re-PASS. Final analyze/release web build PASS (session 61410).
 Final same-source consistency browser smoke PASS (including snapshot fallback).
-Next: explicit commit/push and exact-SHA full Linux CI/public consistency smoke.
+Source committed/pushed b3da5c2a32173b899d526504fb76f1431fbe6b7d.
+S2 CI PASS: web 41658314912 and Android test APK 41658314699. Public consistency smoke PASS.
+Production APK requested 2026-11-04. Source e752e34 bumped version to 1.0.4+5. Signed build 41791432029 PASS and v1.0.4 published. APK package io.github.peter7004.recall, versionCode 5 and previous certificate match verified. Public latest download and release SHA-256 verified. Android on-device install NOT TESTED.
+After S2, first unfinished product module is Reader export/restore (not started).
 See CONSISTENCY_VERIFICATION.md.
 For isolated tests set TEMP/TMP=C:/Users/Public/Recall-reader-test-temp. Native
 Android device testing needs connected hardware. Preserve unrelated staged copies.
 
-## Latest completed module — S1 storage collision safety (2026-11-03)
+## Previous completed module — S1 storage collision safety (2026-11-03)
 
 User authorized prioritization of proposed/screenshot learning features and starting
 highest priority. P0 is preventing Reader record loss/resurrection across independently
@@ -108,7 +111,7 @@ Exact runtime 55937793390517cfef02f410a8b65260e45e6633:
   pdfium_dart. Linux tests/builds do not prove device behavior.
 See P4_P5_VERIFICATION.md for scope and limitations.
 
-## Next concrete action
+## Historical P4/P5 follow-up
 
 1. Inspect git status, actual code and latest complete checkpoint hashes. Do not
    redo P4/P5. No deployment or build remains pending.

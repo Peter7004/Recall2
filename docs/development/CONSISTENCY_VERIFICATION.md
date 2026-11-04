@@ -34,7 +34,7 @@
 
 Windows 전체 프로젝트 테스트는 pdfium_dart 네이티브 훅용 C++ 컴파일러 부재로
 실행 전에 실패한다. 의존성을 제거해 앱을 바꾸지 않고 격리 테스트와 Linux 전체 CI를
-구분한다. GitHub 정확한 SHA 전체 테스트/빌드/배포 결과는 완료 후 추가한다.
+구분한다.
 
 ## 범위와 재현
 
@@ -47,3 +47,12 @@ Windows 전체 프로젝트 테스트는 pdfium_dart 네이티브 훅용 C++ 컴
   RECALL_PLAYWRIGHT_MODULE과 RECALL_READER_TEST_URL로 테스트 런타임/주소 지정.
 - 초기 브라우저 자동화의 뜻 exact-text 탐색은 Flutter의 합쳐진 의미 노드 때문에 실패했다.
   스크린샷에서 올바른 표시를 확인하고 합쳐진 접근성 텍스트를 검사한 뒤 통과했다.
+
+
+## 배포 검증 (2026-11-04)
+
+- PASS. S2 소스 b3da5c2의 웹 41658314912 및 Android 테스트 APK 41658314699 전체 CI.
+- PASS. 공개 웹에서 최신 정의, 저장 당시 정보, PDF 누락 시 링크 재검사. 버전 갱신 소스 e752e34의 웹 41791431459와 테스트 APK 41791431452도 성공.
+- PASS. [서명 빌드 41791432029](https://github.com/Peter7004/Recall-APK-Private/actions/runs/41791432029)와 [정식 APK v1.0.4](https://github.com/Peter7004/Recall-APK-Private/releases/tag/v1.0.4). 패키지 io.github.peter7004.recall, 버전 코드 5, v1.0.3 배포 인증서 일치. 공개 다운로드와 SHA-256 확인.
+- APK SHA-256: 8277d4d9285f2d64d5e90471c0d2f9369999b9e22de6d89cdd488d8de69a288f
+- 로컬 aapt는 한글 경로에서 실패했고 영문 경로에서 패키지 검사에 성공했다. 기기 설치는 NOT TESTED.
