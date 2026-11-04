@@ -908,7 +908,62 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   int _page = 1;
   int _pages = 0;
   int _selectionRequest = 0;
+  int _tapRequest = 0;
   Timer? _selectionTimer;
+
+  bool _onPdfTap(BuildContext _, PdfViewerController controller,
+      PdfViewerGeneralTapHandlerDetails details) {
+    final request = ++_tapRequest;
+    if (details.type == PdfViewerGeneralTapType.tap &&
+        _ready &&
+        controller.isReady) {
+      unawaited(
+          _selectTappedTerm(controller, details.documentPosition, request));
+    }
+    // Let pdfrx finish its normal tap handling, including clearing selection.
+    return false;
+  }
+
+  Future<void> _selectTappedTerm(
+      PdfViewerController controller, Offset position, int request) async {
+    final document = controller.document;
+    final lookup = _terminology;
+    final center = controller.centerPosition;
+    final zoom = controller.currentZoom;
+    final layouts = controller.layout.pageLayouts;
+    final index = layouts.indexWhere((rect) => rect.contains(position));
+    if (index < 0) return;
+    final rect = layouts[index];
+    final point = Offset((position.dx - rect.left) / rect.width,
+        (position.dy - rect.top) / rect.height);
+    try {
+      final areas = await loadPdfHoverAreas(document.pages[index], lookup);
+      if (!mounted ||
+          request != _tapRequest ||
+          !_ready ||
+          !controller.isReady ||
+          !identical(document, controller.document) ||
+          !identical(lookup, _terminology) ||
+          controller.centerPosition != center ||
+          controller.currentZoom != zoom ||
+          controller.textSelectionDelegate.hasSelectedText) {
+        return;
+      }
+      for (final area in areas) {
+        if (!area.rects.any((rect) => rect.contains(point))) continue;
+        final range = area.range;
+        await controller.textSelectionDelegate.setTextSelectionPointRange(
+            PdfTextSelectionRange.fromPoints(
+                PdfTextSelectionPoint(range.pageText, range.start),
+                PdfTextSelectionPoint(range.pageText, range.end - 1)));
+        return;
+      }
+    } on TermTextUnavailable {
+      // A page without selectable text has no tappable terms.
+    } catch (error, stack) {
+      debugPrint('Reader tap lookup failed: $error\n$stack');
+    }
+  }
 
   Widget _lookupContent(String text) {
     final matches = {
@@ -1141,7 +1196,9 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           layoutPages: _paged ? _horizontalLayout : null,
                           scrollPhysics:
                               _paged ? const ClampingScrollPhysics() : null,
+                          onGeneralTap: _onPdfTap,
                           onInteractionStart: (_) {
+                            _tapRequest++;
                             _gesturePage = _controller.pageNumber ?? _page;
                             _gesturePosition = _controller.centerPosition;
                             _gestureScale = 1;

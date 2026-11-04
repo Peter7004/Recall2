@@ -5,6 +5,14 @@ Latest runtime: e752e34ce9cd22e43ff4fc4a184bc820b9f44aee (v1.0.4+5).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
+## Completed locally — S3 tap and click lookup
+
+Use the viewer's confirmed single tap and existing matched PDF rectangles to
+select the exact dictionary occurrence. Reuse the selection popup and source
+saving. Keep scroll, zoom, native selection and PDF link handling.
+Implemented in pdf_reader_page.dart and pdf_term_hover.dart. PASS: analyze, release web build, browser click and emulated touch, exact source save, zoom, touch drag, and existing selection and source consistency smoke. The smoke selectors were corrected after early harness failures. Android device and deployed web verification NOT TESTED. Source committed locally. Next product module: Reader backup and restore.
+
+
 ## Latest completed module — S2 definition and source consistency
 
 Authorized continuation 2026-11-03. Scope: learning list shows all current primary

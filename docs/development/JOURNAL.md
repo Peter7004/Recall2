@@ -223,3 +223,10 @@
 - Signed run 41791432029 published v1.0.4. Verified APK checksum, package,
   version code and matching v1.0.3 signer. Latest APK URL responds successfully.
 - Android device install NOT TESTED. Next module is Reader backup/restore.
+
+
+## 2026-11-04 — S3 single tap term lookup
+
+- PASS: analyze and release web build. Browser click and emulated touch opened the definition and saved the lower of two matching PDF occurrences. Zoom and touch drag checks passed. Existing selection and source consistency smoke passed.
+- Resolved smoke setup and locator failures involving semantics readiness, zoomed visibility and duplicate accessibility announcements.
+- NOT TESTED: deployed web and Android device.
