@@ -1,16 +1,16 @@
 # Reader handoff — start here
 
 Updated: 2026-11-04 (Asia/Seoul). Branch main.
-Latest runtime: e752e34ce9cd22e43ff4fc4a184bc820b9f44aee (v1.0.4+5).
+Latest runtime: 3afdd04efdd3522ed8c848bed0787a5941a85a12 (v1.0.5+6).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,
 P3a 97443f1. History is preserved in JOURNAL.md.
 
-## Active release — S3 tap and click lookup
+## Latest completed module — S3 tap and click lookup
 
 Use the viewer's confirmed single tap and existing matched PDF rectangles to
 select the exact dictionary occurrence. Reuse the selection popup and source
 saving. Keep scroll, zoom, native selection and PDF link handling.
-Implemented in pdf_reader_page.dart and pdf_term_hover.dart. PASS: analyze, release web build, browser click and emulated touch, exact source save, zoom, touch drag, and existing selection and source consistency smoke. The smoke selectors were corrected after early harness failures. Android device and deployed web verification NOT TESTED. Reported deployed app still required drag because S3 was local. Release v1.0.5+6 includes S3. Next: push Pages and run permanent signing, then verify public click and APK.
+Implemented in pdf_reader_page.dart and pdf_term_hover.dart. PASS: analyze, release web build, browser click and emulated touch, exact source save, zoom, touch drag, and existing selection and source consistency smoke. The smoke selectors were corrected after early harness failures. Android device verification NOT TESTED. Reported deployed app still required drag because S3 was local. Release v1.0.5+6 includes S3. Pages 41802098782 and public mouse/touch smoke PASS. Signed build 41802098954 PASS. v1.0.5 published with package io.github.peter7004.recall, version code 6, and the v1.0.4 certificate. Next product module: Reader backup and restore.
 
 
 ## Latest completed module — S2 definition and source consistency

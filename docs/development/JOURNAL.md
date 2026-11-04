@@ -230,3 +230,11 @@
 - PASS: analyze and release web build. Browser click and emulated touch opened the definition and saved the lower of two matching PDF occurrences. Zoom and touch drag checks passed. Existing selection and source consistency smoke passed.
 - Resolved smoke setup and locator failures involving semantics readiness, zoomed visibility and duplicate accessibility announcements.
 - NOT TESTED: deployed web and Android device.
+
+
+## 2026-11-04 — S3 public deployment
+
+- The deployed app still required dragging while the click implementation was local. Released source 3afdd04 with the S3 commit.
+- PASS: Pages 41802098782 and public click, emulated touch, zoom, exact source save and touch drag smoke.
+- PASS: Signed build 41802098954 and public v1.0.5 APK download. Verified package identity, version code 6, previous certificate and SHA-256 92d94989a7dd66c80c057e7cd82c55717bb1adc67ba45090a87bf318a0ec2a85.
+- NOT TESTED: Android device gestures and installation.
