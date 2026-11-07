@@ -1,5 +1,16 @@
 # Reader development journal
 
+## 2026-11-08 — Personal vocabulary dialog UI
+
+- Grouped required meaning and optional notes, outlined fields with spacing,
+  readable source block, contextual duplicate confirmation, save progress indicator.
+- Scrollable dialog keeps actions reachable with small viewport/keyboard insets.
+- PASS: 8 focused tests, full analyze, release web build, browser save/reload with
+  explicit stored memo assertion. Desktop/mobile screenshots visually inspected.
+- Browser harness corrected: Flutter semantics focus changes made positional/fill
+  input unreliable; named controls with key input pass. No production storage change.
+- Android hardware/actual mobile keyboard NOT TESTED. No push or deployment.
+
 ## 2026-11-03 — P2 closed / P3 started
 
 - Rechecked 826ed80: web run 41404851026 and Android run 41404851004 both SUCCESS.

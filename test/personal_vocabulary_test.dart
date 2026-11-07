@@ -150,12 +150,38 @@ void main() {
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
     expect(find.textContaining('같은 단어가 있습니다.'), findsOneWidget);
+    await tester.ensureVisible(find.byType(Checkbox));
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
     expect(store.allCards.length, 2);
     expect(store.allCards.last.card.isPersonal, isTrue);
+  });
+  testWidgets(
+      'compact dialog scrolls with keyboard and hides irrelevant duplicate option',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.reset);
+    final store = await RecallStore.load();
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: PersonalVocabularyDialog(
+                store: store,
+                term: 'new term',
+                sentence: '',
+                source:
+                    'A very long electrical engineering document title.pdf · 12쪽'))));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Checkbox), findsNothing);
+    expect(find.text('저장').hitTestable(), findsOneWidget);
+    await tester.ensureVisible(find.textContaining('PDF 출처'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('PDF 출처').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 

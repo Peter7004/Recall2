@@ -2,6 +2,7 @@
 const {chromium} = require(process.env.RECALL_PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 (async () => {
   const browser = await chromium.launch({channel: 'msedge', headless: true});
   try {
@@ -30,16 +31,29 @@ const path = require('node:path');
     await page.mouse.move(rect.x + rect.width + 3, rect.y + rect.height / 2, {steps: 20});
     await page.mouse.up();
     await button('내 단어장에 추가').click();
-    const fields = page.getByRole('textbox');
-    await fields.nth(0).fill('personal skin effect');
-    await fields.nth(1).fill('직접 입력한 뜻');
-    await fields.nth(2).fill('내 설명');
-    await fields.nth(3).fill('Editable source sentence.');
+    async function type(name, value) {
+      const field = page.getByRole('textbox', {name});
+      await field.click();
+      await field.press('ControlOrMeta+A');
+      await field.pressSequentially(value);
+      await page.waitForTimeout(100);
+    }
+    await type(/단어 또는 전문용어/, 'personal skin effect');
+    await type(/내가 작성한 뜻/, '직접 입력한 뜻');
+    await type(/설명 \/ 메모/, '내 설명');
+    await type(/원문 문장/, 'Editable source sentence.');
+    const screenshots = path.resolve(__dirname, '../build/personal-vocabulary-ui');
+    fs.mkdirSync(screenshots, {recursive: true});
+    await page.screenshot({path: path.join(screenshots, 'desktop.png')});
+    await page.setViewportSize({width: 390, height: 844});
+    await page.waitForTimeout(500);
+    await page.screenshot({path: path.join(screenshots, 'mobile.png')});
     await button('저장').click();
     await page.waitForTimeout(1000);
     await button('1 / 5').waitFor();
     const saved = (await data()).entries.find(e => e.collector === 'reader:personal');
     assert(saved, 'manual entry must be persisted');
+    assert.equal(saved.meanings[0].explanation_ko, '내 설명');
     assert.equal(saved.example, 'Editable source sentence.');
     assert(saved.source.includes('1쪽'));
     await page.reload();

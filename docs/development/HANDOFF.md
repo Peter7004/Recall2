@@ -1,5 +1,16 @@
 # Reader handoff — start here
 
+## Active UI follow-up — 2026-11-08
+User authorized UI improvements and commit. Scope: personal_vocabulary_dialog.dart,
+focused widget/browser tests and development records. Add field spacing/borders, required vs
+optional sections, readable source block, contextual duplicate confirmation and
+scrollable keyboard-safe layout. Storage unchanged. 8 focused tests PASS, including
+390x844 viewport with 300px simulated keyboard inset. Full analyze, release web build,
+browser drag/save/reload PASS. Desktop/mobile screenshots inspected. Browser smoke
+uses named fields and real key input because Flutter editable semantics rebuild on
+focus; fixed test harness failures, confirmed saved explanation_ko. Ready for task-only
+commit; no push/deploy. Android device/actual mobile keyboard NOT TESTED.
+
 ## Active task — manual PDF vocabulary (2026-11-08)
 User authorized implementation and commit. Inspecting existing pdfrx selection,
 RecallCard meanings/examples/sources and SharedPreferences v3. Reuse existing
