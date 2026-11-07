@@ -1222,6 +1222,13 @@ class _ReviewPageState extends State<ReviewPage> {
                           imageData: current.card.imageData,
                           example: current.card.example,
                           details: [
+                            if (current.card.isPersonal) ...[
+                              for (final m in current.card.effectiveMeanings)
+                                if (m.explanationKo.isNotEmpty)
+                                  (label: '내 메모', value: m.explanationKo),
+                              if (current.card.source.isNotEmpty)
+                                (label: 'PDF 출처', value: current.card.source),
+                            ],
                             (
                               label: '학습 우선순위',
                               value: current.card.learningPriority.label
@@ -2449,6 +2456,7 @@ class _VocabularyTile extends StatelessWidget {
         const SizedBox(height: 4),
         Wrap(spacing: 12, runSpacing: 4, children: [
           _VocabularyTypeLabel(card.vocabularyType),
+          if (card.isPersonal) const Text('내 단어'),
           _LearningPriorityLabel(card.learningPriority),
         ]),
         if (subjects.isNotEmpty)
@@ -2910,6 +2918,7 @@ class _DictionaryTermPageState extends State<_DictionaryTermPage> {
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Wrap(spacing: 12, runSpacing: 4, children: [
+                      if (term.isPersonal) const Chip(label: Text('내 단어')),
                       _VocabularyTypeLabel(term.vocabularyType),
                       _LearningPriorityLabel(term.learningPriority),
                     ]),

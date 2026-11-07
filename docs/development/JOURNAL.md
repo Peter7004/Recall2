@@ -238,3 +238,13 @@
 - PASS: Pages 41802098782 and public click, emulated touch, zoom, exact source save and touch drag smoke.
 - PASS: Signed build 41802098954 and public v1.0.5 APK download. Verified package identity, version code 6, previous certificate and SHA-256 92d94989a7dd66c80c057e7cd82c55717bb1adc67ba45090a87bf318a0ec2a85.
 - NOT TESTED: Android device gestures and installation.
+# 2026-11-08 — Manual PDF personal vocabulary
+
+Added selection-to-manual-entry flow, conservative selected-offset sentence extraction,
+personal identities without schema migration, duplicate confirmation and flashcard
+back note/source. Reused existing dictionary CRUD and examples. Corrected test to use
+deleteEntries (deleteCard intentionally only removes collection membership).
+49 isolated tests, full analyze, release web build and actual browser save/reload PASS.
+Full native tests blocked by missing Windows C++ compiler; Android device/build NOT TESTED.
+See PERSONAL_VOCABULARY_VERIFICATION.md. No user data, unrelated staged copies or
+collaboration changes removed. No AI/package/DB addition. Commit authorized; no push/merge.

@@ -26,6 +26,8 @@ import 'reader_learning_view.dart';
 import 'reader_source.dart';
 import 'reader_settings.dart';
 import 'reader_learning_guard_factory.dart';
+import 'personal_vocabulary_dialog.dart';
+import 'personal_vocabulary_context.dart';
 
 class PdfReaderPage extends StatefulWidget {
   const PdfReaderPage(
@@ -965,6 +967,28 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     }
   }
 
+  Future<void> _addPersonalWord(String text) async {
+    final store = widget.store;
+    if (store == null) return;
+    final ranges = List<PdfPageTextRange>.of(_selectionRanges);
+    final selected = ranges.length == 1 ? ranges.single : null;
+    final sentence = selected == null
+        ? ''
+        : personalSentence(
+            selected.pageText.fullText, selected.start, selected.end);
+    final pages = ranges.map((r) => r.pageNumber).toSet().toList();
+    final source = '$_name${pages.isEmpty ? '' : ' · ${pages.join(', ')}쪽'}';
+    final saved = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PersonalVocabularyDialog(
+            store: store, term: text, sentence: sentence, source: source));
+    if (mounted && saved == true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('내 단어장에 저장했습니다. 사전에서 수정하고 플래시카드로 복습할 수 있습니다.')));
+    }
+  }
+
   Widget _lookupContent(String text) {
     final matches = {
       for (final match in _terminology.lookup(text))
@@ -976,36 +1000,42 @@ class _PdfReaderPageState extends State<PdfReaderPage>
             child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: matches.isEmpty
-              ? [const Text('정의를 찾을 수 없습니다 (Definition not available).')]
-              : [
-                  for (final match in matches.take(5)) ...[
-                    Text(match.expression,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text((match.isKorean
-                            ? match.concept.english
-                            : match.concept.korean)
-                        .join(' / ')),
-                    for (final meaning in match.concept.card.effectiveMeanings)
-                      Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (meaning.definitionEn.isNotEmpty)
-                              Text(meaning.definitionEn),
-                            if (meaning.explanationKo.isNotEmpty)
-                              Text(meaning.explanationKo),
-                          ]),
-                    TextButton.icon(
-                        onPressed: _termSaving ? null : () => _saveTerm(match),
-                        icon: const Icon(Icons.playlist_add),
-                        label:
-                            Text('단어 저장: ${match.concept.card.displayTerm}')),
-                    if (match.concept.card.verificationStatus !=
-                        VerificationStatus.verified)
-                      Text(match.concept.card.verificationStatus.label),
-                    const SizedBox(height: 8),
-                  ],
-                ],
+          children: [
+            if (widget.store != null)
+              TextButton.icon(
+                  onPressed: () => _addPersonalWord(text),
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('내 단어장에 추가')),
+            if (matches.isEmpty)
+              const Text('정의를 찾을 수 없습니다 (Definition not available).')
+            else ...[
+              for (final match in matches.take(5)) ...[
+                Text(match.expression,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text((match.isKorean
+                        ? match.concept.english
+                        : match.concept.korean)
+                    .join(' / ')),
+                for (final meaning in match.concept.card.effectiveMeanings)
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (meaning.definitionEn.isNotEmpty)
+                          Text(meaning.definitionEn),
+                        if (meaning.explanationKo.isNotEmpty)
+                          Text(meaning.explanationKo),
+                      ]),
+                TextButton.icon(
+                    onPressed: _termSaving ? null : () => _saveTerm(match),
+                    icon: const Icon(Icons.playlist_add),
+                    label: Text('단어 저장: ${match.concept.card.displayTerm}')),
+                if (match.concept.card.verificationStatus !=
+                    VerificationStatus.verified)
+                  Text(match.concept.card.verificationStatus.label),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ],
         )));
   }
 

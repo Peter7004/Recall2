@@ -192,6 +192,7 @@ class RecallCategory {
 
 // Legacy card fields remain available to the existing photo and review screens.
 class RecallCard {
+  bool get isPersonal => collector == 'reader:personal';
   const RecallCard({
     required this.id,
     required this.front,
