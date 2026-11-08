@@ -1,5 +1,15 @@
 # Reader handoff — start here
 
+## Unhighlighted text check — 2026-11-08
+User asks whether plain PDF text can be drag-selected and saved. Existing selection
+callback and manual action do not require dictionary matches. No duplicate app feature
+needed. Added RECALL_TEST_UNHIGHLIGHTED mode to personal_vocabulary_smoke.cjs.
+PASS against current local release: no dictionary match, plain text drag, exact prefill,
+save original selected text/manual meaning/note/source, same page and reload persistence.
+Harness fixes: restarted stopped local server; focus Flutter semantics input before
+reading inputValue (unfocused semantics node returns empty). No app source changed.
+UI follow-up committed as 973a036; no public deployment performed.
+
 ## Active UI follow-up — 2026-11-08
 User authorized UI improvements and commit. Scope: personal_vocabulary_dialog.dart,
 focused widget/browser tests and development records. Add field spacing/borders, required vs

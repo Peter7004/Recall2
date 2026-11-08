@@ -23,14 +23,22 @@ const fs = require('node:fs');
     ]);
     await chooser.setFiles(path.resolve(__dirname, '../build/reader-learning-fixtures/source-a.pdf'));
     await button('1 / 5').waitFor();
-    const text = page.getByText('Skin effect', {exact: true}).nth(1);
+    const plainText = process.env.RECALL_TEST_UNHIGHLIGHTED === '1';
+    const selectedText = plainText ? 'Reader source fixture source-a, page 1' : 'Skin effect';
+    const text = page.getByText(selectedText, {exact: true}).nth(plainText ? 0 : 1);
     await text.waitFor();
     const rect = await text.boundingBox();
     await page.mouse.move(rect.x - 3, rect.y + rect.height / 2);
     await page.mouse.down();
     await page.mouse.move(rect.x + rect.width + 3, rect.y + rect.height / 2, {steps: 20});
     await page.mouse.up();
+    if (plainText) {
+      await page.getByText('정의를 찾을 수 없습니다 (Definition not available).', {exact: true}).waitFor();
+    }
     await button('내 단어장에 추가').click();
+    await page.getByRole('textbox', {name: /단어 또는 전문용어/}).click();
+    await page.waitForTimeout(200);
+    assert.equal(await page.getByRole('textbox', {name: /단어 또는 전문용어/}).inputValue(), selectedText);
     async function type(name, value) {
       const field = page.getByRole('textbox', {name});
       await field.click();
@@ -38,7 +46,7 @@ const fs = require('node:fs');
       await field.pressSequentially(value);
       await page.waitForTimeout(100);
     }
-    await type(/단어 또는 전문용어/, 'personal skin effect');
+    if (!plainText) await type(/단어 또는 전문용어/, 'personal skin effect');
     await type(/내가 작성한 뜻/, '직접 입력한 뜻');
     await type(/설명 \/ 메모/, '내 설명');
     await type(/원문 문장/, 'Editable source sentence.');
@@ -53,6 +61,7 @@ const fs = require('node:fs');
     await button('1 / 5').waitFor();
     const saved = (await data()).entries.find(e => e.collector === 'reader:personal');
     assert(saved, 'manual entry must be persisted');
+    if (plainText) assert.equal(saved.front, selectedText);
     assert.equal(saved.meanings[0].explanation_ko, '내 설명');
     assert.equal(saved.example, 'Editable source sentence.');
     assert(saved.source.includes('1쪽'));
@@ -60,7 +69,7 @@ const fs = require('node:fs');
     await page.waitForTimeout(2000);
     assert.deepEqual((await data()).entries.find(e => e.id === saved.id), saved);
     assert.deepEqual(errors, []);
-    console.log('PASS: PDF drag selection, personal dialog, manual meaning/note/context, source page, same reading page, web reload persistence; no JS errors.');
+    console.log(`PASS (${plainText ? 'unhighlighted text, no dictionary match' : 'dictionary term'}): PDF drag selection, personal dialog, manual meaning/note/context, source page, same reading page, web reload persistence; no JS errors.`);
   } finally {
     await browser.close();
   }

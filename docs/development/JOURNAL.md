@@ -1,5 +1,14 @@
 # Reader development journal
 
+## 2026-11-08 — Plain unhighlighted PDF selection verified
+
+- Existing implementation already allows saving any copyable selected text, with no
+  dictionary-match requirement. No duplicate feature added.
+- PASS browser test with RECALL_TEST_UNHIGHLIGHTED=1: selected ordinary fixture text,
+  confirmed empty dictionary lookup, exact prefill, manual save and reload persistence.
+- Test harness needed local server restart and focus before reading Flutter inputValue.
+- Android touch selection NOT TESTED. Local feature not yet published to web/APK.
+
 ## 2026-11-08 — Personal vocabulary dialog UI
 
 - Grouped required meaning and optional notes, outlined fields with spacing,
