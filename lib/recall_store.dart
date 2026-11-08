@@ -224,6 +224,7 @@ class RecallStore extends ChangeNotifier {
     if (_bundledVocabularyVersion >= catalog.version) return false;
     final existingByKey = <String, RecallCard>{};
     for (final card in _entries.values) {
+      if (card.isPersonal) continue;
       existingByKey.putIfAbsent(vocabularyKey(card), () => card);
     }
     final grouped = <String, List<CsvVocabularyRow>>{};
@@ -639,6 +640,7 @@ class RecallStore extends ChangeNotifier {
     final preview = previewCsvImportDetailed(csvText);
     final byKey = <String, RecallCard>{};
     for (final card in _entries.values) {
+      if (card.isPersonal) continue;
       byKey.putIfAbsent(vocabularyKey(card), () => card);
     }
     final ids = <String>{};
@@ -847,6 +849,7 @@ class RecallStore extends ChangeNotifier {
   }
 
   Future<void> addCard({
+    bool personal = false,
     required String deckId,
     required String front,
     required String meaning,
@@ -874,6 +877,13 @@ class RecallStore extends ChangeNotifier {
     VerificationStatus verificationStatus = VerificationStatus.needsReview,
   }) async {
     _assertWritable();
+    if (personal) {
+      await _pendingSave;
+      await _preferences.reload();
+      if (_preferences.getString(_dataKey) != _persistedData) {
+        throw const RecallConcurrentWriteException();
+      }
+    }
     if (front.trim().isEmpty || meaning.trim().isEmpty) {
       throw ArgumentError('용어와 뜻이 필요합니다.');
     }
@@ -906,7 +916,7 @@ class RecallStore extends ChangeNotifier {
         learningPriority: learningPriority,
         priorityReason: priorityReason,
         inclusionRecommendation: inclusionRecommendation,
-        collector: collector,
+        collector: personal ? 'reader:personal' : collector,
         notes: notes,
         partOfSpeech: partOfSpeech,
         meanings: meanings,
@@ -915,9 +925,11 @@ class RecallStore extends ChangeNotifier {
     if (card.meanings.isEmpty) {
       card = card.copyWith(meanings: card.effectiveMeanings);
     }
-    final existing =
-        _entries.values.where((c) => vocabularyKey(c) == vocabularyKey(card));
-    if (existing.isNotEmpty) card = _mergeEntry(existing.first, card);
+    final existing = _entries.values
+        .where((c) => !c.isPersonal && vocabularyKey(c) == vocabularyKey(card));
+    if (!personal && existing.isNotEmpty) {
+      card = _mergeEntry(existing.first, card);
+    }
     _entries[card.id] = card;
     final i = _decks.indexWhere((d) => d.id == deckId);
     if (i >= 0 && !_decks[i].cards.any((c) => c.id == card.id)) {
@@ -925,7 +937,26 @@ class RecallStore extends ChangeNotifier {
       _decks[i] = RecallDeck(
           id: deck.id, name: deck.name, cards: [...deck.cards, card]);
     }
-    await _save();
+    try {
+      await _save();
+    } catch (_) {
+      if (personal) {
+        _entries.remove(card.id);
+        _decks = [
+          for (final deck in _decks)
+            RecallDeck(
+                id: deck.id,
+                name: deck.name,
+                cards: deck.cards.where((c) => c.id != card.id).toList())
+        ];
+        _invalidateDictionaryCaches();
+        try {
+          await _preferences.reload();
+        } catch (_) {/* Preserve save error. */}
+        notifyListeners();
+      }
+      rethrow;
+    }
   }
 
   Future<void> updateCard({
@@ -997,9 +1028,12 @@ class RecallStore extends ChangeNotifier {
         ...old.effectiveMeanings.skip(1)
       ]);
     }
-    if (vocabularyKey(updated) != vocabularyKey(old) &&
+    if (!old.isPersonal &&
+        vocabularyKey(updated) != vocabularyKey(old) &&
         _entries.values.any((c) =>
-            c.id != cardId && vocabularyKey(c) == vocabularyKey(updated))) {
+            !c.isPersonal &&
+            c.id != cardId &&
+            vocabularyKey(c) == vocabularyKey(updated))) {
       throw ArgumentError('같은 영어 용어가 이미 있습니다. 기존 항목에 의미를 추가해 주세요.');
     }
     _entries[cardId] = updated;

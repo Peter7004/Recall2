@@ -5,6 +5,7 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
+| M1 | IMPLEMENTED; verification in PERSONAL_VOCABULARY_VERIFICATION.md | Manual PDF personal vocabulary, editable context and existing flashcard integration. 49 isolated tests/analyze/web build/browser save-reload PASS; native host tests blocked by C++ toolchain; Android NOT TESTED. |
 | P0 | DONE | Repository handoff, journal, source checkpoint command. Snapshot manifest and all 30 source file hashes verified. |
 | P1 | DONE; DEPLOYMENT TRACKED IN HANDOFF | Right-hand document page navigator and validated page entry. Widget tests, analyze, release web build, real PDF smoke and both full Linux CI test jobs PASS. Android device gestures NOT TESTED. |
 | P2 | DONE; DEPLOYMENT TRACKED IN HANDOFF | Managed PDF library, native no-backup/web IndexedDB. Real browser CRUD/rollback, 11 isolated tests and both full Linux test jobs PASS. Desktop hover/selection verified. Android build and web deployment tracked separately; device behavior NOT TESTED. |

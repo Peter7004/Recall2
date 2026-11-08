@@ -1,5 +1,46 @@
 # Reader handoff — start here
 
+## Unhighlighted text check — 2026-11-08
+User asks whether plain PDF text can be drag-selected and saved. Existing selection
+callback and manual action do not require dictionary matches. No duplicate app feature
+needed. Added RECALL_TEST_UNHIGHLIGHTED mode to personal_vocabulary_smoke.cjs.
+PASS against current local release: no dictionary match, plain text drag, exact prefill,
+save original selected text/manual meaning/note/source, same page and reload persistence.
+Harness fixes: restarted stopped local server; focus Flutter semantics input before
+reading inputValue (unfocused semantics node returns empty). No app source changed.
+UI follow-up committed as 973a036; no public deployment performed.
+
+## Active UI follow-up — 2026-11-08
+User authorized UI improvements and commit. Scope: personal_vocabulary_dialog.dart,
+focused widget/browser tests and development records. Add field spacing/borders, required vs
+optional sections, readable source block, contextual duplicate confirmation and
+scrollable keyboard-safe layout. Storage unchanged. 8 focused tests PASS, including
+390x844 viewport with 300px simulated keyboard inset. Full analyze, release web build,
+browser drag/save/reload PASS. Desktop/mobile screenshots inspected. Browser smoke
+uses named fields and real key input because Flutter editable semantics rebuild on
+focus; fixed test harness failures, confirmed saved explanation_ko. Ready for task-only
+commit; no push/deploy. Android device/actual mobile keyboard NOT TESTED.
+
+## Active task — manual PDF vocabulary (2026-11-08)
+User authorized implementation and commit. Inspecting existing pdfrx selection,
+RecallCard meanings/examples/sources and SharedPreferences v3. Reuse existing
+dictionary edit/delete and flashcards. Add a manual selection dialog, conservative
+offset-based context extraction and separate personal identities; no AI or DB migration.
+Expected files: vocabulary.dart, recall_store.dart, main.dart, reader/pdf_reader_page.dart,
+new personal vocabulary dialog/context helper, focused tests and development records.
+Implemented: manual dialog, conservative selected-offset context, distinct personal
+entries, existing dictionary editing/deletion and flashcard back content reused.
+PASS: 49 isolated tests (same app source and locked compatible dependencies),
+full analyze, release web build and actual browser PDF-selection/save/reload smoke.
+FAIL (environment): full native test invocation stops at pdfium C++ build hook;
+Windows C++ compiler is not configured. Android device/build NOT TESTED; adb has no devices.
+Final same-source release web build and existing full Reader learning/source browser
+regression PASS. Verified source hashes match the tested full-project copy.
+Ready for task-only commit on codex/pdf-personal-vocabulary; next validation requires
+Android hardware and a configured native C++ toolchain. No push/merge/deploy authorized.
+Unrelated staged copies and collaboration changes remain untouched.
+See PERSONAL_VOCABULARY_VERIFICATION.md for scope, commands and limitations.
+
 Updated: 2026-11-04 (Asia/Seoul). Branch main.
 Latest runtime: 3afdd04efdd3522ed8c848bed0787a5941a85a12 (v1.0.5+6).
 Earlier milestones: P0 4887541, P1 1c2f113, P2/hover 826ed80, P3 feecf59,

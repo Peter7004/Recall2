@@ -1,5 +1,25 @@
 # Reader development journal
 
+## 2026-11-08 — Plain unhighlighted PDF selection verified
+
+- Existing implementation already allows saving any copyable selected text, with no
+  dictionary-match requirement. No duplicate feature added.
+- PASS browser test with RECALL_TEST_UNHIGHLIGHTED=1: selected ordinary fixture text,
+  confirmed empty dictionary lookup, exact prefill, manual save and reload persistence.
+- Test harness needed local server restart and focus before reading Flutter inputValue.
+- Android touch selection NOT TESTED. Local feature not yet published to web/APK.
+
+## 2026-11-08 — Personal vocabulary dialog UI
+
+- Grouped required meaning and optional notes, outlined fields with spacing,
+  readable source block, contextual duplicate confirmation, save progress indicator.
+- Scrollable dialog keeps actions reachable with small viewport/keyboard insets.
+- PASS: 8 focused tests, full analyze, release web build, browser save/reload with
+  explicit stored memo assertion. Desktop/mobile screenshots visually inspected.
+- Browser harness corrected: Flutter semantics focus changes made positional/fill
+  input unreliable; named controls with key input pass. No production storage change.
+- Android hardware/actual mobile keyboard NOT TESTED. No push or deployment.
+
 ## 2026-11-03 — P2 closed / P3 started
 
 - Rechecked 826ed80: web run 41404851026 and Android run 41404851004 both SUCCESS.
@@ -238,3 +258,13 @@
 - PASS: Pages 41802098782 and public click, emulated touch, zoom, exact source save and touch drag smoke.
 - PASS: Signed build 41802098954 and public v1.0.5 APK download. Verified package identity, version code 6, previous certificate and SHA-256 92d94989a7dd66c80c057e7cd82c55717bb1adc67ba45090a87bf318a0ec2a85.
 - NOT TESTED: Android device gestures and installation.
+# 2026-11-08 — Manual PDF personal vocabulary
+
+Added selection-to-manual-entry flow, conservative selected-offset sentence extraction,
+personal identities without schema migration, duplicate confirmation and flashcard
+back note/source. Reused existing dictionary CRUD and examples. Corrected test to use
+deleteEntries (deleteCard intentionally only removes collection membership).
+49 isolated tests, full analyze, release web build and actual browser save/reload PASS.
+Full native tests blocked by missing Windows C++ compiler; Android device/build NOT TESTED.
+See PERSONAL_VOCABULARY_VERIFICATION.md. No user data, unrelated staged copies or
+collaboration changes removed. No AI/package/DB addition. Commit authorized; no push/merge.
