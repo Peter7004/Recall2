@@ -222,6 +222,29 @@ class RecallStore extends ChangeNotifier {
 
   bool _seedBundledVocabulary(BundledVocabulary catalog) {
     if (_bundledVocabularyVersion >= catalog.version) return false;
+    if (catalog.version >= 2 && _bundledVocabularyVersion < 2) {
+      final oldIds = _entries.values
+          .where(
+            (card) =>
+                !card.isPersonal &&
+                card.extraFields['recall_catalog'] == 'core' &&
+                card.extraFields['recall_catalog_version'] == '1',
+          )
+          .map((card) => card.id)
+          .toSet();
+      _entries.removeWhere((id, _) => oldIds.contains(id));
+      _decks = [
+        for (final deck in _decks)
+          RecallDeck(
+            id: deck.id,
+            name: deck.name,
+            cards: deck.cards
+                .where((card) => !oldIds.contains(card.id))
+                .toList(),
+          ),
+      ];
+      _recentViews.removeWhere((view) => oldIds.contains(view.cardId));
+    }
     final existingByKey = <String, RecallCard>{};
     for (final card in _entries.values) {
       if (card.isPersonal) continue;

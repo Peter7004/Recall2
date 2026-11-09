@@ -30,13 +30,13 @@ void main() {
 
     final first = await RecallStore.load(loadBundledVocabulary: loader);
     expect(loads, 1);
-    expect(first.totalCards, 276);
+    expect(first.totalCards, 834);
     final erased = first.allCards.first.card.id;
     await first.deleteEntries([erased]);
     first.dispose();
     final reloaded = await RecallStore.load(loadBundledVocabulary: loader);
     expect(loads, 1);
-    expect(reloaded.totalCards, 275);
+    expect(reloaded.totalCards, 833);
     expect(reloaded.cardById(erased), isNull);
     reloaded.dispose();
   });
@@ -56,17 +56,17 @@ void main() {
     final reloaded =
         await RecallStore.load(loadBundledVocabulary: () async => catalog);
     expect(reloaded.searchCards('personal').single.card.primaryMeaning, 'mine');
-    expect(reloaded.totalCards, 277);
+    expect(reloaded.totalCards, 835);
     reloaded.dispose();
   });
 
-  test('all 288 rows become 276 entries without losing alternative meanings',
+  test('all 834 rows become 834 dictionary entries',
       () async {
-    expect(catalog.rows, hasLength(288));
+    expect(catalog.rows, hasLength(834));
     final store = await RecallStore.load(bundledVocabulary: catalog);
-    expect(store.totalCards, 276);
+    expect(store.totalCards, 834);
     expect(store.decks.single.name, BundledVocabulary.deckName);
-    expect(store.decks.single.cards, hasLength(276));
+    expect(store.decks.single.cards, hasLength(834));
     final byKey = {
       for (final e in store.allCards) vocabularyKey(e.card): e.card
     };
@@ -81,7 +81,6 @@ void main() {
           reason: '${row.number}: ${row.card.displayTerm}');
     }
     expect(byKey['skin effect']!.learningPriority, LearningPriority.high);
-    expect(byKey['cda']!.vocabularyType, VocabularyType.generalTechnical);
     expect(byKey['cda']!.learningPriority, LearningPriority.low);
     expect(store.categories.map((c) => c.name), contains('전자기학'));
     RecallBackup.parse(store.exportBackup());
@@ -94,8 +93,8 @@ void main() {
     await original.createDeck('Personal');
     await original.addCard(
         deckId: original.decks.single.id,
-        front: 'My Skin effect',
-        termEnglish: 'SKIN EFFECT',
+        front: 'My Absorption',
+        termEnglish: 'ABSORPTION',
         meaning: '내가 작성한 뜻',
         example: 'Keep my example.',
         categoryNames: ['My subject'],
@@ -109,7 +108,7 @@ void main() {
     final before = original.cardById(id)!.toJson();
     original.dispose();
     final updated = await RecallStore.load(bundledVocabulary: catalog);
-    expect(updated.totalCards, 276);
+    expect(updated.totalCards, 834);
     expect(updated.cardById(id)!.toJson(), before);
     expect(updated.decks.first.name, 'Personal');
     expect(updated.decks.last.cards.any((c) => c.id == id), isTrue);
@@ -134,7 +133,7 @@ void main() {
     final before = RecallBackup.parse(first.exportBackup()).snapshot;
     first.dispose();
     final again = await RecallStore.load(bundledVocabulary: catalog);
-    expect(again.totalCards, 275);
+    expect(again.totalCards, 833);
     expect(again.cardById(erased.id), isNull);
     expect(again.cardById(edited.id)!.primaryMeaning, 'Personal edit');
     expect(RecallBackup.parse(again.exportBackup()).snapshot, before);
@@ -170,7 +169,7 @@ void main() {
     await original.restoreBackup(backup);
     original.dispose();
     final updated = await RecallStore.load(bundledVocabulary: catalog);
-    expect(updated.totalCards, 277);
+    expect(updated.totalCards, 835);
     expect(
         updated.searchCards('custom').single.card.primaryMeaning, '개인');
     updated.dispose();
@@ -182,15 +181,42 @@ void main() {
     final before = first.allCards.first.card.toJson();
     first.dispose();
     final next = BundledVocabulary(
-        version: 2,
+        version: 3,
         csvText: '${recallV3Columns.join(',')}\n'
-            'Skin effect,technical,Changed,noun,Changed,Changed,Changed,low,,include,,,\n'
+            'Absorption,technical,Changed,noun,Changed,Changed,Changed,low,,include,,,\n'
             'New term,technical,새 용어,noun,Electronics,Definition.,설명,high,,include,,,');
     final updated = await RecallStore.load(bundledVocabulary: next);
-    expect(updated.totalCards, 277);
+    expect(updated.totalCards, 835);
     expect(updated.cardById(before['id'] as String)!.toJson(), before);
     expect(updated.decks, hasLength(1));
-    expect(updated.decks.single.cards, hasLength(277));
+    expect(updated.decks.single.cards, hasLength(835));
+    updated.dispose();
+  });
+
+  test('version two replaces only the previous bundled catalog', () async {
+    final old = BundledVocabulary(
+      version: 1,
+      csvText:
+          '${recallV3Columns.join(',')}\n'
+          'Old catalog only,technical,Old,noun,,Old.,,medium,,include,,,',
+    );
+    final first = await RecallStore.load(bundledVocabulary: old);
+    await first.addCard(
+      deckId: '',
+      front: 'Custom',
+      meaning: 'Mine',
+      example: '',
+    );
+    final oldId = first.searchCards('Old catalog only').single.card.id;
+    await first.recordCardViewed(oldId);
+    first.dispose();
+
+    final updated = await RecallStore.load(bundledVocabulary: catalog);
+    expect(updated.cardById(oldId), isNull);
+    expect(updated.searchCards('Custom').single.card.primaryMeaning, 'Mine');
+    expect(updated.totalCards, 835);
+    expect(updated.decks.single.cards, hasLength(834));
+    expect(updated.recentCards, isEmpty);
     updated.dispose();
   });
 
@@ -224,7 +250,7 @@ void main() {
     preferences.fail = false;
     final updated = await RecallStore.load(
         storage: preferences, bundledVocabulary: catalog);
-    expect(updated.totalCards, 276);
+    expect(updated.totalCards, 834);
     expect(updated.decks.first.name, 'Keep');
     updated.dispose();
   });
@@ -237,10 +263,10 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text('등록된 용어가 없습니다.'), findsNothing);
-    await tester.enterText(find.byType(TextField).first, 'Skin effect');
+    await tester.enterText(find.byType(TextField).first, 'Absorption');
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(ListTile, 'Skin effect'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ListTile, 'Skin effect'));
+    expect(find.widgetWithText(ListTile, 'Absorption'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, 'Absorption'));
     await tester.pumpAndSettle();
     expect(find.text(catalog.rows.first.card.definitionEn), findsOneWidget);
     expect(find.text(catalog.rows.first.card.explanationKo), findsOneWidget);
