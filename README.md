@@ -85,16 +85,11 @@ and interactive latency should be evaluated separately.
 
 ### Bundled Vocabulary
 
-Version 1.0.2 includes `assets/vocabulary/recall_core_v1.csv` in Android and web
-builds. Its 288 source rows form 276 unique English terms in the
-`기본 전공 용어` collection; distinct meanings, definitions, explanations,
-subjects, and source metadata from duplicate rows are preserved.
-Blank vocabulary types use the existing `general_technical` import default.
-Editorial review recommendations remain hidden from learners.
-
-Each catalog version is initialized once on startup. Existing matching entries
-are linked without changing their IDs, content, bookmarks, exclusion settings,
-or review history. Missing terms are added; unrelated vocabulary is retained.
+The Android and web builds bundle 834 English terms from
+`assets/vocabulary/recall_core_v1.csv` in the `기본 전공 용어` collection.
+Catalog version 2 replaces entries seeded by version 1. Personal entries and
+entries created independently of the bundled catalog are retained. Existing
+matching user entries are linked without overwriting their content or progress.
 Later launches of the same catalog do not recreate deleted entries or collections.
 The catalog initialization version is saved and included in full JSON backups;
 backups made before this setting existed remain importable. As with other

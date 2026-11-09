@@ -13,7 +13,7 @@ class BundledVocabulary {
   }
   const BundledVocabulary._(this.version, this.rows);
 
-  static const currentVersion = 1;
+  static const currentVersion = 2;
   static const assetPath = 'assets/vocabulary/recall_core_v1.csv';
   static const deckId = 'recall-builtin-deck';
   static const deckName = '기본 전공 용어';
