@@ -279,7 +279,7 @@ the resulting certificate against `RECALL_CERT_SHA256` before uploading it.
 Never commit a keystore or password, include it in an artifact, or print it in logs.
 
 For each update, keep the same application ID and keystore, increase the build
-number in `pubspec.yaml` (currently `1.0.7+8`), test, then publish a newer APK.
+number in `pubspec.yaml` (currently `1.0.8+9`), test, then publish a newer APK.
 Users install it over the production app without uninstalling. The stable public
 download is the latest release's `Recall.apk`, with no GitHub login required.
 This is manual APK distribution, not an automatic updater or a

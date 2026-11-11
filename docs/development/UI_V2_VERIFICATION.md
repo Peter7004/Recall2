@@ -1,3 +1,5 @@
+> Release update 2026-11-11: shipped as 1.0.8+9 (PR5/fdbb427). Full Linux187 tests, public browser regressions and permanently signed APK PASS. Actual corpus data and Android device behavior NOT TESTED. See [release verification](RELEASE_1.0.8.md). The local-stage notes below are historical.
+
 # UI v2 적용 및 검증 — 2026-11-11
 
 첨부 HTML/Flutter 코드는 24개 예시 단어를 사용하는 독립 시안입니다. 실제 앱의 main.dart를 덮어쓰지 않고 색상·레이아웃·카드 디자인을 기존 데이터 및 동작에 연결했습니다.
