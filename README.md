@@ -3,7 +3,9 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
-Current application release: **1.0.11+12**.
+Current application release: **1.0.12+13**.
+
+Home recommendations show separate textbook/abstract document-coverage rings and DF/TF counts. Context-filter and pending-exclusion details remain available under the counting method.
 
 Today's recommendations and daily study share a saved textbook/abstract focus.
 Unlearned observed words rank by that source's DF then TF; previously learned

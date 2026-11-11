@@ -1,18 +1,57 @@
-## Active corpus-based daily recommendations — 2026-11-11
-User requests textbook/abstract learning focus for today's recommendations.
-Current dashboard rotates by calendar index; default study is alphabetical.
-Plan: home focus selector (separate preference key), observed eligible terms,
-unlearned first with per-source DF/TF ordering; reviewed terms oldest first;
-skip already studied today. Preserve explicit decks/bookmarks sessions and all
-vocabulary/Reader records. No corpus/eligible observations -> existing fallback.
-Files: recall_store.dart, ui/recall_dashboard.dart, main.dart, focused tests,
-browser regression and development records. Root staged88 must remain untouched.
-Implemented. PASS Windows198 Flutter tests, analyze, web build, startup8; real
-browser textbook/abstract ranking, next-card evidence, default-session reset,
-320/390 widths, preference/review reload preservation; existing UI regression
-320/430/640/1280. Empty-session copy regression fixed; original manual flow retained.
-Next commit isolated codex/daily-corpus-111; PR checks; web/permanent APK1.0.11+12
-under continuing release authorization. Android physical device NOT TESTED.
+## Active release1.0.12+13 — 2026-11-11
+User explicitly authorized commit, web and permanent APK deployment of coverage UI,
+with existing data preserved. Base main40b0890; isolated worktree
+C:/Users/Public/Recall-release-112 branch codex/corpus-coverage-112.
+Next copy only verified UI/tests/docs, bump version, prepare PR and same-profile
+1.0.11 upgrade baseline, run CI, merge and verify public web/signed APK.
+Preserve existing package/certificate and all corpus/user/Reader stores. No data
+migration. Root staged88 must remain untouched. Android device NOT TESTED.
+
+## Completed locally: recommendation coverage graphs — 2026-11-11
+User requested numeric/circular textbook-vs-abstract recommendation evidence and
+clarification of provisional wording. Suggested term now shows independent DF/N
+rings, source DF and TF, selected-focus border/label. Responsive stacked mobile /
+side-by-side desktop; compact ring/count rows. No totals -> no invented percentage.
+Visible provisional wording replaced with context-filter/pending-excluded labels;
+method dialog retains automatic classification/no full human review, source overlap,
+abstract-vs-fulltext limits and percentage definition. Metadata and statistics unchanged.
+Files: lib/ui/recall_dashboard.dart, lib/corpus/corpus_widgets.dart,
+test/corpus_test.dart, tool/daily_corpus_smoke.cjs, tool/corpus_real_smoke.cjs,
+docs/development/HANDOFF.md, READER_ROADMAP.md, JOURNAL.md and
+DAILY_CORPUS_RECOMMENDATIONS.md. No dependency/store/ranking/schema changes.
+PASS Windows201 tests (including zero/pending/no-total/2x-text cases), analyze, web.
+PASS real browser daily source/queue/DF-TF/rings/320-390-1200 widths/storage reload;
+existing real-corpus dictionary/PDF lookup/save/source/reload checks. Visual screenshots
+inspected. Initial desktop test timed out because pointer180px was outside centered
+scroll area; fixed test to use viewport center, rerun PASS. No product failure remains.
+Logs build/corpus-coverage-*-final.log; screenshots build/daily-corpus-smoke.
+Local preview http://127.0.0.1:5220/ serves changes (refresh). Public web/APK remain
+release1.0.11 without these new UI changes; no commit/push/deploy in this task.
+Root staged88 untouched. Android device NOT TESTED; full expert semantic review NOT TESTED.
+No unfinished implementation step. Next if requested: commit/release via isolated
+worktree/PR, preserving unrelated root staged files and existing signing identity.
+Original review workbook and full-evidence ZIP available under
+C:/Users/유태현/Documents/Codex/2026-10-12/x20/outputs/recall-recount-20261111.
+
+## Completed daily corpus recommendations1.0.11+12 — 2026-11-11
+Home supports textbook/abstract learning focus and uses the same ranked candidates
+for the suggested word and default daily study. Source preference is separate;
+vocabulary, Reader, bookmarks, IDs and review data remain unchanged.
+PR11 head1c71bf8 merged40b08902baa6684c9f0a369eab06f7e085267472.
+PASS Windows198 tests/analyze/web/startup8, Linux CI43033524596, public browser
+DF/TF ranking/default queue/mobile320–390/preference and review persistence.
+PASS Pages43033916563 and actual same-profile1.0.10→1.0.11 exact localStorage,
+bookmark/review/managedPDF/page3 upgrade. Existing UI320–1280 regression PASS.
+PASS signed APK43033941811, local apksigner/aapt: unchanged package/permanent cert,
+code12/name1.0.11, exact834-term/corpus assets. Public unauthenticated download and
+previous1.0.10 assets unchanged verified. APK SHA256:
+35fcfb664d76da6bbdfe75daff1c03a0de15d493d8e34b12b9619d6411535e11.
+Release: https://github.com/Peter7004/Recall-APK-Private/releases/tag/v1.0.11
+Evidence/helpers: C:/Users/Public/Recall-release-111/build/release-1.0.11.
+Local5220 preview1.0.11 remains available. Root staged88 untouched.
+No unfinished release step. Next: Galaxy S25 Ultra update/device validation when
+available; Android physical device and expert semantic review NOT TESTED.
+See DAILY_CORPUS_RECOMMENDATIONS.md. Older checkpoints below are history.
 
 ## Completed real corpus release1.0.10+11 — 2026-11-11
 PR9/d4619715cb7e29a05c28cb40c8bbeb834a3e311e; CI43014655807,

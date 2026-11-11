@@ -376,3 +376,26 @@ Default study sessions follow focus; explicit card collections remain unchanged.
 Windows198/analyze/web/startup8 and actual browser ranking/320–390 mobile/persistence
 plus existing UI320–1280 regression PASS. Empty-session copy regression fixed before
 final suite. Next release checks1.0.11+12; Android device NOT TESTED.
+
+## 2026-11-11 — Daily corpus recommendations1.0.11 released
+
+PR11/40b08902baa6684c9f0a369eab06f7e085267472; finalCI43033524596,
+Pages43033916563 and permanentAPK43033941811 PASS. Public browser focus/queue/
+DF-TF evidence/reload/mobile and real same-profile1.0.10→1.0.11 exact storage,
+bookmark/review/managedPDF/page3 upgrade PASS. Local apksigner/aapt and signed
+package/code12/certificate/payload verification PASS; unauthenticated public APK
+SHA25635fcfb664d76da6bbdfe75daff1c03a0de15d493d8e34b12b9619d6411535e11
+matches. Previous1.0.10 assets unchanged. Root staged88 preserved; local5220 preview
+left running. Android device/expert semantic review NOT TESTED. No release blocker.
+
+## 2026-11-11 — Recommendation coverage UI verified locally
+
+Added independent textbook/abstract DF/N rings, numeric DF/TF and selected-source
+marker, responsive compact cards. Replaced visible provisional text with precise
+context-filter/pending-excluded labels; method dialog retains automatic classification
+and human-review limitations. Source stats/metadata/vocabulary/store code unchanged.
+PASS Windows201/analyze/web, actual browser320/390/1200 daily focus/queue/ratio/reload,
+existing corpus dictionary/PDF/source preservation. Desktop test pointer corrected
+from outside centered scroll surface; final rerun PASS. Visual screenshots inspected.
+Root staged88 untouched. Local5220 preview updated; no commit/push/deploy requested
+for this UI task. Android device and full semantic review NOT TESTED.

@@ -28,16 +28,18 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
       await pause();
       assert.equal(await chip.getAttribute('aria-checked'), 'true');
     }
-    async function suggestion(term, df, tf) {
-      await page.mouse.move(180, 600);
+    async function suggestion(term, df, tf, total = 639) {
+      await page.mouse.move(page.viewportSize().width / 2, 600);
       await page.mouse.wheel(0, 650);
       await pause();
       const group = page.getByRole('group', {name: /^오늘의 추천 단어/});
       await group.scrollIntoViewIfNeeded();
-      const label = await group.getAttribute('aria-label');
+      const label = await group.ariaSnapshot();
       assert(label.includes(term), label);
-      assert(label.includes(`등장 문서 ${df}개 · 출현 ${tf}회`), label);
-      await page.screenshot({path: path.join(out, `${term.toLowerCase()}-recommendation.png`)});
+      assert(label.includes(`등장 문서 ${df} / ${total}개 (DF)`), label);
+      assert(label.includes(`총 출현 ${tf}회 (TF)`), label);
+      assert(label.includes(`${(100 * df / total).toFixed(1)}%`), label);
+      await page.screenshot({path: path.join(out, `${term.toLowerCase()}-${page.viewportSize().width}-recommendation.png`)});
       await page.mouse.wheel(0, -2000);
       await pause();
     }
@@ -59,7 +61,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
     await suggestion('Frequency', 103, 180);
     await choose('교재 중심');
     assert.equal(await snapshot(), learned);
-    await suggestion('Current', 21, 5952);
+    await suggestion('Current', 21, 5952, 22);
     await page.getByRole('button', {name: /학습$/}).last().click();
     await page.getByRole('group', {name: 'Current', exact: true}).waitFor(); // Reset default session on focus change.
     await button('홈').click();
@@ -69,6 +71,11 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
     assert.equal(await snapshot(), learned, 'reload preserves learned counts and card identities');
     assert.equal(await page.getByRole('checkbox', {name: '논문 초록 중심', exact: true}).getAttribute('aria-checked'), 'true');
     await page.screenshot({path: path.join(out, 'focus-320.png')});
+    await suggestion('Frequency', 103, 180);
+    await page.setViewportSize({width: 1200, height: 1000});
+    await suggestion('Frequency', 103, 180);
+    await page.setViewportSize({width: 320, height: 850});
+    await suggestion('Frequency', 103, 180);
     await button('오늘 학습 시작하기').click();
     await page.getByRole('group', {name: 'Frequency', exact: true}).waitFor();
     assert.deepEqual(errors, []);
