@@ -485,7 +485,10 @@ class _HomeShellState extends State<HomeShell> {
                   _TopBar(onSettings: _openSettings),
                   Expanded(
                       child: ReviewPage(
-                    key: ValueKey(_studySession),
+                    key: ValueKey((
+                      _studySession,
+                      _studyCards == null ? store.learningSource : null
+                    )),
                     store: store,
                     initialCards: _studyCards,
                     embedded: true,
@@ -1182,8 +1185,7 @@ class _ReviewPageState extends State<ReviewPage> {
   bool _reverse = false;
   int _index = 0;
   late final List<({RecallDeck deck, RecallCard card})> _queue =
-      widget.initialCards ??
-          widget.store.dueCards.take(widget.store.remainingToday).toList();
+      widget.initialCards ?? widget.store.todayStudyCards;
 
   ({RecallDeck deck, RecallCard card})? get _current {
     while (_index < _queue.length &&
@@ -1240,8 +1242,12 @@ class _ReviewPageState extends State<ReviewPage> {
   Widget build(BuildContext context) {
     final current = _current;
     if (current == null) {
-      final message =
-          widget.store.decks.isEmpty ? '현재 덱이 없습니다.' : '현재 학습할 카드가 없습니다.';
+      final message = widget.initialCards == null &&
+              widget.store.hasCorpusLearningCandidates
+          ? '오늘의 추천 학습을 완료했습니다.'
+          : widget.store.decks.isEmpty
+              ? '현재 덱이 없습니다.'
+              : '현재 학습할 카드가 없습니다.';
       return Scaffold(
         appBar: AppBar(
             title: const Text('단어 학습'),

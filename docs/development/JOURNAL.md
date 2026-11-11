@@ -366,3 +366,13 @@ page3 preservation PASS. APK source/package/code11/permanent certificate/834 sta
 and public re-download SHA2567b8f7541701b398e173a70135b7acd1efc00e80348308814ad41389e4605636d
 PASS. Previous1.0.9 assets unchanged. No dictionary or user-storage migration.
 Android device and expert semantic review NOT TESTED. See RELEASE_1.0.10.md.
+
+## 2026-11-11 — Daily corpus learning focus implemented
+
+Home textbook/abstract selector persists separately from vocabulary/Reader data.
+Unlearned observed terms rank by chosen DF/TF; reviewed terms oldest day first;
+today's reviewed/excluded cards skipped. Daily goal/progress preserved on switching.
+Default study sessions follow focus; explicit card collections remain unchanged.
+Windows198/analyze/web/startup8 and actual browser ranking/320–390 mobile/persistence
+plus existing UI320–1280 regression PASS. Empty-session copy regression fixed before
+final suite. Next release checks1.0.11+12; Android device NOT TESTED.

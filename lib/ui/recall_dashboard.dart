@@ -18,9 +18,14 @@ class _DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = store.allCards;
+    final entries = store.recommendationCards();
+    final focused = store.hasCorpusLearningCandidates;
     final day = DateTime.now().difference(DateTime(2020)).inDays;
-    final suggestion = entries.isEmpty ? null : entries[day % entries.length];
+    final suggestion =
+        entries.isEmpty ? null : entries[focused ? 0 : day % entries.length];
+    final stats = suggestion == null || !focused
+        ? null
+        : store.corpus.forTerm(suggestion.card.displayTerm);
     return _DashboardScroll(children: [
       const _PageHeading('오늘의 전공 영어', ''),
       _Panel(
@@ -44,8 +49,12 @@ class _DashboardPage extends StatelessWidget {
               _DashboardCount('${store.remainingToday}', '남은 목표'),
             ]),
             const SizedBox(height: 22),
+            if (store.corpus.available) ...[
+              _LearningFocusPicker(store: store),
+              const SizedBox(height: 16),
+            ],
             FilledButton.icon(
-                onPressed: store.dueCount == 0 ? null : onStudy,
+                onPressed: store.remainingToday == 0 ? null : onStudy,
                 icon: const Icon(Icons.play_arrow_outlined),
                 label: const Text('오늘 학습 시작하기')),
           ])),
@@ -88,6 +97,15 @@ class _DashboardPage extends StatelessWidget {
                   style:
                       TextStyle(color: _indigo, fontWeight: FontWeight.w700)),
               const SizedBox(height: 14),
+              if (stats != null) ...[
+                Text(store.learningSourceLabel,
+                    style: const TextStyle(color: _muted)),
+                Text('등장 문서 ${stats.df(store.learningSource)}개 · '
+                    '출현 ${stats.tf(store.learningSource)}회'),
+                const Text('잠정 채택값 · 보류 제외',
+                    style: TextStyle(color: _muted, fontSize: 12)),
+                const SizedBox(height: 12),
+              ],
               Text(suggestion.card.displayTerm,
                   style: const TextStyle(
                       fontSize: 28, fontWeight: FontWeight.w800, color: _ink)),
@@ -97,6 +115,8 @@ class _DashboardPage extends StatelessWidget {
                   onPressed: () => onTerm(suggestion.deck.id, suggestion.card),
                   child: const Text('뜻과 설명 보기 →')),
             ])),
+      if (suggestion == null && focused)
+        const _Panel(child: Text('오늘의 추천 단어를 모두 학습했습니다.')),
       const SizedBox(height: 24),
       _Panel(
           padding: EdgeInsets.zero,
@@ -116,6 +136,51 @@ class _DashboardPage extends StatelessWidget {
           ])),
     ]);
   }
+}
+
+class _LearningFocusPicker extends StatefulWidget {
+  const _LearningFocusPicker({required this.store});
+  final RecallStore store;
+  @override
+  State<_LearningFocusPicker> createState() => _LearningFocusPickerState();
+}
+
+class _LearningFocusPickerState extends State<_LearningFocusPicker> {
+  bool _saving = false;
+  Future<void> _select(CorpusSource source) async {
+    setState(() => _saving = true);
+    try {
+      await widget.store.setLearningSource(source);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('추천 기준을 저장하지 못했습니다. 다시 선택해 주세요.')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('추천 기준', style: TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final source in CorpusSource.values)
+            ChoiceChip(
+                label: Text(
+                    source == CorpusSource.textbook ? '교재 중심' : '논문 초록 중심'),
+                selected: widget.store.learningSource == source,
+                onSelected: _saving ? null : (_) => _select(source)),
+        ]),
+        const SizedBox(height: 8),
+        Text(
+            widget.store.hasCorpusLearningCandidates
+                ? '미학습 단어: DF 우선 · 같은 DF는 TF순\n복습: 오래전에 학습한 단어부터'
+                : '관측된 학습 대상이 없어 전체 단어를 추천합니다.',
+            style: const TextStyle(color: _muted, fontSize: 12)),
+      ]);
 }
 
 class _RecordsPage extends StatelessWidget {
