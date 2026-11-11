@@ -336,3 +336,13 @@ full Reader learning regressions PASS. APK SHA256
 79326286502a90369cdfbc7a086f32f412fcd4b1cd3fa77c8b4cbd6ede2cee33.
 Android device and Windows desktop executable NOT TESTED. No new commit or release;
 unrelated staged88 preserved. See WINDOWS_LOCAL_DEVELOPMENT.md for commands/logs.
+
+## 2026-11-11 — Recall1.0.9 deployed; upgrade compatibility verified
+
+PR7/8868ae4, PR42989014089 (188 Flutter/analyze/startup8), Pages42989311938 and
+signedAPK42989316358 PASS. Public UI/Reader/corpus and actual same-profile1.0.8→1.0.9
+saved-data/PDF/page3 audit PASS after bypassing stale HTTP cache without clearing storage.
+Permanent certificate and io.github.peter7004.recall unchanged; code10.
+Public APK SHA256473d50776f868edef9d494aa6d641ddd918857b19824b6db07322f4931b3a7e8;
+previous release digests unchanged. Android physical installation NOT TESTED.
+No storage/catalog migration; root staged88 intact. See RELEASE_1.0.9.md.
