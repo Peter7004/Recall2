@@ -1,3 +1,39 @@
+# Completed UI/corpus/mobile release — 2026-11-11
+
+1.0.8+9 is publicly released. PR5 merged fdbb427. Full Linux187 tests and
+startup8 PASS; Pages42982937540 and permanent signed APK42982945172 PASS.
+Public UI/corpus/mobile/full Reader browser regressions and APK re-download SHA256
+PASS. Previous certificate and v1.0.7 assets preserved; root staged88 unchanged.
+APK SHA256 ca1cd106c0badf40b1ed428b0013c36fd09e9b6c9610e6aba1eb4650f747443a.
+See RELEASE_1.0.8.md for exact URLs, hashes, scope and PASS/FAIL/NOT TESTED.
+Primary agent synced green widget_test.dart/pubspec.yaml to root; merge these final docs and
+README version-only edits while preserving root collaboration content.
+Next product validation: actual Android device and real corpus statistics when supplied.
+Local Windows Gradle/native environment remains unresolved, not claimed fixed.
+Earlier checkpoints below are chronological evidence, not current release blockers.
+
+## Release execution checkpoint — 2026-11-11
+
+PR #5 merged: fdbb427eded7329a61b6db1105f28de7949001f7 (1.0.8+9).
+PASS: Linux PR 42982621625, job 130396336799: 187 Flutter tests, analyze,
+8 Node startup tests. Original run 42982129380: 180 PASS / 7 FAIL; fixed only
+widget-test scroll/visibility; subsequent full run has no missed-tap warnings.
+Active: Pages 42982937540; permanent signed APK 42982945172 pinned to merge SHA;
+separate test APK 42982937536 must not be published as production.
+Next: wait for builds; verify APK signer/package/version/assets/hash, publish v1.0.8,
+verify public web/downloads and run UI/corpus/Reader browser smokes on production.
+Primary agent synced green test/widget_test.dart and pubspec.yaml back to root; no root
+edits performed by this release coordinator. Root staged88 remain intact.
+PASS: Pages42982937540; public version1.0.8+9 and exact CSV asset hashes; public
+UI-v2 smoke. Primary agent independently reports public mobile Reader smoke PASS.
+Coordinator public UI-v2, mobile-menu, corpus fixture integration and full Reader
+learning/source/deletion/corruption/image-PDF smokes all PASS (no JS errors).
+Corpus fixture was injected only into isolated test browser; production asset unchanged.
+NOT TESTED: Android device installation/gestures; signed artifact/public deployment pending.
+Local Windows environment repair remains unresolved: parallel environment agent reports minimal independent
+Gradle projects fail too while standalone Kotlin works; MSVC discovery still in progress.
+Do not claim local Windows fixed. Primary agent will sync verified widget_test/pubspec/docs to root.
+
 ## Active mobile Reader / release — 2026-11-11
 
 ## Active release coordination — 2026-11-11 (1.0.8+9)

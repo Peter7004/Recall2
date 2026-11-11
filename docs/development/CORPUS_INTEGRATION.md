@@ -1,3 +1,5 @@
+> Release update 2026-11-11: shipped as 1.0.8+9 (PR5/fdbb427). Full Linux187 tests, public browser regressions and permanently signed APK PASS. Actual corpus data and Android device behavior NOT TESTED. See [release verification](RELEASE_1.0.8.md). The local-stage notes below are historical.
+
 # 코퍼스 연동 구현 및 검증 — 2026-11-11
 
 ## 1. 기존 구조와 선행 배포

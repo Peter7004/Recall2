@@ -309,3 +309,15 @@ Adaptive circular bottom-right menu groups existing Reader actions on widths bel
 
 ## 2026-11-11 — Linux UI test navigation repair
 PR #5 first full run: 180 PASS / 7 FAIL. Updated widget-test navigation for lazy/scrollable redesigned content; preserve app behavior and assertions. Rerun pending. Merged latest root mobile validation notes without overwriting release coordination.
+
+
+## 2026-11-11 — UI release merged
+PR #5 merged as fdbb427 after full Linux 187 tests/analyze and 8 startup tests PASS. Pages 42982937540 and permanent signed APK 42982945172 launched against exact merge source; production verification pending.
+
+
+## 2026-11-11 — Public 1.0.8 web verified
+Pages42982937540 PASS. Public version1.0.8+9 and both bundled CSV hashes match merge source. UI-v2, mobile-menu, corpus fixture integration, full Reader learning/source-return/deletion/corruption/image-only PDF browser tests PASS. Production corpus stays header-only; no device claim.
+
+
+## 2026-11-11 — Recall1.0.8+9 released and verified
+PR5/fdbb427. Permanent signed APK42982945172 and Pages42982937540 PASS; public UI/corpus/mobile/full Reader regressions PASS. APK source/package/version/previous certificate/834-term payload/header-only corpus and public download verified. SHA256 ca1cd106c0badf40b1ed428b0013c36fd09e9b6c9610e6aba1eb4650f747443a. Prior release unchanged; staged88 intact. Android device and Windows environment repair remain unverified/unresolved. See RELEASE_1.0.8.md.
