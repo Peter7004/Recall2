@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:csv/csv.dart';
 
 String normalizeCorpusTerm(String term) =>
@@ -52,21 +54,87 @@ class CorpusStats {
       source == CorpusSource.textbook ? textbookTf : abstractTf;
 }
 
+/// Provenance for the bundled recount. Pending counts never enter ranking.
+class CorpusMetadata {
+  CorpusMetadata._(this.date, this.textbookDocuments, this.abstractDocuments,
+      Map<String, CorpusStats> pending)
+      : pending = Map.unmodifiable(pending);
+  final String date;
+  final int textbookDocuments, abstractDocuments;
+  final Map<String, CorpusStats> pending;
+
+  static CorpusMetadata parse(
+      String input, String csv, Map<String, CorpusStats> records) {
+    final json = jsonDecode(input) as Map<String, dynamic>;
+    if (json['schema_version'] != 1 ||
+        json['basis'] != 'provisional_accepted' ||
+        json['csv_sha256'] != sha256.convert(utf8.encode(csv)).toString()) {
+      throw const FormatException('집계 기준 또는 CSV 해시 불일치');
+    }
+    final textbook = json['textbook_documents'] as int;
+    final abstracts = json['abstract_documents'] as int;
+    final date = json['date'] as String;
+    if (textbook <= 0 ||
+        abstracts <= 0 ||
+        !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) {
+      throw const FormatException('문서 수 또는 집계일 오류');
+    }
+    for (final row in records.values) {
+      if (row.textbookDf > textbook || row.abstractDf > abstracts) {
+        throw const FormatException('DF가 자료 수보다 큽니다.');
+      }
+    }
+    final pending = <String, CorpusStats>{};
+    for (final entry in (json['pending'] as Map<String, dynamic>).entries) {
+      final key = normalizeCorpusTerm(entry.key);
+      final values = (entry.value as List).cast<int>();
+      if (!records.containsKey(key) ||
+          pending.containsKey(key) ||
+          values.length != 4 ||
+          values.any((v) => v < 0 || v > 9007199254740991) ||
+          values[1] > values[0] ||
+          values[3] > values[2] ||
+          values[1] > textbook ||
+          values[3] > abstracts ||
+          (values[0] == 0) != (values[1] == 0) ||
+          (values[2] == 0) != (values[3] == 0)) {
+        throw const FormatException('보류 용례 데이터 오류');
+      }
+      pending[key] =
+          CorpusStats(key, values[0], values[1], values[2], values[3]);
+    }
+    return CorpusMetadata._(date, textbook, abstracts, pending);
+  }
+}
+
 /// Immutable sidecar data. Never serialized into the vocabulary or Reader stores.
 class CorpusCatalog {
   const CorpusCatalog.empty()
       : records = const {},
-        errors = const [];
-  CorpusCatalog._(Map<String, CorpusStats> records, List<String> errors)
+        errors = const [],
+        metadata = null;
+  CorpusCatalog._(Map<String, CorpusStats> records, List<String> errors,
+      {this.metadata})
       : records = Map.unmodifiable(records),
         errors = List.unmodifiable(errors);
   factory CorpusCatalog.unavailable(String reason) =>
       CorpusCatalog._({}, [reason]);
   final Map<String, CorpusStats> records;
   final List<String> errors;
+  final CorpusMetadata? metadata;
   bool get available => errors.isEmpty && records.isNotEmpty;
   CorpusStats? forTerm(String term) =>
       available ? records[normalizeCorpusTerm(term)] : null;
+
+  CorpusCatalog withMetadata(String input, String csv) {
+    if (!available) return this;
+    try {
+      return CorpusCatalog._(records, errors,
+          metadata: CorpusMetadata.parse(input, csv, records));
+    } catch (_) {
+      return CorpusCatalog.unavailable('코퍼스 집계 기준 파일이 통계와 맞지 않습니다.');
+    }
+  }
 
   factory CorpusCatalog.parse(String input) {
     final errors = <String>[];
@@ -187,7 +255,8 @@ class CorpusCatalog {
     };
   }
 
-  List<String> verifyResearch(Iterable<String> dictionaryTerms) {
+  List<String> verifyResearch(Iterable<String> dictionaryTerms,
+      {bool recount = false}) {
     final report = diagnose(dictionaryTerms);
     final result = <String>[...errors];
     if (records.length != 834 ||
@@ -196,12 +265,19 @@ class CorpusCatalog {
         (report['duplicateDictionaryTerms'] as List).isNotEmpty) {
       result.add('연구 검증에는 중복 없는 사전 834개와 통계 834개의 완전 일치가 필요합니다.');
     }
-    const expected = {
-      'both': 210,
-      'textbookOnly': 276,
-      'abstractOnly': 45,
-      'unobserved': 303
-    };
+    final expected = recount
+        ? const {
+            'both': 225,
+            'textbookOnly': 326,
+            'abstractOnly': 37,
+            'unobserved': 246
+          }
+        : const {
+            'both': 210,
+            'textbookOnly': 276,
+            'abstractOnly': 45,
+            'unobserved': 303
+          };
     final categories = report['categories'] as Map;
     for (final entry in expected.entries) {
       if (categories[entry.key] != entry.value) {

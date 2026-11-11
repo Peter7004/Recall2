@@ -2412,6 +2412,7 @@ class _DictionaryPageState extends State<_DictionaryPage> {
                       ),
                       if (widget.store.corpus.available)
                         CorpusControls(
+                            metadata: widget.store.corpus.metadata,
                             scope: _corpusScope,
                             source: _corpusSource,
                             onScopeChanged: (scope) => setState(() {

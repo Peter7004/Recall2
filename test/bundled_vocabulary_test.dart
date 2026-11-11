@@ -266,6 +266,8 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Absorption');
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'Absorption'), findsOneWidget);
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'Absorption'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Absorption'));
     await tester.pumpAndSettle();
     expect(find.text(catalog.rows.first.card.definitionEn), findsOneWidget);

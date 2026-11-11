@@ -1,1 +1,835 @@
 term_en,textbook_tf,textbook_df,abstract_tf,abstract_df
+Absorption,5,3,15,12
+AC resistance,8,2,0,0
+Acceptance angle,8,2,0,0
+Active Element,5,3,1,1
+Active power,45,1,19,15
+Actuator,113,7,14,7
+Admittance,167,8,0,0
+Air gap,260,15,1,1
+air-gap power,17,4,0,0
+alarm,3,3,1,1
+Alignment,7,4,2,2
+Alternating Current,16,8,0,0
+alternator,4,2,0,0
+Ampere,44,8,0,0
+Ampere's circuit law,95,9,1,1
+Amperian path,1,1,0,0
+Amplitude,280,14,15,12
+analog input,3,1,0,0
+analog output,2,1,0,0
+anchor tower,0,0,0,0
+Angle of incidence,29,2,0,0
+Angle of reflection,16,2,0,0
+Angle of transmission,3,1,0,0
+Angular frequency,56,5,0,0
+angular velocity,17,4,2,2
+Anisotropic material,0,0,0,0
+Antenna,812,6,346,75
+Antenna array,3,1,20,7
+Aperture antenna,0,0,1,1
+Apparent power,95,5,4,2
+armature,246,13,0,0
+armature reaction,4,2,0,0
+armature winding,29,7,0,0
+Array factor,0,0,3,3
+Attenuation,36,6,11,6
+Attenuation constant,26,3,0,0
+auto mode,0,0,0,0
+automatic voltage regulator,5,1,6,5
+automation,2,1,6,4
+autotransformer starter,0,0,0,0
+auxiliary winding,1,1,0,0
+Average Power,158,8,3,2
+back electromotive force,0,0,1,1
+battery charger,0,0,0,0
+Beamwidth,23,2,0,0
+bearing,27,5,2,2
+Binomial array,0,0,0,0
+Bioelectromagnetics,0,0,0,0
+Biomagnetism,0,0,0,0
+Biot-Savart's law,26,3,0,0
+Bistatic radar,0,0,0,0
+Bonding,0,0,0,0
+Bonding effectiveness,0,0,0,0
+Bounce diagram,15,1,0,0
+Bound charge,0,0,0,0
+Bound surface current density,0,0,0,0
+Bound volume current density,0,0,0,0
+Boundary conditions,135,6,1,1
+Branch,242,11,1,1
+breakdown torque,6,3,0,0
+Breaker,37,4,7,2
+Brewster angle,16,1,0,0
+Broadside array,0,0,0,0
+brush,11,4,1,1
+brush holder,0,0,0,0
+brushless exciter,0,0,0,0
+cable,104,9,7,3
+cable cleat,0,0,0,0
+cable gland,0,0,0,0
+cable joint,0,0,0,0
+cable termination,0,0,0,0
+cable tray,0,0,0,0
+cable tunnel,0,0,0,0
+Calibration,3,1,5,4
+Capacitance,462,9,9,7
+capacitance per unit length,5,3,0,0
+Capacitor,1621,10,21,14
+capacitor bank,6,3,1,1
+capacitor-run motor,0,0,0,0
+capacitor-start motor,0,0,0,0
+CDA,0,0,0,0
+CDA(Clean Dry Air),0,0,0,0
+centrifugal switch,0,0,0,0
+Chamber,15,3,1,1
+Characteristic admittance,3,2,0,0
+Characteristic impedance,100,4,1,1
+Charge,865,11,6,5
+Charge conservation,0,0,0,0
+Charge distribution,53,3,0,0
+Charge transfer,3,2,0,0
+Charged particle,60,6,0,0
+chopper,7,3,0,0
+circuit breaker,18,3,7,2
+Circular polarization,15,2,5,4
+Circular waveguide,0,0,0,0
+Cladding,8,2,0,0
+Cleaning,0,0,0,0
+Cloaking,0,0,0,0
+Coaxial capacitor,6,2,0,0
+Coaxial line,43,3,0,0
+coaxial transmission line,20,4,0,0
+Coercive field intensity,0,0,0,0
+coil pitch,0,0,0,0
+coil span,3,3,0,0
+communication,76,8,79,54
+commutation,24,2,0,0
+commutator,62,5,0,0
+compensating winding,0,0,0,0
+Complex permittivity,17,3,0,0
+Complex Power,98,4,1,1
+compound motor,0,0,0,0
+compound winding,0,0,0,0
+compressor,5,5,1,1
+Computational electromagnetics,0,0,0,0
+concentrated winding,6,3,0,0
+Conductance,164,9,3,3
+Conducted emission,0,0,0,0
+Conduction current,38,4,0,0
+Conduction loss,6,3,0,0
+Conductivity,199,14,1,1
+Conductor,521,16,3,3
+Conservation of magnetic flux,1,1,0,0
+Conservative field,1,1,0,0
+Constant standing wave ratio circle,0,0,0,0
+Constitutive relations,1,1,0,0
+contactor,0,0,0,0
+Continuity equation,1,1,0,0
+control panel,0,0,0,0
+control room,0,0,0,0
+Convection current,9,2,0,0
+convergence,11,4,16,13
+converted power,2,2,0,0
+conveyor,0,0,0,0
+cooling fan,0,0,0,0
+cooling system,1,1,0,0
+copper loss,1,1,0,0
+Core,11,2,3,1
+core loss,36,4,0,0
+corona,0,0,0,0
+Coulomb,46,6,0,0
+Coulomb's gauge,0,0,0,0
+Coulomb's law,33,3,0,0
+counter,15,5,0,0
+Coupled strip line,0,0,0,0
+Coupling,157,12,42,31
+Critical angle,21,3,0,0
+Critical current,0,0,0,0
+crossarm,0,0,0,0
+Crosstalk,0,0,0,0
+Curie temperature,0,0,0,0
+Current,5952,21,128,63
+Current density,169,12,0,0
+Current element,13,2,0,0
+Current reflection coefficient,2,1,0,0
+Cutoff frequency,44,2,2,1
+Cutoff wavelength,0,0,0,0
+cycle,108,9,15,13
+cycle time,0,0,7,3
+Cyclotron,2,1,0,0
+cylinder,42,7,1,1
+damper,49,4,1,1
+DC generator,0,0,1,1
+DC link,66,1,8,5
+DC motor,27,5,0,0
+DC resistance,13,4,0,0
+DC SQUID,0,0,0,0
+Degenerate modes,0,0,1,1
+DI Water,0,0,0,0
+Diamagnetism,2,2,0,0
+Dielectric,303,6,26,12
+Dielectric breakdown,12,3,0,0
+Dielectric heating,0,0,0,0
+Dielectric loss,0,0,0,0
+Dielectric strength,11,3,0,0
+Dielectric waveguide,0,0,0,0
+Differentiation,11,4,2,1
+digital input,1,1,0,0
+digital output,3,1,0,0
+Dipole,367,6,5,3
+Direct Current,12,8,3,3
+direct-on-line starter,0,0,0,0
+Directive gain,0,0,1,1
+Directivity,94,2,2,1
+discretization,0,0,0,0
+Dish antenna,4,1,0,0
+Disk capacitor,0,0,0,0
+Dispersion,19,3,1,1
+Dispersion relation,0,0,0,0
+Displacement current,34,3,0,0
+Displacement current density,4,1,0,0
+Distortionless line,4,1,0,0
+distributed winding,0,0,0,0
+distribution pole,0,0,0,0
+Dominant mode,0,0,0,0
+Double-stub matching,0,0,0,0
+Downtime,0,0,0,0
+Drift velocity,12,2,0,0
+E-plane pattern,1,1,0,0
+Eddy current,43,7,5,1
+Effective,134,8,3,2
+effective aperture,35,2,0,0
+Effective area,17,3,0,0
+Effective relative permittivity,4,2,0,0
+efficiency,104,9,87,71
+Electric charge,73,5,0,0
+Electric current,36,7,0,0
+Electric dipole,16,1,0,0
+Electric dipole moment,1,1,0,0
+Electric double-layer capacitor,0,0,0,0
+Electric field,808,13,1,1
+Electric field lines,25,5,0,0
+Electric flux,51,3,0,0
+Electric flux density,40,3,0,0
+Electric force,8,1,0,0
+Electric potential,85,5,0,0
+electric potential energy,2,1,0,0
+Electric susceptibility,2,1,0,0
+electrical enclosure,0,0,0,0
+Electrical length,10,3,1,1
+electrical power input,3,3,0,0
+Electrode,65,4,27,13
+Electrodynamic levitation,0,0,0,0
+Electrohydrodynamic pump,0,0,0,0
+Electromagnet,20,4,0,0
+Electromagnetic compatibility,5,2,0,0
+Electromagnetic energy,15,5,0,0
+Electromagnetic field,40,5,0,0
+Electromagnetic induction,25,4,1,1
+Electromagnetic interference,3,2,5,5
+Electromagnetic levitation,0,0,7,1
+Electromagnetic spectrum,23,3,2,1
+electromagnetic torque,2,1,2,2
+Electromagnetic wave,65,5,7,1
+Electromagnetic wave propagation,0,0,0,0
+Electromagnetics,71,4,0,0
+Electrometer,2,2,0,0
+Electromotive force,12,5,1,1
+Electron,454,8,12,5
+Electron beam,3,2,0,0
+Electron charge,1,1,0,0
+Electron gun,8,2,0,0
+Electron-volt,0,0,0,0
+Electrostatic boundary-value problem,0,0,0,0
+Electrostatic discharge,3,2,0,0
+Electrostatic energy,9,2,0,0
+Electrostatic energy density,2,1,0,0
+Electrostatic field,17,4,0,0
+Electrostatic potential well,0,0,0,0
+Electrostatic separation,0,0,0,0
+Electrostatic shielding,0,0,0,0
+Electrostatics,98,3,0,0
+Elliptical polarization,6,2,0,0
+emergency,1,1,2,1
+encoder,0,0,3,2
+end ring,9,3,0,0
+end winding,11,4,0,0
+End-fire array,0,0,0,0
+energy storage,28,6,12,9
+Equal-level far-end crosstalk,0,0,0,0
+Equipotential line,0,0,0,0
+Equipotential surface,1,1,0,0
+error code,0,0,0,0
+ESD,3,2,0,0
+ESD(Electrostatic Discharge),0,0,0,0
+Etching,1,1,1,1
+Evanescent mode,0,0,0,0
+excitation current,0,0,0,0
+exciter,92,1,1,1
+External inductance,0,0,0,0
+external rotor resistance,0,0,0,0
+Far field,33,2,1,1
+Far-end crosstalk,0,0,0,0
+Farad,14,5,0,0
+Faraday cage,0,0,0,0
+Faraday's law,99,12,0,0
+fault,227,5,75,28
+feeder,16,1,1,1
+Ferrite,18,7,5,1
+Ferroelectric state,0,0,0,0
+Ferromagnetism,2,2,0,0
+field current,31,4,0,0
+Field pattern,3,1,0,0
+Field plotting,0,0,0,0
+field pole,8,2,0,0
+field resistance,0,0,0,0
+field rheostat,0,0,0,0
+field winding,30,8,1,1
+Filter,298,8,52,31
+finite difference method,0,0,0,0
+finite element method,0,0,1,1
+flashover,0,0,0,0
+Flow,37,9,6,5
+Flowmeter,0,0,0,0
+Flux,957,19,9,6
+Flux linkage,48,12,2,1
+forward rotation,0,0,0,0
+Fractal antenna,0,0,0,0
+Free charge,9,3,0,0
+Free space,206,9,14,11
+Frequency,1904,16,180,103
+frequency converter,0,0,0,0
+frequency regulation,0,0,3,3
+Fresnel coefficients,0,0,0,0
+Fresnel's equations,0,0,0,0
+friction loss,0,0,0,0
+Friis equation,0,0,0,0
+Friis transmission formula,5,1,0,0
+Fringing capacitance,0,0,0,0
+Fringing effect,0,0,0,0
+Fringing field,27,5,0,0
+full-load torque,0,0,0,0
+Fuse,43,3,0,0
+Gamma ray,9,3,0,0
+Gas,17,6,7,6
+gas-insulated switchgear,0,0,1,1
+Gasket,0,0,0,0
+Gauss's law,44,2,0,0
+Gaussian surface,12,1,0,0
+Gearbox,5,2,1,1
+Geomagnetism,0,0,0,0
+governor,78,1,0,0
+Graded-index core,0,0,0,0
+Ground,246,9,2,2
+Grounded conducting plane,1,1,0,0
+Grounding,2,2,3,3
+Group pattern,0,0,0,0
+Group velocity,23,1,0,0
+Guided wave,19,3,0,0
+H-plane pattern,1,1,0,0
+Half-wave dipole antenna,12,2,0,0
+Harmonics,269,13,74,32
+heat sink,58,3,0,0
+Helical antenna,3,2,0,0
+Helmholtz's equation,0,0,0,0
+Henry,20,7,0,0
+Hertz,23,7,0,0
+Hertzian dipole,78,2,0,0
+hmi,0,0,0,0
+Homogeneous material,1,1,0,0
+Homopolar generator,0,0,0,0
+Horn antenna,2,1,0,0
+Humidity,11,3,0,0
+Hybrid capacitor,0,0,0,0
+Hybrid mode,0,0,0,0
+hydraulic,4,3,6,4
+Hysteresis,55,8,4,1
+Hysteresis loop,21,5,0,0
+Hysteresis loss,2,2,0,0
+hysteresis motor,0,0,0,0
+I/O,2,1,0,0
+Image charge,1,1,0,0
+Impedance,1882,15,70,35
+Impedance matching,35,5,16,9
+Incident wave,68,3,0,0
+Induced charge,1,1,0,0
+Induced current,8,3,0,0
+Induced emf,8,1,0,0
+induced voltage,17,7,0,0
+Inductance,550,20,4,3
+induction motor,65,8,12,7
+Inductive coupling,3,1,0,0
+Inductive field,0,0,0,0
+Inductor,840,9,14,8
+Infrared,51,5,1,1
+Inhomogeneous material,0,0,0,0
+Initial magnetization curve,0,0,0,0
+input,1212,15,60,52
+Input admittance,13,3,0,0
+Input impedance,240,6,2,2
+inrush current,0,0,2,1
+Insertion loss,0,0,3,2
+Inspection,106,8,2,2
+Instantaneous Power,42,8,1,1
+insulation class,0,0,0,0
+Insulator,70,6,5,2
+Integration,41,5,8,5
+interlock,2,1,0,0
+Internal inductance,1,1,0,0
+interpole,20,2,0,0
+Intrinsic impedance,22,3,0,0
+Intrinsic impedance of free space,4,3,0,0
+inverter,120,6,79,36
+Ionizing radiation,1,1,0,0
+Isolated conductor,0,0,0,0
+Isotropic antenna,22,2,0,0
+Isotropic material,0,0,0,0
+Josephson junction,0,0,2,2
+Josephson tunneling,0,0,0,0
+Joule's law,6,3,0,0
+Klystron,0,0,0,0
+ladder,3,1,0,0
+lamination,28,3,0,0
+lap winding,0,0,0,0
+Laplace's equation,22,7,0,0
+Leakage,111,11,7,6
+Leakage resistance,6,1,0,0
+Lenz's law,29,4,0,0
+Lightning,25,5,15,3
+lightning arrester,0,0,0,0
+Lightning rod,10,2,0,0
+limit switch,0,0,0,0
+Line charge,26,3,0,0
+Line charge density,9,3,0,0
+Line current,119,8,0,0
+Linear material,2,2,0,0
+linear motor,1,1,0,0
+Linear polarization,15,2,1,1
+Load admittance,2,2,0,0
+Load impedance,107,7,0,0
+load loss,11,3,1,1
+load torque,0,0,5,3
+locked-rotor current,0,0,0,0
+locked-rotor torque,0,0,0,0
+Loop,1343,15,82,48
+Loop antenna,2,2,1,1
+Lorentz force,12,4,0,0
+Lorenz condition,0,0,0,0
+Loss angle,0,0,0,0
+Loss tangent,15,1,2,2
+Lossless dielectric,5,3,0,0
+Lossless line,44,1,0,0
+Lossy dielectric,8,3,0,0
+Lossy line,1,1,0,0
+Magnetic boundary conditions,4,1,0,0
+Magnetic circuit,106,7,0,0
+magnetic core,11,4,1,1
+Magnetic dipole,17,4,2,1
+Magnetic dipole moment,7,2,2,1
+Magnetic energy,34,6,1,1
+Magnetic field,1110,18,7,4
+Magnetic field intensity,90,8,0,0
+Magnetic flux,298,15,1,1
+Magnetic flux density,149,13,0,0
+Magnetic flux lines,2,2,0,0
+Magnetic flux quantization,0,0,0,0
+Magnetic focusing,0,0,0,0
+Magnetic force,49,4,2,1
+Magnetic levitation,3,3,0,0
+magnetic pressure,0,0,0,0
+Magnetic resonance imaging,9,3,5,2
+Magnetic scalar potential,2,2,0,0
+Magnetic screening,0,0,0,0
+Magnetic susceptibility,4,3,0,0
+Magnetic torque,6,1,1,1
+Magnetic vector potential,24,2,0,0
+Magnetization,82,8,4,3
+Magnetization current,0,0,0,0
+Magnetization curve,14,3,0,0
+magnetizing current,0,0,0,0
+Magnetocardiography,0,0,0,0
+Magnetohydrodynamic generator,0,0,0,0
+Magnetometer,0,0,2,2
+Magnetomotive force,11,3,1,1
+Magnetostatic energy density,0,0,0,0
+Magnetostatic field,2,1,0,0
+Magnetostatics,88,3,0,0
+Magnetron,4,1,0,0
+main winding,2,1,0,0
+Maintenance,3,2,14,8
+manual mode,0,0,0,0
+marshalling box,0,0,0,0
+Matched line,4,1,0,0
+Maxwell's equations,64,4,0,0
+mechanical power,42,4,0,0
+mechanical speed,8,4,0,0
+Mesh,324,3,0,0
+Metamaterial,0,0,5,4
+Method of images,12,1,0,0
+Microstrip line,59,3,7,6
+Microwave,45,3,12,10
+Microwave imaging,0,0,0,0
+Millimeter wave,1,1,12,10
+Mode,98,5,9,5
+Mode excitation,0,0,0,0
+mode propagation,0,0,0,0
+moment method,0,0,0,0
+Monopole,14,3,15,7
+Monostatic radar,0,0,0,0
+Motional electric field,1,1,0,0
+Motional emf,12,3,0,0
+motor,354,19,52,28
+Multimode fiber,3,1,0,0
+Mutual inductance,77,12,0,0
+nameplate,1,1,0,0
+Near field,0,0,1,1
+Near-end crosstalk,0,0,0,0
+Negative charge,37,5,0,0
+neutral plane,0,0,0,0
+no-load loss,4,2,0,0
+no-load voltage,0,0,0,0
+Node,1140,9,7,5
+Nonionizing radiation,0,0,0,0
+Nonlinear material,0,0,0,0
+Nonmagnetic material,9,1,0,0
+Nonpolar molecule,1,1,0,0
+Normal incidence,15,2,1,1
+Normalized admittance,8,1,0,0
+Normalized impedance,4,1,0,0
+Nuclear magnetic resonance,1,1,0,0
+Null,9,3,4,2
+Numerical aperture,2,1,0,0
+numerical integration,6,1,0,0
+Oblique incidence,2,1,0,0
+Octupole,0,0,0,0
+Ohm,61,6,0,0
+Ohm's law,291,12,0,0
+oil level gauge,1,1,0,0
+Omnidirectional antenna,3,1,0,0
+Open-circuited line,4,2,0,0
+Optical fiber,43,4,6,2
+Optical frequency,7,3,0,0
+oscilloscope,47,5,0,0
+output,1065,13,109,77
+overhead line,0,0,0,0
+overvoltage,0,0,10,2
+Parallel polarization,11,1,0,0
+Parallel-plate capacitor,51,4,0,0
+Paramagnetism,2,2,0,0
+Parameter,374,18,113,80
+Particle,116,7,13,12
+Passive Element,24,3,1,1
+Path loss,5,1,21,8
+Pattern multiplication,0,0,0,0
+Perfect conductor,58,3,0,0
+Period,121,8,4,4
+Permanent flux density,0,0,0,0
+Permanent magnet,164,14,18,16
+permanent-magnet motor,6,2,2,1
+Permeability,144,11,1,1
+Permeability of free space,21,8,0,0
+Permeance,39,7,0,0
+Permittivity,286,5,5,5
+Permittivity of free space,9,3,0,0
+Perpendicular polarization,11,1,0,0
+Phase,1556,20,35,23
+Phase constant,9,2,0,0
+phase delay,0,0,1,1
+Phase velocity,115,5,0,0
+Phase-matching conditions,2,2,0,0
+Phasor,715,10,1,1
+photoelectric sensor,0,0,1,1
+Piezoelectric effect,2,1,0,0
+Piezoelectric material,3,3,0,0
+Planar line,0,0,0,0
+Plane of incidence,24,2,0,0
+Plane wave,316,3,0,0
+Plasma,6,1,0,0
+PLC,0,0,1,1
+pneumatic,1,1,0,0
+Point charge,47,2,0,0
+Poisson's equation,17,2,1,1
+Polar molecule,0,0,0,0
+Polarization,152,4,19,11
+pole core,0,0,0,0
+pole count,0,0,0,0
+pole pair,18,8,0,0
+pole shoe,0,0,0,0
+Poling,0,0,0,0
+Positive charge,51,6,0,0
+Potential,470,15,4,4
+Potential difference,73,6,1,1
+Power density,166,8,3,2
+power distribution,15,4,3,3
+Power factor,261,8,17,9
+Power gain,51,4,2,2
+power generator,3,2,2,1
+Power pattern,0,0,4,2
+Power Supply,155,6,11,11
+power system,419,8,114,64
+power transformation,0,0,0,0
+power transmission,7,3,3,3
+Poynting vector,19,4,0,0
+Poynting's theorem,15,4,0,0
+Pressure,70,9,8,5
+pressure relief device,0,0,0,0
+prime mover,18,3,0,0
+principle of superposition,9,4,0,0
+Printed antenna,0,0,0,0
+Propagation constant,74,3,0,0
+protective relay,1,1,0,0
+Proton,51,5,2,1
+proximity sensor,5,2,0,0
+Pseudocapacitance,0,0,0,0
+pullout torque,0,0,0,0
+Pump,3,2,7,5
+Pyroelectric effect,0,0,0,0
+Pyroelectrics,0,0,0,0
+Quadrupole,0,0,0,0
+Quality factor,17,4,0,0
+Quantum Hall effect,0,0,0,0
+Quarter-wave monopole antenna,2,1,0,0
+Quarter-wave transformer,5,1,1,1
+Radar,48,5,63,19
+Radar cross section,0,0,0,0
+radar equation,0,0,0,0
+Radar range equation,0,0,0,0
+Radar transmission equation,0,0,0,0
+Radiated emission,0,0,0,0
+Radiated power,12,2,2,2
+Radiation,140,4,52,35
+Radiation efficiency,25,2,3,3
+Radiation intensity,15,1,0,0
+Radiation pattern,24,3,21,16
+Radiation resistance,34,2,0,0
+Radio frequency identification,8,2,3,3
+Radio wave,19,4,0,0
+rated current,10,3,0,0
+rated speed,2,2,1,1
+rated voltage,5,4,0,0
+Reactance,695,16,3,3
+Reactance circle,0,0,0,0
+Reactive power,193,6,29,20
+reactor,20,2,2,1
+Recipe,2,2,0,0
+Reconfigurable antenna,0,0,2,1
+Rectangular waveguide,27,2,0,0
+rectifier,68,3,9,5
+Reflected wave,51,3,0,0
+Reflection,126,5,15,13
+Reflection coefficient,90,3,9,7
+Refraction,54,3,0,0
+Refractive index,1,1,1,1
+Regulator,69,4,13,11
+Relative permeability,6,4,0,0
+Relative permittivity,79,5,1,1
+Relaxation time,0,0,0,0
+relay,42,5,9,4
+Reluctance,44,7,0,0
+reluctance motor,2,2,1,1
+Replacement,7,2,0,0
+repulsion motor,0,0,0,0
+Resistance,1329,18,11,7
+Resistance circle,0,0,0,0
+Resistivity,44,6,1,1
+Resonance,138,6,18,10
+Resonant coupling,0,0,0,0
+Resonant Frequency,96,5,7,6
+Resonant wavelength,0,0,0,0
+Retarded potential,3,1,0,0
+Retarded time,0,0,0,0
+Return loss,0,0,7,6
+Return stroke,0,0,0,0
+reverse rotation,0,0,0,0
+RF SQUID,0,0,0,0
+RFID,11,2,3,3
+robot arm,15,3,0,0
+rotating magnetic field,1,1,0,0
+rotational loss,0,0,0,0
+rotor,956,14,21,12
+rotor bar,6,2,0,0
+rotor resistance,33,5,0,0
+rotor speed,38,6,0,0
+rotor winding,6,5,1,1
+run capacitor,0,0,0,0
+Safe Interlock,0,0,0,0
+safety door,0,0,0,0
+Saturation,48,9,1,1
+Scattering,2,2,6,2
+Scattering parameters,0,0,2,2
+Scattering transfer parameters,0,0,0,0
+Seal,0,0,0,0
+Self-inductance,25,6,0,0
+Semiconductor,126,8,14,11
+sensor,243,8,167,69
+separately excited motor,0,0,0,0
+separation of variables,0,0,0,0
+sequence control,0,0,0,0
+series motor,0,0,0,0
+series winding,0,0,0,0
+servo drive,0,0,0,0
+servo motor,0,0,1,1
+set/reset,0,0,0,0
+Setpoint,8,1,1,1
+shaded-pole motor,0,0,0,0
+shaft,71,10,2,1
+shaft power,3,3,0,0
+Shielded strip line,0,0,0,0
+Shielding,5,3,2,2
+Shielding effectiveness,0,0,0,0
+short circuit,318,11,8,7
+Shorted line,2,1,0,0
+shunt motor,0,0,0,0
+shunt winding,0,0,0,0
+Siemens,16,6,0,0
+Simple material,0,0,0,0
+Single-mode fiber,2,2,0,0
+single-phase motor,3,1,0,0
+Single-stub tuner,0,0,0,0
+Sinusoid,64,9,0,0
+Skin depth,47,5,0,0
+Skin effect,12,5,0,0
+skin resistance,0,0,0,0
+slip,70,7,4,1
+slip frequency,11,4,0,0
+slip ring,0,0,0,0
+slot,245,10,23,15
+Slotted line,5,1,0,0
+Small-loop antenna,0,0,0,0
+Smart antenna,0,0,1,1
+Smith chart,64,2,0,0
+Snell's law,29,2,0,0
+soft starter,0,0,0,0
+solar panel,1,1,4,2
+Solenoid,63,7,2,2
+solenoid valve,0,0,1,1
+Solenoidal field,0,0,0,0
+Source impedance,28,6,0,0
+Space charge,0,0,0,0
+Speed of light,18,4,0,0
+speed regulation,0,0,2,2
+Spherical capacitor,0,0,0,0
+Spherical wave,21,3,0,0
+split-phase motor,0,0,0,0
+Spontaneous polarization,0,0,0,0
+squirrel-cage rotor,2,2,0,0
+Standing wave,73,3,6,1
+Standing wave ratio,29,2,0,0
+star-delta starter,0,0,0,0
+start capacitor,0,0,0,0
+starting current,0,0,0,0
+starting resistor,0,0,0,0
+starting torque,2,2,0,0
+starting winding,0,0,0,0
+stator,458,13,15,7
+stator winding,25,6,1,1
+Steady state,315,13,20,19
+Step Response,91,2,0,0
+Step-index fiber,0,0,0,0
+stepper motor,0,0,2,2
+stranded wire,0,0,0,0
+Stray capacitance,5,3,0,0
+stray loss,4,2,0,0
+substation,15,2,18,5
+Supercapacitor,21,1,13,4
+Superconducting quantum interference device,1,1,0,0
+Superconductor,18,2,0,0
+Supercurrent,0,0,0,0
+Superposition principle,13,1,0,0
+Surface charge,53,5,0,0
+Surface charge density,34,3,0,0
+Surface current,90,10,1,1
+Surface current density,35,7,0,0
+Surface resistance,4,2,0,0
+Susceptance,77,5,0,0
+switchgear,0,0,4,2
+synchronous generator,17,3,9,8
+synchronous motor,7,2,12,12
+synchronous speed,17,5,0,0
+Temperature,173,12,29,15
+temperature rise,8,4,0,0
+terminal voltage,115,8,1,1
+Tesla,37,8,0,0
+Test charge,3,2,0,0
+Textile antenna,0,0,1,1
+thermal overload,0,0,0,0
+thermal protector,0,0,0,0
+three-phase winding,0,0,0,0
+Throughput,0,0,11,9
+Time Constant,186,10,0,0
+Time-harmonic field,3,1,0,0
+Time-varying field,31,3,0,0
+timer,0,0,0,0
+tooth,7,4,0,0
+Toroid,12,3,0,0
+torque,517,15,41,24
+torque-speed characteristic,0,0,0,0
+Total internal reflection,43,2,0,0
+traction motor,2,2,0,0
+transformer bushing,0,0,0,0
+Transformer emf,11,3,0,0
+transformer tank,0,0,0,0
+Transient,380,11,27,19
+Transmission coefficient,8,1,4,4
+Transmission line,716,7,18,12
+Transmission line equations,7,1,0,0
+transmission line marker,0,0,0,0
+Transmission line parameters,4,2,0,0
+transmission tower,0,0,0,0
+Transmitted wave,37,2,0,0
+Transverse electric mode,0,0,0,0
+transverse electromagnetic mode,1,1,0,0
+Transverse electromagnetic wave,4,2,0,0
+Transverse magnetic mode,0,0,0,0
+Traveling wave,18,5,0,0
+troubleshooting,4,2,0,0
+turbine,122,7,34,22
+Two-wire line,6,1,0,0
+Ultraviolet,28,5,0,0
+underground line,0,0,0,0
+Uniform field,14,2,0,0
+Uniform linear array,0,0,2,1
+Uniform plane wave,97,3,0,0
+Uniqueness theorem,0,0,0,0
+Unit pattern,0,0,0,0
+universal motor,6,3,0,0
+Vacuum,26,7,5,3
+Valve,29,4,2,2
+variable-frequency drive,0,0,0,0
+Vector Poisson equation,0,0,0,0
+Velocity filter,0,0,0,0
+ventilation duct,0,0,0,0
+Vibration,22,7,8,3
+Visible light,15,3,2,1
+Volt,943,14,1,1
+Voltage,7294,21,261,107
+voltage detector,0,0,0,0
+Voltage reflection coefficient,19,3,0,0
+voltage regulation,8,2,9,6
+voltmeter,68,6,0,0
+Volume charge,28,3,0,0
+Volume charge density,25,3,0,0
+volume current density,20,5,0,0
+Wafer,9,2,1,1
+Wave equation,65,4,0,0
+Wave impedance,59,2,0,0
+Wave number,1,1,0,0
+Wave number vector,0,0,0,0
+Wave polarization,12,2,0,0
+wave winding,0,0,0,0
+Waveguide,126,3,9,8
+Waveguide resonator,0,0,1,1
+Waveguide wavelength,0,0,0,0
+Wavelength,246,9,21,15
+Weber,36,8,0,0
+windage loss,4,2,0,0
+winding pitch,2,2,0,0
+winding temperature,0,0,0,0
+Wire antenna,9,3,0,0
+Wireless power transfer,1,1,1,1
+wound rotor,4,3,1,1
+X-ray,26,3,1,1
+yoke,5,2,0,0
+Zeeman effect,0,0,0,0
+Zero,93,4,2,2

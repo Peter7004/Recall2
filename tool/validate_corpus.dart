@@ -7,18 +7,23 @@ void main(List<String> args) {
   final paths = args.where((arg) => !arg.startsWith('--')).toList();
   if (paths.isEmpty ||
       paths.length > 2 ||
-      args
-          .where((arg) => arg.startsWith('--'))
-          .any((arg) => arg != '--research-check')) {
+      args.where((arg) => arg.startsWith('--')).any(
+          (arg) => arg != '--research-check' && arg != '--recount-check')) {
     stderr.writeln(
         'Usage: dart --packages=.dart_tool/package_config.json tool/validate_corpus.dart '
-        '<corpus.csv> [dictionary.csv] [--research-check]');
+        '<corpus.csv> [dictionary.csv] [--research-check | --recount-check]');
     exitCode = 2;
     return;
   }
   try {
-    final catalog =
-        CorpusCatalog.parse(File(paths.first).readAsStringSync(encoding: utf8));
+    final csv = File(paths.first).readAsStringSync(encoding: utf8);
+    var catalog = CorpusCatalog.parse(csv);
+    if (args.contains('--recount-check')) {
+      final metadata =
+          File('${File(paths.first).parent.path}/corpus_metadata.json');
+      catalog =
+          catalog.withMetadata(metadata.readAsStringSync(encoding: utf8), csv);
+    }
     final path =
         paths.length >= 2 ? paths[1] : 'assets/vocabulary/recall_core_v1.csv';
     final rows = const CsvToListConverter(
@@ -37,9 +42,11 @@ void main(List<String> args) {
       }
       terms.add(row[index].toString());
     }
-    final research = args.contains('--research-check')
-        ? catalog.verifyResearch(terms)
-        : null;
+    final research =
+        args.contains('--research-check') || args.contains('--recount-check')
+            ? catalog.verifyResearch(terms,
+                recount: args.contains('--recount-check'))
+            : null;
     stdout.writeln(const JsonEncoder.withIndent('  ').convert({
       ...catalog.diagnose(terms),
       if (research != null) 'researchErrors': research,

@@ -346,3 +346,14 @@ Permanent certificate and io.github.peter7004.recall unchanged; code10.
 Public APK SHA256473d50776f868edef9d494aa6d641ddd918857b19824b6db07322f4931b3a7e8;
 previous release digests unchanged. Android physical installation NOT TESTED.
 No storage/catalog migration; root staged88 intact. See RELEASE_1.0.9.md.
+
+## 2026-11-11 — Actual corpus recovered and integrated
+
+Found latest recount from related x20 chat/local output. Verified86182 occurrence
+records,661 original document hashes and834 exact dictionary matches. Exported
+accepted TF/DF and separate pending metadata; corpus-specific DF/TF sorting excludes
+pending counts. Explicitly labels22 PDF files/639 abstracts and provisional automated
+domain-context assessment. No corpus full texts or local paths exported.
+Windows191/analyze/web/CLI and existing browser UI/storage tests PASS; no product
+storage/catalog/model migration. Real-data browser and mocked fallback/PDF source persistence
+PASS; actual225 common filter and abstract DF sorting verified. Release1.0.10 checks next.
