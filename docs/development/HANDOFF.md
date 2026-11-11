@@ -1,11 +1,56 @@
-## Active release1.0.12+13 — 2026-11-11
-User explicitly authorized commit, web and permanent APK deployment of coverage UI,
-with existing data preserved. Base main40b0890; isolated worktree
-C:/Users/Public/Recall-release-112 branch codex/corpus-coverage-112.
-Next copy only verified UI/tests/docs, bump version, prepare PR and same-profile
-1.0.11 upgrade baseline, run CI, merge and verify public web/signed APK.
-Preserve existing package/certificate and all corpus/user/Reader stores. No data
-migration. Root staged88 must remain untouched. Android device NOT TESTED.
+## Active release1.0.13+14 — 2026-11-12
+User authorized GitHub upload, web and permanent APK deployment with data preserved.
+Source fix d285589; worktree C:/Users/Public/Recall-highlight-fix,
+branch codex/reader-highlight-alignment. Version-only release preparation follows.
+Next seed actual1.0.12 web profile, push PR, pass CI, merge and verify Pages,
+build permanent-signed APK from pinned merge SHA, verify and publish1.0.13.
+Preserve package/certificate, corpus/vocabulary and all user/Reader storage keys.
+No data migrations; root staged88 untouched. Android physical update NOT TESTED.
+
+## Completed locally: source-return highlight geometry — 2026-11-12
+User reports PC web PDF learning-source return offsets throughout circuit textbook.
+Confirmed regression: text came from the loaded PdfPage while highlight normalization
+used placeholder dimensions/rotation. Resolve one loaded page for both operations;
+include page identity in the hover cache key so replacement pages invalidate geometry.
+Files: lib/reader/pdf_term_hover.dart, lib/reader/pdf_reader_page.dart,
+test/pdf_term_adapter_test.dart and development records. No storage/schema changes.
+FAIL before fix: new progressive-page regression (201 existing tests passed).
+PASS after fix: all203 Flutter tests, flutter analyze, release web build.
+PASS real Edge browser: existing learning smoke (save/duplicate/source/independent
+PDF/reload/deletion persistence), circuit PDF995 pages /24.3MB page344 source return,
+search panel open/close, zoom and paged-mode screenshots visually checked.
+The circuit PDF cover561.53x757.69 differs from body576.68x736.68; no fixed offset used.
+NOT TESTED: user's exact saved browser state, all995 pages, Android physical device.
+Initial browser harness retry timed out locating the search toggle with a tooltip;
+using the explicit search-close control passed. No remaining test failures.
+Web build retains existing Cupertino font warning; analyze has no issues.
+Evidence (ignored): build/highlight-test-before.log, highlight-test-after.log,
+highlight-analyze.log, highlight-web.log, highlight-learning-after.log,
+highlight-real-after-final.log and highlight-alignment/*.png. Textbook not committed.
+Isolated branch codex/reader-highlight-alignment at C:/Users/Public/Recall-highlight-fix.
+Next: review commit; public web/APK have NOT been updated by this task. Local5220
+preview contains the fix. Recheck user's existing browser state when deployed.
+Root staged88 unrelated files untouched. No push, merge or deployment performed.
+
+## Completed release1.0.12+13 — 2026-11-12
+User-authorized commit/web/permanent APK update complete. PR12/8b6ffe4 merged
+567270df2faa8b71bf9127cfa54736b813374547. CI43042651851 and Pages43043054362 PASS;
+permanent signed APK43043073226 PASS. Changes: recommendation source DF/N rings,
+DF/TF values and context-filter/pending-excluded copy with explicit method limits.
+PASS Windows201/analyze/web, public daily graph/queue/focus/320-390-1200 browser,
+actual same-profile1.0.11→1.0.12 exact Recall storage/focus/bookmark/review/PDF/page3.
+PASS apksigner/aapt: same package io.github.peter7004.recall and permanent cert,
+code13/name1.0.12; exact834 vocabulary/corpus payload; unauthenticated APK download.
+APK SHA256:8dcbb37fea452b5d60f868cdd3612a6ec0fd0e29a3ba269b869dc505641d8e83
+Previous1.0.11 assets unchanged. No corpus/ranking/user/Reader storage changes.
+Release: https://github.com/Peter7004/Recall-APK-Private/releases/tag/v1.0.12
+Evidence/helper: C:/Users/Public/Recall-release-112/build/release-1.0.12.
+Worktree: C:/Users/Public/Recall-release-112; branch codex/corpus-coverage-112.
+Root staged88 unrelated files untouched. Local5220 preview1.0.12 remains available.
+Android physical update NOT TESTED: adb devices empty. Full expert semantic review
+NOT TESTED. No unfinished release step. Next when available: physical-device update
+and Reader validation; do not infer those passed from web/APK checks.
+Older checkpoints below are history, not pending release actions.
 
 ## Completed locally: recommendation coverage graphs — 2026-11-11
 User requested numeric/circular textbook-vs-abstract recommendation evidence and

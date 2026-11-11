@@ -5,6 +5,7 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
+| H1 | FIXED LOCALLY | Loaded-page dimensions/rotation and page-identity cache for highlight alignment.203 tests/analyze/web and real browser source-return/zoom/paged checks PASS. Exact user profile/Android NOT TESTED; no deployment. |
 | C3 | LOCAL COMPLETE; NOT DEPLOYED | Recommendation DF/N donuts and source DF/TF; context-filter wording with explicit method limits. Windows201/analyze/web, mobile/desktop browser and saved-data checks PASS. No statistics or storage changes. Android device NOT TESTED. |
 | C2 | RELEASED1.0.11+12 | Home textbook/abstract focus, source-specific daily recommendations/study, separate preference persistence and preserved explicit sessions. Windows198/analyze/web/startup8, public browser and actual1.0.10→1.0.11 stored-data preservation PASS; signed APK/public checksum verified. See DAILY_CORPUS_RECOMMENDATIONS.md. Android device NOT TESTED. |
 | UI3 / WIN | RELEASED 1.0.9+10 | Five bottom tabs with persistent Reader/study and concise copy. Windows188 tests/PDFium1/analyze/debug APK, Linux188/startup8, public web/Reader/corpus and 1.0.8→1.0.9 saved-data upgrade PASS. Permanent signature/package retained; public APK checksum PASS. Android device NOT TESTED. See RELEASE_1.0.9.md and WINDOWS_LOCAL_DEVELOPMENT.md. |
