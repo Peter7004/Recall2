@@ -38,6 +38,7 @@ class RecallStore extends ChangeNotifier {
   static const _legacyKey = 'recall.data.v1';
   static const _previousKey = 'recall.data.v2';
   static const _dataKey = 'recall.data.v3';
+  static const _learningSourceKey = 'recall.learning.corpus-source.v1';
   static int _idSequence = 0;
   static const _retiredDefaultSubjects = ['전기공학', '반도체공학'];
   static const _subjectSettingsVersion = 1;
@@ -81,6 +82,8 @@ class RecallStore extends ChangeNotifier {
   String? _persistedData;
   bool _restoring = false;
   int _dailyGoal = 24;
+  CorpusSource _learningSource = CorpusSource.textbook;
+  bool _savingLearningSource = false;
   int _bundledVocabularyVersion = 0;
   int _reviewsToday = 0;
   bool _tutorialCompleted = false;
@@ -93,6 +96,14 @@ class RecallStore extends ChangeNotifier {
       Future<BundledVocabulary> Function()? loadBundledVocabulary}) async {
     final preferences = storage ?? await SharedPreferences.getInstance();
     final store = RecallStore._(preferences, corpus);
+    try {
+      if (preferences.getString(_learningSourceKey) ==
+          CorpusSource.abstracts.name) {
+        store._learningSource = CorpusSource.abstracts;
+      }
+    } on TypeError {
+      // A damaged optional preference must not block vocabulary loading.
+    }
     final current = preferences.getString(_dataKey);
     store._persistedData = current;
     final previous = preferences.getString(_previousKey);
@@ -293,13 +304,83 @@ class RecallStore extends ChangeNotifier {
   List<RecallCategory> get categories =>
       _categoriesCache ??= List.unmodifiable(_categories);
   int get dailyGoal => _dailyGoal;
-  int get reviewsToday => _reviewsToday;
+  int get reviewsToday =>
+      _reviewDay == _dayKey(DateTime.now()) ? _reviewsToday : 0;
+  CorpusSource get learningSource => _learningSource;
+  String get learningSourceLabel =>
+      _learningSource == CorpusSource.textbook ? '교재 중심' : '논문 초록 중심';
+
+  bool get hasCorpusLearningCandidates =>
+      corpus.available &&
+      dueCards.any((e) =>
+          (corpus.forTerm(e.card.displayTerm)?.df(_learningSource) ?? 0) > 0);
+
+  /// Read-only recommendations. Never changes card IDs, priorities or schedules.
+  /// No observations: retain the existing unrestricted study queue.
+  DictionaryCards recommendationCards({DateTime? now}) {
+    if (!hasCorpusLearningCandidates) return List.of(dueCards);
+    final date = now ?? DateTime.now();
+    final today = DateTime(date.year, date.month, date.day);
+    final ranked = dueCards.where((entry) {
+      final last = entry.card.lastReviewed?.toLocal();
+      return (corpus.forTerm(entry.card.displayTerm)?.df(_learningSource) ??
+                  0) >
+              0 &&
+          (last == null || last.isBefore(today));
+    }).toList();
+    ranked.sort((a, b) {
+      final x = a.card.lastReviewed?.toLocal();
+      final y = b.card.lastReviewed?.toLocal();
+      if (x == null && y != null) return -1;
+      if (y == null && x != null) return 1;
+      if (x != null && y != null) {
+        final age = DateTime(x.year, x.month, x.day)
+            .compareTo(DateTime(y.year, y.month, y.day));
+        if (age != 0) return age;
+      }
+      final sx = corpus.forTerm(a.card.displayTerm)!;
+      final sy = corpus.forTerm(b.card.displayTerm)!;
+      final df = sy.df(_learningSource).compareTo(sx.df(_learningSource));
+      if (df != 0) return df;
+      final tf = sy.tf(_learningSource).compareTo(sx.tf(_learningSource));
+      if (tf != 0) return tf;
+      final name = normalizeCorpusTerm(a.card.displayTerm)
+          .compareTo(normalizeCorpusTerm(b.card.displayTerm));
+      return name != 0 ? name : a.card.id.compareTo(b.card.id);
+    });
+    return ranked;
+  }
+
+  DictionaryCards get todayStudyCards => recommendationCards()
+      .take(math.max(0, dailyGoal - reviewsToday))
+      .toList();
+
+  Future<void> setLearningSource(CorpusSource source) async {
+    _assertWritable();
+    if (_savingLearningSource) throw StateError('추천 기준을 저장 중입니다.');
+    _savingLearningSource = true;
+    try {
+      if (!await _preferences.setString(_learningSourceKey, source.name)) {
+        throw StateError('추천 기준을 저장하지 못했습니다.');
+      }
+      _learningSource = source;
+      if (hasListeners) notifyListeners();
+    } catch (_) {
+      try {
+        await _preferences.reload();
+      } catch (_) {/* Preserve the original write error. */}
+      rethrow;
+    } finally {
+      _savingLearningSource = false;
+    }
+  }
+
   bool get tutorialCompleted => _tutorialCompleted;
   int get totalCards => _entries.length;
   int get dueCount => _dueCountCache ??=
       _entries.values.where((c) => !c.isExcludedFromReview).length;
-  int get remainingToday =>
-      math.min(dueCount, math.max(0, dailyGoal - reviewsToday));
+  int get remainingToday => math.min(
+      recommendationCards().length, math.max(0, dailyGoal - reviewsToday));
   RecallCard? cardById(String id) => _entries[id];
   RecallDeck _hydrateDeck(RecallDeck deck) => RecallDeck(
       id: deck.id,

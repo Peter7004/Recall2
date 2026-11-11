@@ -3,7 +3,11 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
-Current application release: **1.0.10+11**.
+Current application release: **1.0.11+12**.
+
+Today's recommendations and daily study share a saved textbook/abstract focus.
+Unlearned observed words rank by that source's DF then TF; previously learned
+words return oldest review day first. Manual study scopes remain available.
 
 Bundled corpus statistics now cover 834 terms across 22 PDF files and 639 paper
 abstracts. These are provisional accepted occurrences from the 2026-11-11 recount;

@@ -409,3 +409,19 @@ No keys/PDF/user content in handoffs. Checkpoints do not stage/restore automatic
 Quota reset does not auto-resume development.
 
 Resume: **“개발 인계 기록을 읽고 마지막 미완료 작업부터 계속해 줘.”**
+## Active corpus-based daily recommendations — 2026-11-11
+User requests textbook/abstract learning focus for today's recommendations.
+Current dashboard rotates by calendar index; default study is alphabetical.
+Plan: home focus selector (separate preference key), observed eligible terms,
+unlearned first with per-source DF/TF ordering; reviewed terms oldest first;
+skip already studied today. Preserve explicit decks/bookmarks sessions and all
+vocabulary/Reader records. No corpus/eligible observations -> existing fallback.
+Files: recall_store.dart, ui/recall_dashboard.dart, main.dart, focused tests,
+browser regression and development records. Root staged88 must remain untouched.
+Implemented. PASS Windows198 Flutter tests, analyze, web build, startup8; real
+browser textbook/abstract ranking, next-card evidence, default-session reset,
+320/390 widths, preference/review reload preservation; existing UI regression
+320/430/640/1280. Empty-session copy regression fixed; original manual flow retained.
+Next commit isolated codex/daily-corpus-111; PR checks; web/permanent APK1.0.11+12
+under continuing release authorization. Android physical device NOT TESTED.
+
