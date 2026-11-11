@@ -321,3 +321,18 @@ Pages42982937540 PASS. Public version1.0.8+9 and both bundled CSV hashes match m
 
 ## 2026-11-11 — Recall1.0.8+9 released and verified
 PR5/fdbb427. Permanent signed APK42982945172 and Pages42982937540 PASS; public UI/corpus/mobile/full Reader regressions PASS. APK source/package/version/previous certificate/834-term payload/header-only corpus and public download verified. SHA256 ca1cd106c0badf40b1ed428b0013c36fd09e9b6c9610e6aba1eb4650f747443a. Prior release unchanged; staged88 intact. Android device and Windows environment repair remain unverified/unresolved. See RELEASE_1.0.8.md.
+
+## 2026-11-11 — Windows local build repaired; five bottom tabs
+
+Reader moved into home/dictionary/Reader/study/records bottom navigation; Reader
+page and study card remain mounted across tab switches. Removed repeated coaching
+copy and retained user data and existing functions. Added root Windows runner with
+owned ASCII staging and scoped portable C++ toolchain discovery. Physical Flutter,
+Gradle, Android SDK, JDK and pub cache resolve prior Unicode/junction failures.
+
+PASS on Windows: final188 Flutter tests, real PDFium native1, analyze without issues,
+debug APK and aapt/apksigner verification. Browser five-tab UI/mobile menu/corpus/
+full Reader learning regressions PASS. APK SHA256
+79326286502a90369cdfbc7a086f32f412fcd4b1cd3fa77c8b4cbd6ede2cee33.
+Android device and Windows desktop executable NOT TESTED. No new commit or release;
+unrelated staged88 preserved. See WINDOWS_LOCAL_DEVELOPMENT.md for commands/logs.

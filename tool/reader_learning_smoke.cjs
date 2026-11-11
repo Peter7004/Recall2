@@ -5,7 +5,7 @@ const output=path.join(root,'build','reader-learning-smoke');fs.mkdirSync(output
 const hash=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(fixtures,name))).digest('hex');
 (async()=>{
  const browser=await chromium.launch({headless:true,channel:process.env.RECALL_BROWSER_CHANNEL||'msedge'});
- const page=await browser.newPage({viewport:{width:1100,height:850}});page.setDefaultTimeout(20000);
+ const page=await browser.newPage({viewport:{width:1100,height:1000}});page.setDefaultTimeout(20000);
  const errors=[];page.on('pageerror',e=>errors.push(String(e)));
  const button=n=>page.getByRole('button',{name:n,exact:true}), settle=ms=>page.waitForTimeout(ms);
  const at=n=>button(`${n} / 5`).waitFor();
@@ -13,7 +13,7 @@ const hash=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(fi
  async function start(){
   await page.goto(process.env.RECALL_READER_TEST_URL||'http://127.0.0.1:5205/Recall2/',{waitUntil:'networkidle'});
   const sem=page.locator('flt-semantics-placeholder');if(await sem.count())await sem.dispatchEvent('click');
-  await button('Recall Reader').click();await settle(700);
+  await button('Reader').click();await settle(700);
  }
  async function importPdf(name){await away();const[c]=await Promise.all([page.waitForEvent('filechooser'),button('PDF 열기').first().click()]);await c.setFiles(path.join(fixtures,name));await settle(1800);}
  async function data(key){return page.evaluate(key=>{const raw=localStorage.getItem(`flutter.${key}`);if(!raw)return null;let v=JSON.parse(raw);return typeof v==='string'?JSON.parse(v):v;},key);}
@@ -55,8 +55,8 @@ const hash=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(fi
   const clean=d=>({...d,entries:d.entries.map(({isBookmarked,...entry})=>entry)});
   assert.deepEqual(clean(after),clean(dictionaryBefore),'only intentional bookmark flag may change');
   console.log('PASS: one term across two documents, cross-document source jump/back, restart persistence, highlight preference and vocabulary fields preserved.');
-  await away();await button('Back').click();await settle(700);
-  await button('Search vocabulary').click();await settle(600);
+  await away();
+  await button('사전').click();await settle(600);
   const query=page.getByRole('textbox',{name:'영어·한국어 검색'});await query.focus();await query.pressSequentially('Skin effect');await settle(700);
   await page.getByRole('button',{name:/Skin effect/}).first().click();await settle(600);
   await button('PDF 학습 출처').click();await settle(700);

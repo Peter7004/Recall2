@@ -9,11 +9,10 @@ class _DashboardPage extends StatelessWidget {
       required this.onSubjects,
       required this.onCollections,
       required this.onBookmarks,
-      required this.onReader,
       required this.onTerm,
       required this.onCategory});
   final RecallStore store;
-  final VoidCallback onStudy, onSubjects, onCollections, onBookmarks, onReader;
+  final VoidCallback onStudy, onSubjects, onCollections, onBookmarks;
   final ValueChanged<String> onSearch, onCategory;
   final void Function(String, RecallCard) onTerm;
 
@@ -23,7 +22,7 @@ class _DashboardPage extends StatelessWidget {
     final day = DateTime.now().difference(DateTime(2020)).inDays;
     final suggestion = entries.isEmpty ? null : entries[day % entries.length];
     return _DashboardScroll(children: [
-      const _PageHeading('오늘의 전공 영어', '매일 조금씩, 확실하게 기억하세요.'),
+      const _PageHeading('오늘의 전공 영어', ''),
       _Panel(
           padding: const EdgeInsets.all(24),
           child:
@@ -68,14 +67,17 @@ class _DashboardPage extends StatelessWidget {
         const Expanded(child: _HomeSectionHeading('분야별 학습')),
         TextButton(onPressed: onSubjects, child: const Text('과목 관리'))
       ]),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final category
-            in store.categories.where((c) => c.parentId == null))
-          ActionChip(
-              label: Text(category.name),
-              onPressed: () => onCategory(category.id)),
-        if (store.categories.isEmpty) const Text('과목을 추가해 학습 분야를 정리하세요.'),
-      ]),
+      SizedBox(
+          height: 56,
+          child: ListView(scrollDirection: Axis.horizontal, children: [
+            for (final category
+                in store.categories.where((c) => c.parentId == null))
+              Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                      label: Text(category.name),
+                      onPressed: () => onCategory(category.id))),
+          ])),
       const SizedBox(height: 24),
       if (suggestion != null)
         _Panel(
@@ -99,14 +101,6 @@ class _DashboardPage extends StatelessWidget {
       _Panel(
           padding: EdgeInsets.zero,
           child: Column(children: [
-            ListTile(
-                leading:
-                    const Icon(Icons.picture_as_pdf_outlined, color: _indigo),
-                title: const Text('Recall Reader'),
-                subtitle: const Text('PDF 읽기 · 단어 저장 · 원문 복귀'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: onReader),
-            const Divider(height: 1),
             ListTile(
                 leading: const Icon(Icons.folder_open_outlined, color: _indigo),
                 title: const Text('단어 모음 관리'),
@@ -135,7 +129,7 @@ class _RecordsPage extends StatelessWidget {
     final percent =
         (100 * store.reviewsToday / store.dailyGoal).clamp(0, 100).round();
     return _DashboardScroll(children: [
-      const _PageHeading('학습 기록', '매일의 작은 성장을 한눈에 확인하세요.'),
+      const _PageHeading('학습 기록', ''),
       LayoutBuilder(
           builder: (context, constraints) =>
               Wrap(spacing: 12, runSpacing: 12, children: [
@@ -168,14 +162,6 @@ class _RecordsPage extends StatelessWidget {
                                     style: const TextStyle(color: _muted)),
                               ]))),
               ])),
-      const SizedBox(height: 28),
-      const _HomeSectionHeading('학습 기록 안내'),
-      const SizedBox(height: 12),
-      const _Panel(
-          child: Text(
-              '오늘 학습 횟수는 같은 단어를 다시 학습한 횟수도 포함합니다. '
-              '현재 저장 데이터에는 날짜별 전체 이력이 없어 최근 7일 그래프는 표시하지 않습니다.',
-              style: TextStyle(color: _muted, height: 1.7))),
       const SizedBox(height: 28),
       Row(children: [
         const Expanded(child: _HomeSectionHeading('저장한 단어')),
@@ -223,8 +209,9 @@ class _PageHeading extends StatelessWidget {
         Text(title,
             style: const TextStyle(
                 fontSize: 28, fontWeight: FontWeight.w800, color: _ink)),
-        const SizedBox(height: 10),
-        Text(subtitle, style: const TextStyle(color: _muted, height: 1.6)),
+        if (subtitle.isNotEmpty) const SizedBox(height: 10),
+        if (subtitle.isNotEmpty)
+          Text(subtitle, style: const TextStyle(color: _muted, height: 1.6)),
       ]));
 }
 

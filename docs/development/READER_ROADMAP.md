@@ -5,6 +5,7 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
+| UI3 / WIN | DONE LOCALLY; not published | Five bottom tabs with persistent Reader/study; concise reference-style copy. Windows native188 tests, real PDFium1, analyze, debug APK PASS after physical ASCII toolchain setup. Browser UI/Reader/corpus regressions PASS; Android device NOT TESTED. See WINDOWS_LOCAL_DEVELOPMENT.md. |
 | UI2 | RELEASED 1.0.8+9 | Supplied UI v2 theme/home/records/dictionary/flashcards/settings integrated with real data. Full Linux187 tests, public browser regressions and permanent signed APK PASS. Device NOT TESTED; see RELEASE_1.0.8.md. |
 | C1 | RELEASED support; actual data pending | Read-only corpus CSV validation, diagnostics, dictionary filters/DF sorting/detail and PDF statistics. Full Linux/public browser/signed APK PASS; actual stats absent and Android device NOT TESTED. See RELEASE_1.0.8.md. |
 | M1 | IMPLEMENTED; verification in PERSONAL_VOCABULARY_VERIFICATION.md | Manual PDF personal vocabulary, editable context and existing flashcard integration. 49 isolated tests/analyze/web build/browser save-reload PASS; native host tests blocked by C++ toolchain; Android NOT TESTED. |
