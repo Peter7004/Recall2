@@ -357,3 +357,12 @@ domain-context assessment. No corpus full texts or local paths exported.
 Windows191/analyze/web/CLI and existing browser UI/storage tests PASS; no product
 storage/catalog/model migration. Real-data browser and mocked fallback/PDF source persistence
 PASS; actual225 common filter and abstract DF sorting verified. Release1.0.10 checks next.
+
+## 2026-11-11 — Real corpus release1.0.10 verified
+
+PR9/d461971; CI43014655807, Pages43015022187, permanent signedAPK43015043216 PASS.
+Public real corpus browser and exact same-profile1.0.9→1.0.10 localStorage/managedPDF/
+page3 preservation PASS. APK source/package/code11/permanent certificate/834 statistics
+and public re-download SHA2567b8f7541701b398e173a70135b7acd1efc00e80348308814ad41389e4605636d
+PASS. Previous1.0.9 assets unchanged. No dictionary or user-storage migration.
+Android device and expert semantic review NOT TESTED. See RELEASE_1.0.10.md.
