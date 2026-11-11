@@ -1,4 +1,17 @@
-## Active release 1.0.9+10 — 2026-11-11
+## Completed 1.0.9+10 release — 2026-11-11
+User-authorized commit/deployment complete. PR7 merged8868ae4a03009bc1c53a771683794d0197086bbb.
+PASS PR42989014089:188 Flutter/analyze/startup8; Pages42989311938;
+permanent signed APK42989316358; public UI/mobile/Reader/corpus regressions.
+Same isolated 1.0.8 browser profile upgraded to1.0.9: exact Recall localStorage,
+bookmarks/review, managed PDF and page3 retained after cache-bypassing reload.
+APK io.github.peter7004.recall code10/name1.0.9, unchanged permanent certificate;
+SHA256473d50776f868edef9d494aa6d641ddd918857b19824b6db07322f4931b3a7e8.
+Public latest download re-verified without auth. Existing v1.0.8 assets unchanged.
+See RELEASE_1.0.9.md. Android device upgrade NOT TESTED (adb empty).
+No storage/model/catalog/Android settings or dependency changes. Root index88 preserved.
+Next: device validation when Galaxy S25 Ultra is connected; no release blocker remains.
+Historical checkpoints below are not active tasks.
+## Release preparation checkpoint 1.0.9+10 — 2026-11-11
 User authorized GitHub commit, web deployment and permanent-signed APK update.
 Worktree: C:/Users/Public/Recall-release-109; branch codex/five-tab-release-109.
 Files: main/dashboard, widget/browser tests, Windows scripts, version/README and records.
