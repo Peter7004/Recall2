@@ -1,3 +1,35 @@
+## Active release 1.0.9+10 — 2026-11-11
+User authorized GitHub commit, web deployment and permanent-signed APK update.
+Worktree: C:/Users/Public/Recall-release-109; branch codex/five-tab-release-109.
+Files: main/dashboard, widget/browser tests, Windows scripts, version/README and records.
+Preserve io.github.peter7004.recall and the existing distribution certificate;
+versionCode increases9→10. No vocabulary/persistence/model/Android config changes.
+Baseline Windows188 tests/PDFium/analyze/debug APK and browser regressions PASS.
+Next: PR checks, merge pinned commit, Pages/signed APK workflows, compare certificate,
+package, payload and existing-browser upgrade data before publishing release assets.
+Android physical-device upgrade NOT TESTED. Root staged88 must remain unchanged.
+## Completed local Windows repair / five-tab UI — 2026-11-11
+
+User request complete locally. Home / dictionary / Reader / study / records now
+share five bottom tabs; PDF page and current study card survive tab switches.
+Removed repetitive coaching copy. See WINDOWS_LOCAL_DEVELOPMENT.md for files,
+commands, physical SDK paths, root causes and validation limits.
+
+PASS on this Windows PC: final native suite188, actual PDFium extraction/render1,
+Flutter analyze (no issues), local debug APK. PASS real browser UI widths320–1280,
+mobile Reader menu/tab persistence, corpus and full Reader learning/source tests.
+No dependency/version/storage changes. Tool runner stages exact current source into
+owned physical C:/Users/Public/Recall-windows-build; process environment restored.
+APK build/windows/Recall-debug.apk: com.example.recall, Android Debug signer,
+1.0.8+9, SHA256 79326286502a90369cdfbc7a086f32f412fcd4b1cd3fa77c8b4cbd6ede2cee33.
+It is a separate test app, not a production update. Android device and Windows
+desktop app build NOT TESTED. No new commit/push/publication; staged88 untouched.
+
+Next concrete action: device validation on Galaxy S25 Ultra when connected.
+If publication is requested, prepare a new version and permanent-signed release;
+do not replace the existing production APK with this debug artifact.
+Historical checkpoints below describe earlier states, not current blockers.
+
 # Completed UI/corpus/mobile release — 2026-11-11
 
 1.0.8+9 is publicly released. PR5 merged fdbb427. Full Linux187 tests and
@@ -9,7 +41,8 @@ See RELEASE_1.0.8.md for exact URLs, hashes, scope and PASS/FAIL/NOT TESTED.
 Primary agent synced green widget_test.dart/pubspec.yaml to root; merge these final docs and
 README version-only edits while preserving root collaboration content.
 Next product validation: actual Android device and real corpus statistics when supplied.
-Local Windows Gradle/native environment remains unresolved, not claimed fixed.
+At the time of that release, local Windows Gradle/native repair was unresolved;
+the completed local repair above supersedes that environment status.
 Earlier checkpoints below are chronological evidence, not current release blockers.
 
 ## Release execution checkpoint — 2026-11-11

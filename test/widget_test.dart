@@ -125,12 +125,12 @@ void main() {
     expect(store.decks.single.name, 'Existing');
   });
 
-  testWidgets('home has four destinations and opens the dictionary',
+  testWidgets('home has five destinations and opens the dictionary',
       (tester) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
     expect(find.text('오늘의 전공 영어'), findsOneWidget);
-    for (final label in ['홈', '사전', '학습', '기록']) {
+    for (final label in ['홈', '사전', 'Reader', '학습', '기록']) {
       expect(find.text(label), findsOneWidget);
     }
     await tester.tap(find.text('사전'));
@@ -138,6 +138,40 @@ void main() {
     expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
     await _openManagement(tester, '북마크');
     expect(find.text('북마크한 용어가 없습니다.'), findsOneWidget);
+  });
+
+  testWidgets('study tab retains its current card and removes coaching copy',
+      (tester) async {
+    final store = await RecallStore.load();
+    await store.createDeck('Words');
+    for (final word in ['alpha', 'beta']) {
+      await store.addCard(
+          deckId: store.decks.single.id,
+          front: word,
+          meaning: '$word meaning',
+          example: '',
+          termEnglish: word);
+    }
+    await tester.pumpWidget(RecallApp(loadStore: () async => store));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('학습').last);
+    await tester.pumpAndSettle();
+    expect(find.text('alpha'), findsOneWidget);
+    expect(find.textContaining('뜻을 떠올린'), findsNothing);
+    expect(find.textContaining('앞면과 뒷면을 바꿔서'), findsNothing);
+    await tester.ensureVisible(find.text('정답 확인 →'));
+    await tester.tap(find.text('정답 확인 →'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('기억했어요'));
+    await tester.tap(find.text('기억했어요'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('홈').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('학습').last);
+    await tester.pumpAndSettle();
+    expect(find.text('beta'), findsOneWidget);
+    expect(store.reviewsToday, 1);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('dictionary searches English and opens a bookmarkable term',

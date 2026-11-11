@@ -99,6 +99,10 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 4;
+  bool _readerVisited = false;
+  bool _studyVisited = false;
+  int _studySession = 0;
+  StudyCards? _studyCards;
   String _dictionaryQuery = '';
   String? _dictionaryCategoryId;
   RecallStore? _store;
@@ -152,10 +156,11 @@ class _HomeShellState extends State<HomeShell> {
   static const _destinations = [
     (label: '홈', icon: Icons.home_outlined),
     (label: '사전', icon: Icons.search_rounded),
+    (label: 'Reader', icon: Icons.picture_as_pdf_outlined),
     (label: '학습', icon: Icons.style_outlined),
     (label: '기록', icon: Icons.bar_chart_rounded),
   ];
-  static const _tabPages = [4, 0, 3, 5];
+  static const _tabPages = [4, 0, 7, 3, 5];
 
   void _showTutorial(RecallStore store) {
     showDialog<void>(
@@ -406,97 +411,133 @@ class _HomeShellState extends State<HomeShell> {
       extendBody: false,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            _TopBar(
-                onSearch: _openDictionary,
-                onSettings: _openSettings,
-                onOpenReader: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                        builder: (_) => PdfReaderPage(store: store)))),
-            Expanded(
-              child: _selectedIndex == 4
-                  ? _DashboardPage(
-                      store: store,
-                      onStudy: _startReview,
-                      onSearch: (q) => _openDictionary(query: q),
-                      onSubjects: () => setState(() => _selectedIndex = 1),
-                      onCollections: () => setState(() => _selectedIndex = 6),
-                      onBookmarks: () => setState(() => _selectedIndex = 2),
-                      onReader: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                              builder: (_) => PdfReaderPage(store: store))),
-                      onTerm: _openTerm,
-                      onCategory: _openCategory)
-                  : _selectedIndex == 5
-                      ? _RecordsPage(store: store, onTerm: _openTerm)
-                      : _selectedIndex == 0
-                          ? _DictionaryPage(
-                              store: store,
-                              initialQuery: _dictionaryQuery,
-                              initialCategoryId: _dictionaryCategoryId,
-                              onOpenTerm: _openTerm,
-                              onCategorySelected: (categoryId) =>
-                                  _openDictionary(categoryId: categoryId),
-                            )
-                          : _selectedIndex == 1
-                              ? _SubjectsPage(
-                                  store: store, onOpenSubject: _openCategory)
-                              : _selectedIndex == 2
-                                  ? _BookmarkedPage(
-                                      store: store,
-                                      onOpenTerm: _openTerm,
-                                    )
-                                  : _selectedIndex == 3
-                                      ? _FlashcardLaunchPage(
-                                          store: store,
-                                          onStartReview: _startReview,
-                                        )
-                                      : _HomePage(
-                                          store: store,
-                                          onOpenDeck: _openDeck,
-                                          onStartReview: _startReview,
-                                          onImportCsv: _showCsvImport,
-                                          onCreateDeck: _showAddDeck,
-                                          onSearch: (q) =>
-                                              _openDictionary(query: q),
-                                          onOpenBookmarks: () => setState(
-                                              () => _selectedIndex = 2),
-                                          onOpenTerm: _openTerm,
-                                          onOpenCategory: _openCategory,
-                                        ),
-            ),
-          ],
-        ),
+        child: IndexedStack(
+            index: _selectedIndex == 7
+                ? 1
+                : _selectedIndex == 3
+                    ? 2
+                    : 0,
+            children: [
+              Column(
+                children: [
+                  _TopBar(onSettings: _openSettings),
+                  Expanded(
+                    child: _selectedIndex == 4
+                        ? _DashboardPage(
+                            store: store,
+                            onStudy: _startReview,
+                            onSearch: (q) => _openDictionary(query: q),
+                            onSubjects: () =>
+                                setState(() => _selectedIndex = 1),
+                            onCollections: () =>
+                                setState(() => _selectedIndex = 6),
+                            onBookmarks: () =>
+                                setState(() => _selectedIndex = 2),
+                            onTerm: _openTerm,
+                            onCategory: _openCategory)
+                        : _selectedIndex == 5
+                            ? _RecordsPage(store: store, onTerm: _openTerm)
+                            : _selectedIndex == 0
+                                ? _DictionaryPage(
+                                    store: store,
+                                    initialQuery: _dictionaryQuery,
+                                    initialCategoryId: _dictionaryCategoryId,
+                                    onOpenTerm: _openTerm,
+                                    onCategorySelected: (categoryId) =>
+                                        _openDictionary(categoryId: categoryId),
+                                  )
+                                : _selectedIndex == 1
+                                    ? _SubjectsPage(
+                                        store: store,
+                                        onOpenSubject: _openCategory)
+                                    : _selectedIndex == 2
+                                        ? _BookmarkedPage(
+                                            store: store,
+                                            onOpenTerm: _openTerm,
+                                          )
+                                        : _selectedIndex == 3
+                                            ? _FlashcardLaunchPage(
+                                                store: store,
+                                                onStartReview: _startReview,
+                                              )
+                                            : _HomePage(
+                                                store: store,
+                                                onOpenDeck: _openDeck,
+                                                onStartReview: _startReview,
+                                                onImportCsv: _showCsvImport,
+                                                onCreateDeck: _showAddDeck,
+                                                onSearch: (q) =>
+                                                    _openDictionary(query: q),
+                                                onOpenBookmarks: () => setState(
+                                                    () => _selectedIndex = 2),
+                                                onOpenTerm: _openTerm,
+                                                onOpenCategory: _openCategory,
+                                              ),
+                  ),
+                ],
+              ),
+              if (_readerVisited)
+                PdfReaderPage(key: const ValueKey('reader-tab'), store: store)
+              else
+                const SizedBox.shrink(),
+              if (_studyVisited)
+                Column(children: [
+                  _TopBar(onSettings: _openSettings),
+                  Expanded(
+                      child: ReviewPage(
+                    key: ValueKey(_studySession),
+                    store: store,
+                    initialCards: _studyCards,
+                    embedded: true,
+                    onExit: () => setState(() => _selectedIndex = 4),
+                    onChoose: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => Scaffold(
+                                appBar: AppBar(title: const Text('학습 범위')),
+                                body: _FlashcardLaunchPage(
+                                    store: store,
+                                    onStartReview: _startReview)))),
+                  )),
+                ])
+              else
+                const SizedBox.shrink(),
+            ]),
       ),
-      floatingActionButton:
-          (_selectedIndex == 4 || _selectedIndex == 5 || _selectedIndex == 3)
-              ? null
-              : FloatingActionButton(
-                  onPressed: _showHomeActions,
-                  tooltip: '용어·모음 추가',
-                  backgroundColor: _indigo,
-                  foregroundColor: Colors.white,
-                  child: const Icon(Icons.add, size: 28),
-                ),
+      floatingActionButton: (_selectedIndex == 4 ||
+              _selectedIndex == 5 ||
+              _selectedIndex == 3 ||
+              _selectedIndex == 7)
+          ? null
+          : FloatingActionButton(
+              onPressed: _showHomeActions,
+              tooltip: '용어·모음 추가',
+              backgroundColor: _indigo,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add, size: 28),
+            ),
       bottomNavigationBar: _BottomNav(
         selectedIndex: _tabPages.contains(_selectedIndex)
             ? _tabPages.indexOf(_selectedIndex)
             : 0,
         dueCount: store.remainingToday,
         destinations: _destinations,
-        onSelect: (index) => setState(() => _selectedIndex = _tabPages[index]),
+        onSelect: (index) => setState(() {
+          _selectedIndex = _tabPages[index];
+          if (_selectedIndex == 7) _readerVisited = true;
+          if (_selectedIndex == 3) _studyVisited = true;
+        }),
       ),
     );
   }
 
   void _startReview({StudyCards? cards}) {
-    final store = _store!;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ReviewPage(store: store, initialCards: cards),
-      ),
-    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() {
+      _studyCards = cards;
+      _studySession++;
+      _studyVisited = true;
+      _selectedIndex = 3;
+    });
   }
 
   void _openDeck(String deckId) {
@@ -533,13 +574,7 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar(
-      {required this.onSearch,
-      required this.onSettings,
-      required this.onOpenReader});
-  final VoidCallback onOpenReader;
-
-  final VoidCallback onSearch;
+  const _TopBar({required this.onSettings});
   final VoidCallback onSettings;
 
   @override
@@ -583,17 +618,6 @@ class _TopBar extends StatelessWidget {
                                   fontWeight: FontWeight.w700)),
                         ]),
                   ]))),
-          IconButton(
-            onPressed: onSearch,
-            tooltip: 'Search vocabulary',
-            icon: const Icon(Icons.search_rounded),
-            color: _muted,
-          ),
-          IconButton(
-            tooltip: 'Recall Reader',
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            onPressed: onOpenReader,
-          ),
           IconButton(
             onPressed: onSettings,
             tooltip: 'Settings',
@@ -1095,7 +1119,7 @@ class _BottomNav extends StatelessWidget {
                           children: [
                             Icon(destination.icon,
                                 color: selected ? _indigo : _muted, size: 22),
-                            if (index == 2 && dueCount > 0)
+                            if (index == 3 && dueCount > 0)
                               Positioned(
                                 right: -13,
                                 top: -5,
@@ -1136,7 +1160,15 @@ class _BottomNav extends StatelessWidget {
 }
 
 class ReviewPage extends StatefulWidget {
-  const ReviewPage({super.key, required this.store, this.initialCards});
+  const ReviewPage(
+      {super.key,
+      required this.store,
+      this.initialCards,
+      this.embedded = false,
+      this.onExit,
+      this.onChoose});
+  final bool embedded;
+  final VoidCallback? onExit, onChoose;
 
   final RecallStore store;
   final StudyCards? initialCards;
@@ -1211,7 +1243,10 @@ class _ReviewPageState extends State<ReviewPage> {
       final message =
           widget.store.decks.isEmpty ? '현재 덱이 없습니다.' : '현재 학습할 카드가 없습니다.';
       return Scaffold(
-        appBar: AppBar(title: const Text('Review'), backgroundColor: _surface),
+        appBar: AppBar(
+            title: const Text('단어 학습'),
+            automaticallyImplyLeading: !widget.embedded,
+            backgroundColor: _surface),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -1225,7 +1260,7 @@ class _ReviewPageState extends State<ReviewPage> {
                     style: const TextStyle(color: _ink, fontSize: 16)),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: widget.onExit ?? () => Navigator.of(context).pop(),
                   child: const Text('돌아가기'),
                 ),
               ],
@@ -1245,14 +1280,22 @@ class _ReviewPageState extends State<ReviewPage> {
       backgroundColor: _surface,
       appBar: AppBar(
         backgroundColor: _surface,
-        leading: IconButton(
-            tooltip: 'Go back',
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded)),
+        automaticallyImplyLeading: !widget.embedded,
+        leading: widget.embedded
+            ? null
+            : IconButton(
+                tooltip: 'Go back',
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back_rounded)),
         title: const Text('단어 학습',
             style: TextStyle(
                 color: _ink, fontSize: 18, fontWeight: FontWeight.w700)),
         actions: [
+          if (widget.onChoose != null)
+            IconButton(
+                tooltip: '학습 범위',
+                onPressed: widget.onChoose,
+                icon: const Icon(Icons.tune)),
           IconButton(
               tooltip: 'PDF 학습 출처',
               icon: const Icon(Icons.picture_as_pdf_outlined),
@@ -1288,9 +1331,10 @@ class _ReviewPageState extends State<ReviewPage> {
                 child: Column(
                   children: [
                     _SessionRail(
-                      completed: widget.store.reviewsToday,
-                      total: widget.store.dailyGoal,
+                      completed: _index + 1,
+                      total: _queue.length,
                       deckName: current.deck.name,
+                      onExit: widget.onExit,
                     ),
                     Expanded(
                         child: SingleChildScrollView(
@@ -1371,11 +1415,13 @@ class _SessionRail extends StatelessWidget {
     required this.completed,
     required this.total,
     required this.deckName,
+    this.onExit,
   });
 
   final int completed;
   final int total;
   final String deckName;
+  final VoidCallback? onExit;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -1385,7 +1431,7 @@ class _SessionRail extends StatelessWidget {
             IconButton.filledTonal(
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Exit session',
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: onExit ?? () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.close_rounded, size: 18)),
             const SizedBox(width: 8),
             Container(
@@ -1404,12 +1450,6 @@ class _SessionRail extends StatelessWidget {
                     color: _ink, fontSize: 12, fontWeight: FontWeight.w700)),
             Text(' / $total',
                 style: const TextStyle(color: _muted, fontSize: 12)),
-            const SizedBox(width: 13),
-            const Icon(Icons.circle, size: 7, color: _indigo),
-            const SizedBox(width: 5),
-            const Text('FLASHCARDS',
-                style: TextStyle(
-                    color: _indigo, fontSize: 10, fontWeight: FontWeight.w600)),
           ]),
           const SizedBox(height: 6),
           ClipRRect(
@@ -1456,6 +1496,7 @@ class _Flashcard extends StatelessWidget {
             side: const BorderSide(color: _line)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
+            hoverColor: Colors.transparent,
             onTap: onReveal,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -1482,10 +1523,6 @@ class _Flashcard extends StatelessWidget {
                             fontWeight: FontWeight.w800)),
                     const SizedBox(height: 28),
                     if (!revealed) ...[
-                      const Text('단어를 보고 의미를 생각해 본 다음\n아래에서 정답을 확인하세요.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: _muted, height: 1.8)),
-                      const SizedBox(height: 24),
                       IconButton(
                           tooltip: 'Flip card',
                           onPressed: onReveal,
@@ -1586,19 +1623,6 @@ class _FeedbackDock extends StatelessWidget {
         decoration: const BoxDecoration(
             color: _surface, border: Border(top: BorderSide(color: _line))),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            const Expanded(
-              child: Text('뜻을 떠올린 뒤 정답을 확인하세요.',
-                  style: TextStyle(
-                      color: _muted,
-                      fontSize: 9,
-                      letterSpacing: 0.8,
-                      fontWeight: FontWeight.w600)),
-            ),
-            Text(revealed ? '답 확인 완료' : '답을 보기',
-                style: const TextStyle(color: _muted, fontSize: 9))
-          ]),
-          const SizedBox(height: 8),
           if (!revealed)
             SizedBox(
                 width: double.infinity,
@@ -1630,10 +1654,6 @@ class _FeedbackDock extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 7),
-          const Text('앞면과 뒷면을 바꿔서 학습할 수 있습니다.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: _muted, fontSize: 9)),
         ]),
       );
 }
@@ -3693,12 +3713,8 @@ class _SettingsPageState extends State<_SettingsPage> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const _PageHeading('학습 환경', '나에게 맞는 학습 환경을 설정하세요.'),
+                const _PageHeading('학습 환경', ''),
                 const SizedBox(height: 8),
-                const Text(
-                  '하루 학습 목표를 설정하세요. 기존 학습 기록은 유지됩니다.',
-                  style: TextStyle(color: _muted, fontSize: 13),
-                ),
                 const SizedBox(height: 20),
                 _Panel(
                   child: Column(
@@ -3891,10 +3907,8 @@ class _FlashcardLaunchPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                 children: [
-                  const _PageHeading('단어 학습', '뜻을 떠올린 뒤 정답을 확인하세요.'),
+                  const _PageHeading('단어 학습', ''),
                   const SizedBox(height: 4),
-                  const Text('용어와 정의를 간단히 확인합니다.',
-                      style: TextStyle(color: _muted, fontSize: 13)),
                   const SizedBox(height: 16),
                   _Panel(
                     padding: EdgeInsets.zero,

@@ -14,8 +14,8 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
     fs.mkdirSync(output, {recursive: true});
     async function start() {
       await page.goto(url);
-      await page.locator('flt-semantics-placeholder').dispatchEvent('click');
-      await button('Search vocabulary').click();
+      await page.waitForFunction(() => document.querySelector('flt-semantics-placeholder') || document.querySelector('flt-semantics')); if (await page.locator('flt-semantics-placeholder').count()) await page.locator('flt-semantics-placeholder').dispatchEvent('click');
+      await button('사전').click();
       await page.getByRole('textbox', {name: '영어·한국어 검색'}).waitFor();
     }
     const snapshot = () => page.evaluate(() => localStorage.getItem('flutter.recall.data.v3'));
@@ -42,7 +42,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
     await page.getByText(/코퍼스 관측 정보/).waitFor();
     await page.getByText(/교재·강의자료: TF 20 · DF 4/).waitFor();
     await button('Back').click();
-    await button('Recall Reader').click();
+    await button('Reader').click();
     const [chooser] = await Promise.all([page.waitForEvent('filechooser'), button('PDF 열기').first().click()]);
     await chooser.setFiles(path.resolve(__dirname, '../build/reader-learning-fixtures/source-a.pdf'));
     await button('1 / 5').waitFor();

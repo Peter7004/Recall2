@@ -18,7 +18,7 @@ const path = require('node:path');
     const raw = () => page.evaluate(() => localStorage.getItem('flutter.recall.data.v3'));
     async function start() {
       await page.goto(process.env.RECALL_READER_TEST_URL || 'http://127.0.0.1:5220/');
-      await page.locator('flt-semantics-placeholder').dispatchEvent('click');
+      await page.waitForFunction(() => document.querySelector('flt-semantics-placeholder') || document.querySelector('flt-semantics')); if (await page.locator('flt-semantics-placeholder').count()) await page.locator('flt-semantics-placeholder').dispatchEvent('click');
       await page.getByText(/오늘의 전공 영어/).waitFor();
       await settle();
     }
@@ -27,7 +27,7 @@ const path = require('node:path');
     const before = await raw();
     await shot('home');
     
-    await button('Search vocabulary').click();
+    await button('사전').click();
     await page.getByRole('textbox', { name: '영어·한국어 검색' }).click();
     await page.keyboard.type('Absorption', {delay: 30});
     await settle();
@@ -39,7 +39,7 @@ const path = require('node:path');
     const saved = await raw();
     assert.notEqual(saved, before);
     await page.getByText('기록', { exact: true }).click();
-    await page.getByText(/학습 기록 매일|학습 기록\n/).waitFor();
+    await page.getByText('학습 기록', {exact: true}).waitFor();
     await shot('records');
     await button('Settings').click();
     await page.getByText(/학습 환경/).waitFor();
@@ -61,7 +61,7 @@ const path = require('node:path');
     for (const [width, height] of [[320, 640], [640, 360], [1280, 900]]) {
       await page.setViewportSize({ width, height });
       await shot(`home-${width}`);
-      await button('Search vocabulary').click();
+      await button('사전').click();
       await shot(`dictionary-${width}`);
       if (width === 640) {
         await page.mouse.move(300, 220);
