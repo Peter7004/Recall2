@@ -1,3 +1,22 @@
+## Active real corpus integration — 2026-11-11
+User reports missing 22-PDF/639-abstract frequencies. Found other chat01a13054 and
+x20/work/recall-recount-20261111:834 matched terms, 661-source manifest, occurrence ledger.
+Released1.0.9 CSV was header-only. Now exported latest accepted provisional counts with separate
+pending counts, corpus sizes and explicit source/method note. Optional preference had no reply;
+proceeding with stated recommended latest-recount default.
+Files to change: assets/corpus CSV/metadata/README; corpus model/loader/widgets; main
+controls; validation/export tool and tests; pubspec asset registration; development records.
+Preserve13-column vocabulary and all user/Reader stores. PASS ledger86182/661 hashes/834 matches,
+categories225/326/37/246; Windows191 tests/analyze/web, CLI recount validation and mobile UI
+storage regression. Test fixture tap corrected to scroll first; browser assertions being updated
+for merged Flutter accessibility labels. No product runtime failure identified.
+PASS real corpus browser: actual Voltage/Frequency counts and pending, method dialog,
+225 common filter, abstract DF sorting,320/390 widths, PDF stats/save/source/reload.
+PASS absent/mocked corpus fallback and startup8. Browser selectors/focus waits corrected
+for Flutter semantics; normal detail visits intentionally change recentViews only.
+Next commit isolated codex/real-corpus-110 worktree, PR checks and continuing authorized
+web/permanent APK release1.0.10+11. Root staged88 untouched.
+Do not claim Android device test. Existing staged88 untouched.
 ## Completed 1.0.9+10 release — 2026-11-11
 User-authorized commit/deployment complete. PR7 merged8868ae4a03009bc1c53a771683794d0197086bbb.
 PASS PR42989014089:188 Flutter/analyze/startup8; Pages42989311938;

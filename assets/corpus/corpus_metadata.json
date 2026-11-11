@@ -1,0 +1,874 @@
+{
+  "schema_version": 1,
+  "dataset_id": "recall-recount-20261111",
+  "basis": "provisional_accepted",
+  "date": "2026-11-11",
+  "textbook_documents": 22,
+  "abstract_documents": 639,
+  "csv_sha256": "e27b2ac8bef862c154fa88ceac996ea4cc4de0fc36ab104ea20f714ef6c23b7d",
+  "pending": {
+    "absorption": [
+      5,
+      4,
+      4,
+      4
+    ],
+    "alarm": [
+      2,
+      1,
+      12,
+      4
+    ],
+    "alignment": [
+      6,
+      3,
+      8,
+      3
+    ],
+    "ampere": [
+      25,
+      7,
+      0,
+      0
+    ],
+    "amplitude": [
+      129,
+      10,
+      14,
+      8
+    ],
+    "attenuation": [
+      59,
+      4,
+      5,
+      4
+    ],
+    "automation": [
+      0,
+      0,
+      4,
+      4
+    ],
+    "bearing": [
+      10,
+      7,
+      0,
+      0
+    ],
+    "boundary conditions": [
+      58,
+      5,
+      0,
+      0
+    ],
+    "branch": [
+      151,
+      7,
+      11,
+      8
+    ],
+    "breaker": [
+      11,
+      3,
+      0,
+      0
+    ],
+    "brush": [
+      30,
+      4,
+      0,
+      0
+    ],
+    "cable": [
+      63,
+      6,
+      2,
+      1
+    ],
+    "calibration": [
+      3,
+      2,
+      9,
+      5
+    ],
+    "charge": [
+      428,
+      9,
+      4,
+      4
+    ],
+    "chopper": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "cladding": [
+      7,
+      2,
+      0,
+      0
+    ],
+    "cleaning": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "communication": [
+      25,
+      5,
+      103,
+      53
+    ],
+    "compressor": [
+      2,
+      1,
+      0,
+      0
+    ],
+    "conductor": [
+      263,
+      14,
+      1,
+      1
+    ],
+    "continuity equation": [
+      2,
+      1,
+      0,
+      0
+    ],
+    "convergence": [
+      28,
+      2,
+      34,
+      28
+    ],
+    "core": [
+      282,
+      13,
+      28,
+      27
+    ],
+    "coulomb": [
+      27,
+      7,
+      1,
+      1
+    ],
+    "counter": [
+      23,
+      8,
+      2,
+      2
+    ],
+    "coupling": [
+      21,
+      6,
+      22,
+      18
+    ],
+    "current": [
+      1547,
+      21,
+      83,
+      58
+    ],
+    "cycle": [
+      60,
+      11,
+      29,
+      15
+    ],
+    "cylinder": [
+      48,
+      4,
+      4,
+      1
+    ],
+    "damper": [
+      24,
+      2,
+      1,
+      1
+    ],
+    "differentiation": [
+      19,
+      4,
+      3,
+      2
+    ],
+    "dispersion": [
+      11,
+      3,
+      5,
+      2
+    ],
+    "downtime": [
+      0,
+      0,
+      2,
+      2
+    ],
+    "effective": [
+      156,
+      16,
+      94,
+      79
+    ],
+    "effective aperture": [
+      10,
+      1,
+      0,
+      0
+    ],
+    "effective area": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "efficiency": [
+      53,
+      10,
+      101,
+      80
+    ],
+    "emergency": [
+      9,
+      4,
+      20,
+      8
+    ],
+    "encoder": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "energy storage": [
+      10,
+      4,
+      14,
+      8
+    ],
+    "esd": [
+      153,
+      3,
+      0,
+      0
+    ],
+    "etching": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "farad": [
+      10,
+      3,
+      0,
+      0
+    ],
+    "fault": [
+      149,
+      4,
+      87,
+      27
+    ],
+    "feeder": [
+      3,
+      1,
+      3,
+      3
+    ],
+    "filter": [
+      177,
+      8,
+      42,
+      18
+    ],
+    "flow": [
+      655,
+      14,
+      46,
+      30
+    ],
+    "flux": [
+      285,
+      17,
+      2,
+      2
+    ],
+    "frequency": [
+      1452,
+      19,
+      106,
+      57
+    ],
+    "fuse": [
+      24,
+      4,
+      2,
+      1
+    ],
+    "gas": [
+      2,
+      2,
+      12,
+      6
+    ],
+    "gearbox": [
+      0,
+      0,
+      4,
+      1
+    ],
+    "governor": [
+      72,
+      1,
+      1,
+      1
+    ],
+    "ground": [
+      123,
+      9,
+      45,
+      33
+    ],
+    "grounding": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "henry": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "hertz": [
+      20,
+      6,
+      0,
+      0
+    ],
+    "hmi": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "homogeneous material": [
+      4,
+      3,
+      0,
+      0
+    ],
+    "humidity": [
+      2,
+      2,
+      0,
+      0
+    ],
+    "hydraulic": [
+      0,
+      0,
+      5,
+      4
+    ],
+    "hysteresis": [
+      11,
+      4,
+      6,
+      5
+    ],
+    "i/o": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "input": [
+      294,
+      13,
+      57,
+      50
+    ],
+    "inspection": [
+      27,
+      5,
+      3,
+      1
+    ],
+    "integration": [
+      140,
+      8,
+      45,
+      39
+    ],
+    "ladder": [
+      44,
+      5,
+      0,
+      0
+    ],
+    "lamination": [
+      8,
+      2,
+      0,
+      0
+    ],
+    "leakage": [
+      19,
+      8,
+      3,
+      2
+    ],
+    "lightning": [
+      26,
+      4,
+      8,
+      4
+    ],
+    "linear material": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "loop": [
+      806,
+      16,
+      39,
+      25
+    ],
+    "maintenance": [
+      4,
+      4,
+      22,
+      11
+    ],
+    "mechanical power": [
+      9,
+      2,
+      0,
+      0
+    ],
+    "mesh": [
+      36,
+      6,
+      4,
+      4
+    ],
+    "mode": [
+      630,
+      13,
+      196,
+      95
+    ],
+    "motor": [
+      97,
+      17,
+      45,
+      23
+    ],
+    "nameplate": [
+      4,
+      1,
+      0,
+      0
+    ],
+    "node": [
+      233,
+      9,
+      117,
+      35
+    ],
+    "nonlinear material": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "normal incidence": [
+      29,
+      2,
+      0,
+      0
+    ],
+    "null": [
+      24,
+      5,
+      0,
+      0
+    ],
+    "numerical integration": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "oblique incidence": [
+      29,
+      2,
+      0,
+      0
+    ],
+    "ohm": [
+      67,
+      8,
+      0,
+      0
+    ],
+    "output": [
+      310,
+      10,
+      73,
+      54
+    ],
+    "parameter": [
+      186,
+      14,
+      122,
+      82
+    ],
+    "particle": [
+      89,
+      4,
+      29,
+      19
+    ],
+    "passive element": [
+      2,
+      1,
+      0,
+      0
+    ],
+    "period": [
+      84,
+      11,
+      34,
+      21
+    ],
+    "permeability": [
+      41,
+      7,
+      2,
+      2
+    ],
+    "phase": [
+      913,
+      18,
+      59,
+      38
+    ],
+    "plasma": [
+      12,
+      2,
+      6,
+      2
+    ],
+    "plc": [
+      0,
+      0,
+      7,
+      1
+    ],
+    "polarization": [
+      47,
+      4,
+      16,
+      9
+    ],
+    "potential": [
+      231,
+      10,
+      46,
+      41
+    ],
+    "power distribution": [
+      1,
+      1,
+      11,
+      7
+    ],
+    "power transmission": [
+      5,
+      3,
+      1,
+      1
+    ],
+    "pressure": [
+      51,
+      10,
+      12,
+      7
+    ],
+    "pump": [
+      3,
+      3,
+      6,
+      4
+    ],
+    "quality factor": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "radiation": [
+      75,
+      4,
+      10,
+      6
+    ],
+    "reactor": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "recipe": [
+      11,
+      3,
+      0,
+      0
+    ],
+    "reflection": [
+      182,
+      6,
+      2,
+      2
+    ],
+    "regulator": [
+      12,
+      2,
+      3,
+      2
+    ],
+    "relative permeability": [
+      4,
+      3,
+      0,
+      0
+    ],
+    "relay": [
+      21,
+      4,
+      12,
+      7
+    ],
+    "reluctance": [
+      10,
+      5,
+      1,
+      1
+    ],
+    "replacement": [
+      5,
+      2,
+      2,
+      1
+    ],
+    "resistance": [
+      377,
+      16,
+      6,
+      5
+    ],
+    "resonance": [
+      33,
+      4,
+      9,
+      6
+    ],
+    "rfid": [
+      71,
+      2,
+      6,
+      5
+    ],
+    "saturation": [
+      99,
+      6,
+      7,
+      5
+    ],
+    "scattering": [
+      7,
+      3,
+      1,
+      1
+    ],
+    "seal": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "separation of variables": [
+      2,
+      1,
+      0,
+      0
+    ],
+    "setpoint": [
+      6,
+      1,
+      1,
+      1
+    ],
+    "shaft": [
+      17,
+      4,
+      1,
+      1
+    ],
+    "shielding": [
+      3,
+      2,
+      0,
+      0
+    ],
+    "siemens": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "slip": [
+      12,
+      4,
+      3,
+      3
+    ],
+    "slot": [
+      107,
+      8,
+      6,
+      6
+    ],
+    "speed regulation": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "steady state": [
+      155,
+      11,
+      12,
+      11
+    ],
+    "step response": [
+      109,
+      2,
+      0,
+      0
+    ],
+    "temperature": [
+      147,
+      12,
+      24,
+      16
+    ],
+    "tesla": [
+      6,
+      3,
+      0,
+      0
+    ],
+    "throughput": [
+      0,
+      0,
+      9,
+      7
+    ],
+    "time constant": [
+      83,
+      6,
+      0,
+      0
+    ],
+    "tooth": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "torque": [
+      6,
+      4,
+      0,
+      0
+    ],
+    "transient": [
+      133,
+      8,
+      13,
+      10
+    ],
+    "vacuum": [
+      13,
+      3,
+      4,
+      1
+    ],
+    "valve": [
+      9,
+      2,
+      7,
+      4
+    ],
+    "vibration": [
+      6,
+      2,
+      8,
+      7
+    ],
+    "volt": [
+      276,
+      10,
+      1,
+      1
+    ],
+    "wafer": [
+      14,
+      2,
+      1,
+      1
+    ],
+    "weber": [
+      7,
+      3,
+      0,
+      0
+    ],
+    "zero": [
+      1437,
+      22,
+      29,
+      23
+    ]
+  },
+  "source_hashes": {
+    "recount.json": "d85b6ebb7aef97ec3fd8d24045f8fdb2f2e779d5c5d61bc43e01a0db7cb7e245",
+    "manifest.json": "1bb425784858f8877d6122e4225994c6fd12686e759f10ebd64601a94481d3fd",
+    "occurrences.jsonl": "9bb58c477e518f6726299edc9f040c7d4227fe0aacdd008ffe5f42fa590520f4",
+    "term_rules.json": "26e9ddb6e9a95f7987f0c43ef09c0f149fc8e40c097a6a49cb1457476a47b57e"
+  },
+  "audit": {
+    "occurrences": 86182,
+    "verified_documents": 661,
+    "matched_terms": 834,
+    "categories": {
+      "both": 225,
+      "textbookOnly": 326,
+      "unobserved": 246,
+      "abstractOnly": 37
+    }
+  }
+}

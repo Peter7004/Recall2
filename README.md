@@ -3,7 +3,12 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
-Current application release: **1.0.9+10**.
+Current application release: **1.0.10+11**.
+
+Bundled corpus statistics now cover 834 terms across 22 PDF files and 639 paper
+abstracts. These are provisional accepted occurrences from the 2026-11-11 recount;
+uncertain meanings are shown separately and excluded from recommendation sorting.
+See [corpus data and method](assets/corpus/README.md).
 
 [Web app](https://peter7004.github.io/Recall2/) |
 [Android APK](https://github.com/Peter7004/Recall-APK-Private/releases/latest/download/Recall.apk) |

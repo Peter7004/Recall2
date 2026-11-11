@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final header = corpusColumns.join(',');
+  String metadataFor(String csv, {Map<String, Object> pending = const {}}) =>
+      jsonEncode({
+        'schema_version': 1,
+        'basis': 'provisional_accepted',
+        'date': '2026-11-11',
+        'textbook_documents': 22,
+        'abstract_documents': 639,
+        'csv_sha256': sha256.convert(utf8.encode(csv)).toString(),
+        'pending': pending,
+      });
   late CorpusCatalog catalog;
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -132,10 +144,82 @@ void main() {
     expect((await loadCorpusStats(bundle: _Bundle('$header\n'))).available,
         isFalse);
     expect(
-        (await loadCorpusStats(bundle: _Bundle('$header\nPower,0,0,0,0')))
+        (await loadCorpusStats(
+                bundle: _Bundle('$header\nPower,0,0,0,0',
+                    metadata: metadataFor('$header\nPower,0,0,0,0'))))
             .forTerm('Power')
             ?.textbookTf,
         0);
+  });
+  test('real recount matches all 834 terms, sizes, counts and pending ledger',
+      () async {
+    final actual = await loadCorpusStats();
+    final rows = const CsvToListConverter(shouldParseNumbers: false, eol: '\n')
+        .convert(File('assets/vocabulary/recall_core_v1.csv')
+            .readAsStringSync()
+            .replaceAll('\r\n', '\n'));
+    final i = rows.first.indexOf('term_en');
+    final terms =
+        rows.skip(1).where((r) => r.length == 13).map((r) => r[i].toString());
+    expect(actual.available, isTrue);
+    expect(actual.verifyResearch(terms, recount: true), isEmpty);
+    expect(actual.metadata!.textbookDocuments, 22);
+    expect(actual.metadata!.abstractDocuments, 639);
+    expect(actual.forTerm('Voltage')!.textbookTf, 7294);
+    expect(actual.forTerm('Voltage')!.abstractDf, 107);
+    expect(actual.forTerm('Frequency')!.abstractTf, 180);
+    expect(actual.metadata!.pending['frequency']!.abstractTf, 106);
+    expect(actual.metadata!.pending.values.fold(0, (n, r) => n + r.textbookTf),
+        14733);
+    expect(actual.metadata!.pending.values.fold(0, (n, r) => n + r.abstractTf),
+        2130);
+  });
+  test(
+      'metadata mismatch, missing metadata and impossible pending DF disable statistics',
+      () async {
+    final csv = '$header\nPower,0,0,0,0';
+    final base = CorpusCatalog.parse(csv);
+    expect(base.withMetadata(metadataFor('$csv\n'), csv).available, isFalse);
+    expect(
+        base
+            .withMetadata(
+                metadataFor(csv, pending: {
+                  'power': [4, 5, 0, 0]
+                }),
+                csv)
+            .available,
+        isFalse);
+    expect(
+        base
+            .withMetadata(
+                metadataFor(csv, pending: {
+                  'missing': [1, 1, 0, 0]
+                }),
+                csv)
+            .available,
+        isFalse);
+    expect((await loadCorpusStats(bundle: _Bundle(csv))).available, isFalse);
+  });
+  testWidgets('provisional zero and pending evidence are distinguished',
+      (tester) async {
+    final csv = '$header\nPower,0,0,0,0';
+    final data = CorpusCatalog.parse(csv).withMetadata(
+        metadataFor(csv, pending: {
+          'power': [2, 1, 0, 0]
+        }),
+        csv);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: CorpusInfo(catalog: data, term: 'Power')))));
+    expect(find.text('채택 용례 미관측'), findsOneWidget);
+    expect(find.textContaining('의미 보류 — PDF: 2회'), findsOneWidget);
+    expect(data.forTerm('Power')!.textbookTf, 0);
+    expect(
+        data.select(['Power'], (s) => s, scope: CorpusScope.textbook), isEmpty);
+    await tester.tap(find.text('집계 기준'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('논문 전체 본문 빈도가 아닙니다.'), findsOneWidget);
   });
   test(
       'read-only integration preserves serialized user data and priority/search/PDF lookup',
@@ -198,11 +282,13 @@ void main() {
 }
 
 class _Bundle extends CachingAssetBundle {
-  _Bundle(this.value);
+  _Bundle(this.value, {this.metadata});
   final String? value;
+  final String? metadata;
   @override
   Future<ByteData> load(String key) async {
-    if (value == null) throw FlutterError('Missing fixture');
-    return ByteData.sublistView(Uint8List.fromList(utf8.encode(value!)));
+    final content = key.endsWith('corpus_metadata.json') ? metadata : value;
+    if (content == null) throw FlutterError('Missing fixture');
+    return ByteData.sublistView(Uint8List.fromList(utf8.encode(content)));
   }
 }
