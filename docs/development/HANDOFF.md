@@ -1,3 +1,12 @@
+## Active release1.0.13+14 — 2026-11-12
+User authorized GitHub upload, web and permanent APK deployment with data preserved.
+Source fix d285589; worktree C:/Users/Public/Recall-highlight-fix,
+branch codex/reader-highlight-alignment. Version-only release preparation follows.
+Next seed actual1.0.12 web profile, push PR, pass CI, merge and verify Pages,
+build permanent-signed APK from pinned merge SHA, verify and publish1.0.13.
+Preserve package/certificate, corpus/vocabulary and all user/Reader storage keys.
+No data migrations; root staged88 untouched. Android physical update NOT TESTED.
+
 ## Completed locally: source-return highlight geometry — 2026-11-12
 User reports PC web PDF learning-source return offsets throughout circuit textbook.
 Confirmed regression: text came from the loaded PdfPage while highlight normalization
