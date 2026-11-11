@@ -1,4 +1,17 @@
-## Active real corpus integration — 2026-11-11
+## Completed real corpus release1.0.10+11 — 2026-11-11
+PR9/d4619715cb7e29a05c28cb40c8bbeb834a3e311e; CI43014655807,
+Pages43015022187 and signed APK43015043216 PASS. Actual834-term data from22PDF files
+and639abstracts now public; provisional accepted counts and pending meanings separated.
+PASS public actual corpus/filter/PDF/source/reload; real same-profile1.0.9→1.0.10
+exact stored-data/managedPDF/page3 upgrade; APK permanent cert/package/code11/payload
+and unauthenticated public download. Prior v1.0.9 assets unchanged.
+APK SHA2567b8f7541701b398e173a70135b7acd1efc00e80348308814ad41389e4605636d.
+See RELEASE_1.0.10.md and REAL_CORPUS_INTEGRATION.md. Root staged88 preserved.
+No functional release blocker remains. Next: Android device validation and human
+semantic/source-overlap review when available. Neither has been performed.
+Historical checkpoints below are not unfinished release actions.
+
+## Real corpus preparation history — 2026-11-11
 User reports missing 22-PDF/639-abstract frequencies. Found other chat01a13054 and
 x20/work/recall-recount-20261111:834 matched terms, 661-source manifest, occurrence ledger.
 Released1.0.9 CSV was header-only. Now exported latest accepted provisional counts with separate
@@ -14,8 +27,13 @@ PASS real corpus browser: actual Voltage/Frequency counts and pending, method di
 225 common filter, abstract DF sorting,320/390 widths, PDF stats/save/source/reload.
 PASS absent/mocked corpus fallback and startup8. Browser selectors/focus waits corrected
 for Flutter semantics; normal detail visits intentionally change recentViews only.
-Next commit isolated codex/real-corpus-110 worktree, PR checks and continuing authorized
-web/permanent APK release1.0.10+11. Root staged88 untouched.
+PR9 runtime31f704f merged d4619715cb7e29a05c28cb40c8bbeb834a3e311e after CI43014655807 PASS.
+PASS Pages43015022187 and public834 corpus/metadata byte-for-byte against merged source.
+PASS public real corpus smoke and same-profile1.0.9→1.0.10: exact Recall localStorage,
+bookmark/review, managed PDF/page3. Signed APK43015043216 still building.
+Next download and verify permanent signed APK1.0.10+11, payload/hash/cert, publish and
+verify public release. Helpers/baseline in C:/Users/Public/Recall-release-110/build.
+Root staged88 untouched; no Android device test.
 Do not claim Android device test. Existing staged88 untouched.
 ## Completed 1.0.9+10 release — 2026-11-11
 User-authorized commit/deployment complete. PR7 merged8868ae4a03009bc1c53a771683794d0197086bbb.
