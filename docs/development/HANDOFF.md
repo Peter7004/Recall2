@@ -1,4 +1,60 @@
-# Reader handoff — start here
+## Active mobile Reader / release — 2026-11-11
+
+## Active release coordination — 2026-11-11 (1.0.8+9)
+
+User authorized commit/push/PR/merge/web and permanently signed APK deployment.
+Reader ready signal received: mobile <700 circular FAB / scrollable action sheet;
+desktop unchanged. Exact relevant root files copied to isolated worktree
+C:/Users/Public/Recall-ui-release-20261111 on codex/ui-release-20261111,
+based on origin/main c86f8570ba8071e46f7f68e642f17ea736293144.
+Root staged 88 entries are protected by build/release-coordination/root-index-baseline.bin.
+Sync hashes and explicit paths: build/release-coordination/sync-manifest.json.
+Changed scope: UI/main/store read-only corpus, Reader menu, corpus assets/models,
+widget/corpus/browser tests, validator, PR workflow, version and release docs.
+Next: local analyze/startup tests, explicit-path commit and PR; full Linux CI,
+fix navigation regressions here, report changed test files for root sync; merge only
+when checks pass, verify Pages and signed APK from exact released source.
+PASS: exact initial file sync, staged-entry count 88, local Node startup tests 8/8, release-worktree full flutter analyze.
+User-reported PASS: final Reader analyze/web build; Edge menu import, page 3, search,
+desktop toolbar restoration. Final mobile smoke script resynced after resize-wait fix.
+FAIL: none in this release attempt yet.
+NOT TESTED: full Linux tests/build, signed APK and Android device.
+Existing Windows C++/Gradle limitations recorded below are historical, not new results.
+Corpus CSV contains only its header; actual TF/DF data is unavailable. No fake data.
+Release helpers under build contain stale version constants; do not run their publish,
+configure or verify modes unchanged. Reuse existing key only; never replace secrets.
+
+User authorized environment repair, mobile circular Reader menu, commit/push/PR/web/permanent-signed APK release. Main edits reader page; parallel agents inspect toolchain and prepare clean release worktree. Preserve original staged88. Next implement adaptive menu then browser validate and CI.
+
+# Reader handoff — UI checkpoint
+
+## Active UI redesign — 2026-11-11
+User supplied Temp README/main.dart/index.html/screenshots. Integrated visual reference into existing Flutter app, NOT the standalone 24-word demo. Local branch codex/pdf-personal-vocabulary at c86f857; no UI/corpus commit, push, merge or deployment.
+Implemented teal/navy theme, R header, Home/Dictionary/Study/Records navigation, real-data home/recommendation/record views, white dictionary and flashcards, settings goal chips/backup cards. Collections, subject management, bookmarks and Reader remain accessible. Dictionary controls and lazy result list scroll together on short screens. Existing study scope selection is retained before the redesigned flashcard session.
+Changes: lib/main.dart; new lib/ui/recall_dashboard.dart; test/widget_test.dart, branding_test.dart, bundled_vocabulary_test.dart; tool/corpus_smoke.cjs navigation; new tool/ui_v2_smoke.cjs. No changes to data models, store, Reader or dependencies during UI work (hash comparison with 162736 checkpoint PASS). Prior corpus work remains local.
+PASS: final full Flutter analyze and release web build in ASCII worktree C:/Users/Public/Recall-catalog-preserve-20261109; real Edge UI smoke at 320/430/640/1280 widths; search/bookmark/review/reload; production no-corpus and mocked corpus filter/detail/PDF source smoke; full existing Reader learning/source/delete/reload smoke. Source files copied exactly to ASCII worktree. Preview http://127.0.0.1:5220/; screenshots original workspace build/ui-v2-smoke.
+FAIL (environment): root Korean-path analyze LSP JSON framing; ASCII analyze passed. Flutter test (including Chrome target) blocked by pdfium_dart Windows C++ compiler absence. Android debug build failed during existing Kotlin settings.gradle.kts evaluation (run/file/require/plugins unresolved), before app compilation; matches earlier Android audit failure. Do not claim Android build/device PASS.
+NOT TESTED: native widget test execution, physical Android device, signed APK packaging. Existing 88 unrelated staged copy files preserved. No new APK released.
+Intentional differences: preserve actual goal (default24), actual categories and 834 dictionary; progress counts reviews, not unique daily terms. No invented 8/8/4 breakdown, seven-day totals, incorrect-answer totals, or destructive demo reset. Existing storage lacks full daily history, so records explain why no 7-day graph. No automatic reset when changing goal.
+Next: user visual review; native toolchain repair/CI authorization before APK validation. See UI_V2_VERIFICATION.md. Current local UI is implemented and browser verified, not published.
+
+## Active corpus integration — 2026-11-11
+Prerequisite completed: 834 unique terms verified in remote/public CSV. PR #4 merged
+c86f857; signed CI 42975726693 and Pages 42976067818 PASS. v1.0.7+8 published;
+APK SHA256 ee14600965f9eb9909c8886115df0159b8e7e7c285de28f72b9c62cc364f4182,
+same prior certificate and 834-term payload verified; public download HTTP 200.
+Corpus changes are now in the original workspace on codex/pdf-personal-vocabulary,
+locally fast-forwarded to c86f857. Validation used the ASCII worktree
+C:/Users/Public/Recall-catalog-preserve-20261109. NO corpus commit/push/merge/deploy.
+Unrelated staged entries were byte-for-byte preserved; README collaboration additions
+were three-way merged. Original incomplete draft was backed up under build/corpus-sync-20261111-161547
+before copying verified corpus files. Actual TF/DF file absent.
+Implemented read-only catalog/validator, hidden-by-default filters/detail/PDF integration.
+PASS: 64 isolated tests, full analyze/release web build, fixture-injected browser corpus
+filter/detail/PDF save and existing full Reader learning/source smoke. Native tests blocked
+by Windows C++ toolchain. Actual full TF/DF and Android corpus behavior NOT TESTED.
+See CORPUS_INTEGRATION.md. Next: user review of LOCAL changes; obtain actual stats and
+run --research-check before corpus publication. No corpus commit/push/merge/deploy.
 
 ## Catalog release safety — 2026-11-09
 Remote main 0248264 contains 834 unique terms and web 1.0.6 deployment succeeded.

@@ -78,8 +78,8 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byType(RecallLoadingScreen), findsNothing);
-    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
-    expect(find.byType(RecallHeaderBrand), findsOneWidget);
+    expect(find.text('오늘의 전공 영어'), findsOneWidget);
+    expect(find.text('ENGINEERING ENGLISH'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
@@ -98,10 +98,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 699));
       expect(find.byType(RecallLoadingScreen), findsOneWidget);
-      expect(find.byType(RecallHeaderBrand), findsNothing);
+      expect(find.text('ENGINEERING ENGLISH'), findsNothing);
       await tester.pump(const Duration(milliseconds: 1));
       expect(find.byType(RecallLoadingScreen), findsNothing);
-      expect(find.byType(RecallHeaderBrand), findsOneWidget);
+      expect(find.text('ENGINEERING ENGLISH'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     }
@@ -148,14 +148,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(RecallApp(loadStore: () => RecallStore.load()));
       await tester.pumpAndSettle();
-      expect(find.byType(RecallHeaderBrand), findsOneWidget);
-      final images = find.descendant(
-          of: find.byType(RecallHeaderBrand), matching: find.byType(Image));
-      expect(images, findsNWidgets(2));
-      for (final image in tester.widgetList<Image>(images)) {
-        expect((image.image as AssetImage).assetName, recallLogoAsset);
-      }
-      expect(find.byIcon(Icons.menu_book_rounded), findsNothing);
+      expect(find.text('ENGINEERING ENGLISH'), findsOneWidget);
+      expect(find.text('R'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     }
@@ -182,7 +176,7 @@ void main() {
     await tester.tap(find.text('다시 시도'));
     await tester.pumpAndSettle();
     expect(find.byType(RecallLoadingScreen), findsNothing);
-    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
+    expect(find.text('오늘의 전공 영어'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

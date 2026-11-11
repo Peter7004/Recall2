@@ -5,6 +5,8 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
+| UI2 | LOCAL IMPLEMENTATION; browser verified | Supplied UI v2 theme/home/records/dictionary/flashcards/settings integrated with real data. Native tests/APK blocked by existing local toolchain; see UI_V2_VERIFICATION.md. No deployment. |
+| C1 | LOCAL IMPLEMENTATION; not committed/deployed | Read-only corpus CSV validation, diagnostics, dictionary filters/DF sorting/detail and PDF statistics. 64 isolated tests/analyze/web/browser PASS; real TF/DF and Android verification pending. See CORPUS_INTEGRATION.md. |
 | M1 | IMPLEMENTED; verification in PERSONAL_VOCABULARY_VERIFICATION.md | Manual PDF personal vocabulary, editable context and existing flashcard integration. 49 isolated tests/analyze/web build/browser save-reload PASS; native host tests blocked by C++ toolchain; Android NOT TESTED. |
 | P0 | DONE | Repository handoff, journal, source checkpoint command. Snapshot manifest and all 30 source file hashes verified. |
 | P1 | DONE; DEPLOYMENT TRACKED IN HANDOFF | Right-hand document page navigator and validated page entry. Widget tests, analyze, release web build, real PDF smoke and both full Linux CI test jobs PASS. Android device gestures NOT TESTED. |

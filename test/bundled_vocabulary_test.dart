@@ -60,8 +60,7 @@ void main() {
     reloaded.dispose();
   });
 
-  test('all 834 rows become 834 dictionary entries',
-      () async {
+  test('all 834 rows become 834 dictionary entries', () async {
     expect(catalog.rows, hasLength(834));
     final store = await RecallStore.load(bundledVocabulary: catalog);
     expect(store.totalCards, 834);
@@ -170,8 +169,7 @@ void main() {
     original.dispose();
     final updated = await RecallStore.load(bundledVocabulary: catalog);
     expect(updated.totalCards, 835);
-    expect(
-        updated.searchCards('custom').single.card.primaryMeaning, '개인');
+    expect(updated.searchCards('custom').single.card.primaryMeaning, '개인');
     updated.dispose();
   });
 
@@ -196,8 +194,7 @@ void main() {
   test('version two preserves legacy catalog and personal cards', () async {
     final old = BundledVocabulary(
       version: 1,
-      csvText:
-          '${recallV3Columns.join(',')}\n'
+      csvText: '${recallV3Columns.join(',')}\n'
           'Old catalog only,technical,Old,noun,,Old.,,medium,,include,,,',
     );
     final first = await RecallStore.load(bundledVocabulary: old);
@@ -264,6 +261,8 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text('등록된 용어가 없습니다.'), findsNothing);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Absorption');
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'Absorption'), findsOneWidget);

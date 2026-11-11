@@ -3,7 +3,7 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
-Current application release: **1.0.7+8**.
+Current application release: **1.0.8+9**.
 
 [Web app](https://peter7004.github.io/Recall2/) |
 [Android APK](https://github.com/Peter7004/Recall-APK-Private/releases/latest/download/Recall.apk) |

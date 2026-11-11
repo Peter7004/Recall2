@@ -28,6 +28,7 @@ import 'reader_settings.dart';
 import 'reader_learning_guard_factory.dart';
 import 'personal_vocabulary_dialog.dart';
 import 'personal_vocabulary_context.dart';
+import '../corpus/corpus_widgets.dart';
 
 class PdfReaderPage extends StatefulWidget {
   const PdfReaderPage(
@@ -1029,6 +1030,10 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                     onPressed: _termSaving ? null : () => _saveTerm(match),
                     icon: const Icon(Icons.playlist_add),
                     label: Text('단어 저장: ${match.concept.card.displayTerm}')),
+                if (widget.store != null)
+                  CorpusInfo(
+                      catalog: widget.store!.corpus,
+                      term: match.concept.card.displayTerm),
                 if (match.concept.card.verificationStatus !=
                     VerificationStatus.verified)
                   Text(match.concept.card.verificationStatus.label),
@@ -1111,38 +1116,128 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     super.dispose();
   }
 
+  bool get _compact => MediaQuery.sizeOf(context).width < 700;
+
+  Future<void> _showReaderMenu() => showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) {
+          Widget action(String label, IconData icon, VoidCallback? callback) =>
+              ListTile(
+                leading: Icon(icon),
+                title: Text(label),
+                enabled: callback != null,
+                onTap: callback == null
+                    ? null
+                    : () {
+                        Navigator.of(sheetContext).pop();
+                        callback();
+                      },
+              );
+          return SafeArea(
+              child: SizedBox(
+            height: MediaQuery.sizeOf(sheetContext).height * .7,
+            child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                children: [
+                  const ListTile(
+                      title: Text('Reader 메뉴',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.w700))),
+                  action('PDF 열기', Icons.file_open_outlined,
+                      _opening ? null : _open),
+                  action('문서 목록', Icons.folder_open_outlined,
+                      _opening ? null : _showLibrary),
+                  action('저장한 단어·출처', Icons.school_outlined,
+                      _opening ? null : _showLearning),
+                  const Divider(),
+                  action(
+                      '본문 검색',
+                      Icons.search,
+                      _ready
+                          ? () =>
+                              setState(() => _searchVisible = !_searchVisible)
+                          : null),
+                  action('페이지 번호로 이동', Icons.numbers,
+                      _ready ? _showPageDialog : null),
+                  action('미리보기·북마크', Icons.grid_view_outlined,
+                      _ready ? () => _showDocumentNavigator() : null),
+                  action(
+                      _pageBookmarks.any((b) => b.page == _page)
+                          ? '페이지 북마크 해제'
+                          : '페이지 북마크 추가',
+                      Icons.bookmark_border,
+                      _ready && _bookmarksReadable && !_bookmarkBusy
+                          ? _togglePageBookmark
+                          : null),
+                  action(
+                      '문서 목차',
+                      Icons.format_list_bulleted,
+                      _ready
+                          ? () => _showDocumentNavigator(outlineOnly: true)
+                          : null),
+                  action(
+                      _paged ? '연속 스크롤로 전환' : '페이지별 보기로 전환',
+                      Icons.view_carousel_outlined,
+                      _ready ? _switchMode : null),
+                  action(_highlightAll ? '커서를 올릴 때만 강조로 전환' : '사전 단어 항상 강조로 전환',
+                      Icons.highlight, _ready ? _toggleHighlight : null),
+                  action('확대', Icons.zoom_in,
+                      _ready ? () => _controller.zoomUp() : null),
+                  action('축소', Icons.zoom_out,
+                      _ready ? () => _controller.zoomDown() : null),
+                  if (_returnPoint != null)
+                    action('이전 읽던 위치로 돌아가기', Icons.undo,
+                        _ready && !_opening ? _returnToReading : null),
+                ]),
+          ));
+        },
+      );
+
   @override
   Widget build(BuildContext context) => Scaffold(
+        floatingActionButton: _compact
+            ? FloatingActionButton(
+                heroTag: 'reader-menu',
+                tooltip: 'Reader 메뉴',
+                shape: const CircleBorder(),
+                onPressed: _showReaderMenu,
+                child: const Icon(Icons.menu_rounded),
+              )
+            : null,
         appBar: AppBar(
             title: Text(_name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            actions: [
-              IconButton(
-                  tooltip: '저장한 단어·출처',
-                  onPressed: _opening ? null : _showLearning,
-                  icon: const Icon(Icons.school_outlined)),
-              if (_ready)
-                IconButton(
-                    tooltip: '본문 검색',
-                    icon: const Icon(Icons.search),
-                    onPressed: () =>
-                        setState(() => _searchVisible = !_searchVisible)),
-              if (_bytes != null)
-                IconButton(
-                    tooltip: _paged ? '연속 스크롤로 전환' : '페이지별 보기로 전환',
-                    icon: Icon(_paged
-                        ? Icons.view_agenda_outlined
-                        : Icons.view_carousel_outlined),
-                    onPressed: _ready ? _switchMode : null),
-              if (_bytes != null)
-                IconButton(
-                    tooltip: '문서 목록',
-                    onPressed: _opening ? null : _showLibrary,
-                    icon: const Icon(Icons.folder_open_outlined)),
-              IconButton(
-                  tooltip: 'PDF 열기',
-                  onPressed: _opening ? null : _open,
-                  icon: const Icon(Icons.file_open_outlined)),
-            ]),
+            actions: _compact
+                ? const []
+                : [
+                    IconButton(
+                        tooltip: '저장한 단어·출처',
+                        onPressed: _opening ? null : _showLearning,
+                        icon: const Icon(Icons.school_outlined)),
+                    if (_ready)
+                      IconButton(
+                          tooltip: '본문 검색',
+                          icon: const Icon(Icons.search),
+                          onPressed: () =>
+                              setState(() => _searchVisible = !_searchVisible)),
+                    if (_bytes != null)
+                      IconButton(
+                          tooltip: _paged ? '연속 스크롤로 전환' : '페이지별 보기로 전환',
+                          icon: Icon(_paged
+                              ? Icons.view_agenda_outlined
+                              : Icons.view_carousel_outlined),
+                          onPressed: _ready ? _switchMode : null),
+                    if (_bytes != null)
+                      IconButton(
+                          tooltip: '문서 목록',
+                          onPressed: _opening ? null : _showLibrary,
+                          icon: const Icon(Icons.folder_open_outlined)),
+                    IconButton(
+                        tooltip: 'PDF 열기',
+                        onPressed: _opening ? null : _open,
+                        icon: const Icon(Icons.file_open_outlined)),
+                  ]),
         body: Column(children: [
           if (_opening) const LinearProgressIndicator(),
           if (_searchVisible) _searchPanel(),
@@ -1168,48 +1263,52 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           ? () => _navigateToPage(_page + 1)
                           : null,
                       icon: const Icon(Icons.chevron_right)),
-                  IconButton(
-                      tooltip: '축소',
-                      onPressed: _ready ? () => _controller.zoomDown() : null,
-                      icon: const Icon(Icons.zoom_out)),
-                  IconButton(
-                      tooltip: '확대',
-                      onPressed: _ready ? () => _controller.zoomUp() : null,
-                      icon: const Icon(Icons.zoom_in)),
-                  IconButton(
-                      tooltip: _pageBookmarks.any((b) => b.page == _page)
-                          ? '페이지 북마크 해제'
-                          : '페이지 북마크 추가',
-                      onPressed: _ready && _bookmarksReadable && !_bookmarkBusy
-                          ? _togglePageBookmark
-                          : null,
-                      icon: Icon(_pageBookmarks.any((b) => b.page == _page)
-                          ? Icons.bookmark
-                          : Icons.bookmark_border)),
-                  IconButton(
-                      tooltip: '미리보기·북마크',
-                      onPressed: _ready ? () => _showDocumentNavigator() : null,
-                      icon: const Icon(Icons.grid_view_outlined)),
-                  IconButton(
-                      tooltip: '문서 목차',
-                      onPressed: _ready
-                          ? () => _showDocumentNavigator(outlineOnly: true)
-                          : null,
-                      icon: const Icon(Icons.format_list_bulleted)),
-                  if (_returnPoint != null)
+                  if (!_compact) ...[
                     IconButton(
-                        tooltip: '이전 읽던 위치로 돌아가기',
+                        tooltip: '축소',
+                        onPressed: _ready ? () => _controller.zoomDown() : null,
+                        icon: const Icon(Icons.zoom_out)),
+                    IconButton(
+                        tooltip: '확대',
+                        onPressed: _ready ? () => _controller.zoomUp() : null,
+                        icon: const Icon(Icons.zoom_in)),
+                    IconButton(
+                        tooltip: _pageBookmarks.any((b) => b.page == _page)
+                            ? '페이지 북마크 해제'
+                            : '페이지 북마크 추가',
                         onPressed:
-                            _opening || !_ready ? null : _returnToReading,
-                        icon: const Icon(Icons.undo)),
-                  IconButton(
-                      tooltip: _highlightAll
-                          ? '커서를 올릴 때만 강조로 전환'
-                          : '사전 단어 항상 강조로 전환',
-                      isSelected: _highlightAll,
-                      onPressed: _ready ? _toggleHighlight : null,
-                      icon: const Icon(Icons.highlight_alt_outlined),
-                      selectedIcon: const Icon(Icons.highlight)),
+                            _ready && _bookmarksReadable && !_bookmarkBusy
+                                ? _togglePageBookmark
+                                : null,
+                        icon: Icon(_pageBookmarks.any((b) => b.page == _page)
+                            ? Icons.bookmark
+                            : Icons.bookmark_border)),
+                    IconButton(
+                        tooltip: '미리보기·북마크',
+                        onPressed:
+                            _ready ? () => _showDocumentNavigator() : null,
+                        icon: const Icon(Icons.grid_view_outlined)),
+                    IconButton(
+                        tooltip: '문서 목차',
+                        onPressed: _ready
+                            ? () => _showDocumentNavigator(outlineOnly: true)
+                            : null,
+                        icon: const Icon(Icons.format_list_bulleted)),
+                    if (_returnPoint != null)
+                      IconButton(
+                          tooltip: '이전 읽던 위치로 돌아가기',
+                          onPressed:
+                              _opening || !_ready ? null : _returnToReading,
+                          icon: const Icon(Icons.undo)),
+                    IconButton(
+                        tooltip: _highlightAll
+                            ? '커서를 올릴 때만 강조로 전환'
+                            : '사전 단어 항상 강조로 전환',
+                        isSelected: _highlightAll,
+                        onPressed: _ready ? _toggleHighlight : null,
+                        icon: const Icon(Icons.highlight_alt_outlined),
+                        selectedIcon: const Icon(Icons.highlight)),
+                  ],
                 ]),
           if (_bytes != null) _analysisStatus(),
           Expanded(

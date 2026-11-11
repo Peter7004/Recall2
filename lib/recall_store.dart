@@ -6,6 +6,7 @@ import 'bundled_vocabulary.dart';
 import 'csv_import.dart';
 import 'recall_backup.dart';
 import 'vocabulary.dart';
+import 'corpus/corpus_stats.dart';
 
 export 'csv_import.dart'
     show
@@ -32,7 +33,8 @@ class RecallConcurrentWriteException implements Exception {
 }
 
 class RecallStore extends ChangeNotifier {
-  RecallStore._(this._preferences);
+  RecallStore._(this._preferences, this.corpus);
+  final CorpusCatalog corpus;
   static const _legacyKey = 'recall.data.v1';
   static const _previousKey = 'recall.data.v2';
   static const _dataKey = 'recall.data.v3';
@@ -86,10 +88,11 @@ class RecallStore extends ChangeNotifier {
 
   static Future<RecallStore> load(
       {SharedPreferences? storage,
+      CorpusCatalog corpus = const CorpusCatalog.empty(),
       BundledVocabulary? bundledVocabulary,
       Future<BundledVocabulary> Function()? loadBundledVocabulary}) async {
     final preferences = storage ?? await SharedPreferences.getInstance();
-    final store = RecallStore._(preferences);
+    final store = RecallStore._(preferences, corpus);
     final current = preferences.getString(_dataKey);
     store._persistedData = current;
     final previous = preferences.getString(_previousKey);
