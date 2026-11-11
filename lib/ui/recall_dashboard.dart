@@ -97,20 +97,18 @@ class _DashboardPage extends StatelessWidget {
                   style:
                       TextStyle(color: _indigo, fontWeight: FontWeight.w700)),
               const SizedBox(height: 14),
-              if (stats != null) ...[
-                Text(store.learningSourceLabel,
-                    style: const TextStyle(color: _muted)),
-                Text('등장 문서 ${stats.df(store.learningSource)}개 · '
-                    '출현 ${stats.tf(store.learningSource)}회'),
-                const Text('잠정 채택값 · 보류 제외',
-                    style: TextStyle(color: _muted, fontSize: 12)),
-                const SizedBox(height: 12),
-              ],
               Text(suggestion.card.displayTerm,
                   style: const TextStyle(
                       fontSize: 28, fontWeight: FontWeight.w800, color: _ink)),
               const SizedBox(height: 8),
               Text(suggestion.card.primaryMeaning),
+              if (stats != null) ...[
+                const SizedBox(height: 20),
+                CorpusRecommendationEvidence(
+                    catalog: store.corpus,
+                    term: suggestion.card.displayTerm,
+                    selectedSource: store.learningSource),
+              ],
               TextButton(
                   onPressed: () => onTerm(suggestion.deck.id, suggestion.card),
                   child: const Text('뜻과 설명 보기 →')),

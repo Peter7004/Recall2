@@ -63,7 +63,7 @@ const fs = require('node:fs'), path = require('node:path');
     }
     await start();
     const before = await snapshot();
-    await checkText('PDF 22개 · 초록 639개 · 잠정값');
+    await checkText('PDF 22개 · 초록 639개 · 문맥 필터 적용');
     await search('Voltage');
     await checkText('교재·강의자료: TF 7294 · DF 21');
     await checkText('논문 초록: TF 261 · DF 107');
@@ -130,6 +130,6 @@ const fs = require('node:fs'), path = require('node:path');
     assert.equal(decoded.occurrences.length, 1);
     assert(decoded.occurrences[0].rects.length > 0);
     assert.deepEqual(errors, []);
-    console.log('PASS: real 22-PDF/639-abstract counts, provisional/pending labels, 225 common filter, corpus-specific sorting, 320/390 widths, PDF lookup/save/source and reload persistence.');
+    console.log('PASS: real 22-PDF/639-abstract counts, context-filter/pending labels, 225 common filter, corpus-specific sorting, 320/390 widths, PDF lookup/save/source and reload persistence.');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});

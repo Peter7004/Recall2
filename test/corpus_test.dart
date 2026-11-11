@@ -200,7 +200,7 @@ void main() {
         isFalse);
     expect((await loadCorpusStats(bundle: _Bundle(csv))).available, isFalse);
   });
-  testWidgets('provisional zero and pending evidence are distinguished',
+  testWidgets('filtered zero and pending evidence are distinguished',
       (tester) async {
     final csv = '$header\nPower,0,0,0,0';
     final data = CorpusCatalog.parse(csv).withMetadata(
@@ -220,6 +220,83 @@ void main() {
     await tester.tap(find.text('집계 기준'));
     await tester.pumpAndSettle();
     expect(find.textContaining('논문 전체 본문 빈도가 아닙니다.'), findsOneWidget);
+  });
+  testWidgets('coverage uses each corpus denominator, never combined TF',
+      (tester) async {
+    final csv = '$header\nVoltage,7294,21,261,107';
+    final data = CorpusCatalog.parse(csv).withMetadata(metadataFor(csv), csv);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: CorpusRecommendationEvidence(
+                    catalog: data,
+                    term: 'Voltage',
+                    selectedSource: CorpusSource.abstracts)))));
+    expect(find.text('95.5%'), findsOneWidget);
+    expect(find.text('16.7%'), findsOneWidget);
+    expect(find.text('등장 문서 21 / 22개 (DF)'), findsOneWidget);
+    expect(find.text('등장 문서 107 / 639개 (DF)'), findsOneWidget);
+    expect(find.text('총 출현 7294회 (TF)'), findsOneWidget);
+    expect(find.text('선택한 기준'), findsOneWidget);
+    final rings = tester
+        .widgetList<CircularProgressIndicator>(
+            find.byType(CircularProgressIndicator))
+        .toList();
+    expect(rings.map((r) => r.value), [21 / 22, 107 / 639]);
+    await tester.tap(find.text('집계 기준'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('모든 용례의 의미를 사람이 검수한 통계는 아닙니다.'), findsOneWidget);
+    expect(find.textContaining('잠정'), findsNothing);
+  });
+  testWidgets('missing denominator and absent term do not invent a percentage',
+      (tester) async {
+    final data = CorpusCatalog.parse('$header\nVoltage,7294,21,261,107');
+    Future<void> show(String term) => tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: CorpusRecommendationEvidence(
+                    catalog: data,
+                    term: term,
+                    selectedSource: CorpusSource.textbook)))));
+    await show('Voltage');
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('전체 문서 수 미제공'), findsNWidgets(2));
+    expect(find.text('총 출현 261회 (TF)'), findsOneWidget);
+    await show('Unknown');
+    expect(find.text('추천 근거'), findsNothing);
+  });
+  testWidgets(
+      'zero coverage stays zero despite pending occurrences; mobile text scales',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final csv = '$header\nPower,0,0,0,0';
+    final data = CorpusCatalog.parse(csv).withMetadata(
+        metadataFor(csv, pending: {
+          'power': [20, 10, 4, 2]
+        }),
+        csv);
+    await tester.pumpWidget(MaterialApp(
+        home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+                body: SingleChildScrollView(
+                    child: Padding(
+                        padding: const EdgeInsets.all(44),
+                        child: CorpusRecommendationEvidence(
+                            catalog: data,
+                            term: 'Power',
+                            selectedSource: CorpusSource.textbook)))))));
+    expect(find.text('0.0%'), findsNWidgets(2));
+    expect(
+        tester
+            .widgetList<CircularProgressIndicator>(
+                find.byType(CircularProgressIndicator))
+            .map((r) => r.value),
+        [0, 0]);
+    expect(tester.takeException(), isNull);
   });
   test(
       'read-only integration preserves serialized user data and priority/search/PDF lookup',
