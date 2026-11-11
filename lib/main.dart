@@ -8,21 +8,26 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:recall/branding.dart';
 import 'package:recall/bundled_vocabulary.dart';
+import 'corpus/corpus_loader.dart';
+import 'corpus/corpus_stats.dart';
+import 'corpus/corpus_widgets.dart';
 import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
 import 'package:recall/reader/pdf_reader_page.dart';
 import 'package:recall/reader/reader_card_sources_page.dart';
 
+part 'ui/recall_dashboard.dart';
+
 void main() {
   runApp(const RecallApp());
 }
 
-const _ink = Color(0xFF070235);
-const _indigo = Color(0xFF3947DD);
-const _muted = Color(0xFF666570);
-const _surface = Color(0xFFFBF8FE);
-const _soft = Color(0xFFF3F0F6);
-const _line = Color(0xFFE9E6ED);
+const _ink = Color(0xFF142B43);
+const _indigo = Color(0xFF087F79);
+const _muted = Color(0xFF8292A3);
+const _surface = Color(0xFFF5F8FB);
+const _soft = Color(0xFFE8F5F3);
+const _line = Color(0xFFE7EDF1);
 typedef StudyCards = List<({RecallDeck deck, RecallCard card})>;
 typedef TermDetailValue = ({String label, String value});
 
@@ -40,11 +45,41 @@ class RecallApp extends StatelessWidget {
         scaffoldBackgroundColor: _surface,
         colorScheme: ColorScheme.fromSeed(
           seedColor: _indigo,
-          primary: _ink,
+          primary: _indigo,
           secondary: _indigo,
           surface: _surface,
         ),
         fontFamily: 'sans-serif',
+        textTheme: ThemeData.light()
+            .textTheme
+            .apply(bodyColor: _ink, displayColor: _ink),
+        appBarTheme: const AppBarTheme(
+            backgroundColor: _surface, foregroundColor: _ink, elevation: 0),
+        inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: _line)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: _indigo)),
+            hintStyle: const TextStyle(color: _muted)),
+        filledButtonTheme: FilledButtonThemeData(
+            style: FilledButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                textStyle: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700))),
+        chipTheme: ChipThemeData(
+            backgroundColor: Colors.white,
+            selectedColor: _soft,
+            side: const BorderSide(color: _line),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12))),
         snackBarTheme: const SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
         ),
@@ -63,7 +98,7 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 4;
   String _dictionaryQuery = '';
   String? _dictionaryCategoryId;
   RecallStore? _store;
@@ -87,7 +122,9 @@ class _HomeShellState extends State<HomeShell> {
     RecallStore store;
     try {
       store = await (widget.loadStore?.call() ??
-          RecallStore.load(loadBundledVocabulary: BundledVocabulary.load));
+          RecallStore.load(
+              loadBundledVocabulary: BundledVocabulary.load,
+              corpus: await loadCorpusStats()));
     } catch (error) {
       if (mounted) {
         _startupTimer?.cancel();
@@ -113,12 +150,12 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   static const _destinations = [
-    (label: '사전', icon: Icons.menu_book_outlined),
-    (label: '과목', icon: Icons.school_outlined),
-    (label: '북마크', icon: Icons.bookmark_outline_rounded),
-    (label: '플래시카드', icon: Icons.style_outlined),
-    (label: '모음', icon: Icons.folder_open_outlined),
+    (label: '홈', icon: Icons.home_outlined),
+    (label: '사전', icon: Icons.search_rounded),
+    (label: '학습', icon: Icons.style_outlined),
+    (label: '기록', icon: Icons.bar_chart_rounded),
   ];
+  static const _tabPages = [4, 0, 3, 5];
 
   void _showTutorial(RecallStore store) {
     showDialog<void>(
@@ -366,7 +403,7 @@ class _HomeShellState extends State<HomeShell> {
 
   Widget _buildApp(BuildContext context, RecallStore store) {
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -378,56 +415,77 @@ class _HomeShellState extends State<HomeShell> {
                     MaterialPageRoute<void>(
                         builder: (_) => PdfReaderPage(store: store)))),
             Expanded(
-              child: _selectedIndex == 0
-                  ? _DictionaryPage(
+              child: _selectedIndex == 4
+                  ? _DashboardPage(
                       store: store,
-                      initialQuery: _dictionaryQuery,
-                      initialCategoryId: _dictionaryCategoryId,
-                      onOpenTerm: _openTerm,
-                      onCategorySelected: (categoryId) =>
-                          _openDictionary(categoryId: categoryId),
-                    )
-                  : _selectedIndex == 1
-                      ? _SubjectsPage(
-                          store: store, onOpenSubject: _openCategory)
-                      : _selectedIndex == 2
-                          ? _BookmarkedPage(
+                      onStudy: _startReview,
+                      onSearch: (q) => _openDictionary(query: q),
+                      onSubjects: () => setState(() => _selectedIndex = 1),
+                      onCollections: () => setState(() => _selectedIndex = 6),
+                      onBookmarks: () => setState(() => _selectedIndex = 2),
+                      onReader: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => PdfReaderPage(store: store))),
+                      onTerm: _openTerm,
+                      onCategory: _openCategory)
+                  : _selectedIndex == 5
+                      ? _RecordsPage(store: store, onTerm: _openTerm)
+                      : _selectedIndex == 0
+                          ? _DictionaryPage(
                               store: store,
+                              initialQuery: _dictionaryQuery,
+                              initialCategoryId: _dictionaryCategoryId,
                               onOpenTerm: _openTerm,
+                              onCategorySelected: (categoryId) =>
+                                  _openDictionary(categoryId: categoryId),
                             )
-                          : _selectedIndex == 3
-                              ? _FlashcardLaunchPage(
-                                  store: store,
-                                  onStartReview: _startReview,
-                                )
-                              : _HomePage(
-                                  store: store,
-                                  onOpenDeck: _openDeck,
-                                  onStartReview: _startReview,
-                                  onImportCsv: _showCsvImport,
-                                  onCreateDeck: _showAddDeck,
-                                  onSearch: (q) => _openDictionary(query: q),
-                                  onOpenBookmarks: () =>
-                                      setState(() => _selectedIndex = 2),
-                                  onOpenTerm: _openTerm,
-                                  onOpenCategory: _openCategory,
-                                ),
+                          : _selectedIndex == 1
+                              ? _SubjectsPage(
+                                  store: store, onOpenSubject: _openCategory)
+                              : _selectedIndex == 2
+                                  ? _BookmarkedPage(
+                                      store: store,
+                                      onOpenTerm: _openTerm,
+                                    )
+                                  : _selectedIndex == 3
+                                      ? _FlashcardLaunchPage(
+                                          store: store,
+                                          onStartReview: _startReview,
+                                        )
+                                      : _HomePage(
+                                          store: store,
+                                          onOpenDeck: _openDeck,
+                                          onStartReview: _startReview,
+                                          onImportCsv: _showCsvImport,
+                                          onCreateDeck: _showAddDeck,
+                                          onSearch: (q) =>
+                                              _openDictionary(query: q),
+                                          onOpenBookmarks: () => setState(
+                                              () => _selectedIndex = 2),
+                                          onOpenTerm: _openTerm,
+                                          onOpenCategory: _openCategory,
+                                        ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showHomeActions,
-        tooltip: '용어·모음 추가',
-        backgroundColor: _indigo,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add, size: 28),
-      ),
+      floatingActionButton:
+          (_selectedIndex == 4 || _selectedIndex == 5 || _selectedIndex == 3)
+              ? null
+              : FloatingActionButton(
+                  onPressed: _showHomeActions,
+                  tooltip: '용어·모음 추가',
+                  backgroundColor: _indigo,
+                  foregroundColor: Colors.white,
+                  child: const Icon(Icons.add, size: 28),
+                ),
       bottomNavigationBar: _BottomNav(
-        selectedIndex: _selectedIndex,
+        selectedIndex: _tabPages.contains(_selectedIndex)
+            ? _tabPages.indexOf(_selectedIndex)
+            : 0,
         dueCount: store.remainingToday,
         destinations: _destinations,
-        onSelect: (index) => setState(() => _selectedIndex = index),
+        onSelect: (index) => setState(() => _selectedIndex = _tabPages[index]),
       ),
     );
   }
@@ -487,19 +545,44 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
+      height: 92,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _line, width: 0.6)),
-      ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
               child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: RecallHeaderBrand())),
+                  child: Row(children: [
+                    Container(
+                        width: 46,
+                        height: 46,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                            color: _indigo,
+                            borderRadius: BorderRadius.circular(15)),
+                        child: const Text('R',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800))),
+                    const SizedBox(width: 12),
+                    const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Recall',
+                              style: TextStyle(
+                                  color: _ink,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800)),
+                          Text('ENGINEERING ENGLISH',
+                              style: TextStyle(
+                                  color: _muted,
+                                  fontSize: 8,
+                                  letterSpacing: 1.7,
+                                  fontWeight: FontWeight.w700)),
+                        ]),
+                  ]))),
           IconButton(
             onPressed: onSearch,
             tooltip: 'Search vocabulary',
@@ -516,12 +599,6 @@ class _TopBar extends StatelessWidget {
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
             color: _muted,
-          ),
-          const SizedBox(width: 4),
-          const CircleAvatar(
-            radius: 16,
-            backgroundColor: _ink,
-            child: Icon(Icons.person_outline, color: Colors.white, size: 19),
           ),
         ],
       ),
@@ -961,7 +1038,8 @@ class _Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(22),
           boxShadow: const [
             BoxShadow(
                 color: Color(0x0A070235), blurRadius: 18, offset: Offset(0, 3))
@@ -969,7 +1047,7 @@ class _Panel extends StatelessWidget {
         ),
         child: Material(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(22),
           clipBehavior: Clip.antiAlias,
           child: Padding(padding: padding, child: child),
         ),
@@ -998,7 +1076,7 @@ class _BottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 62,
+          height: 70,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(destinations.length, (index) {
@@ -1017,7 +1095,7 @@ class _BottomNav extends StatelessWidget {
                           children: [
                             Icon(destination.icon,
                                 color: selected ? _indigo : _muted, size: 22),
-                            if (index == 3 && dueCount > 0)
+                            if (index == 2 && dueCount > 0)
                               Positioned(
                                 right: -13,
                                 top: -5,
@@ -1041,7 +1119,7 @@ class _BottomNav extends StatelessWidget {
                       Text(destination.label,
                           style: TextStyle(
                               color: selected ? _indigo : _muted,
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: selected
                                   ? FontWeight.w700
                                   : FontWeight.w500)),
@@ -1171,7 +1249,7 @@ class _ReviewPageState extends State<ReviewPage> {
             tooltip: 'Go back',
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_rounded)),
-        title: const Text('Review',
+        title: const Text('단어 학습',
             style: TextStyle(
                 color: _ink, fontSize: 18, fontWeight: FontWeight.w700)),
         actions: [
@@ -1215,43 +1293,68 @@ class _ReviewPageState extends State<ReviewPage> {
                       deckName: current.deck.name,
                     ),
                     Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                        child: _Flashcard(
-                          revealed: _revealed,
-                          imageData: current.card.imageData,
-                          example: current.card.example,
-                          details: [
-                            if (current.card.isPersonal) ...[
-                              for (final m in current.card.effectiveMeanings)
-                                if (m.explanationKo.isNotEmpty)
-                                  (label: '내 메모', value: m.explanationKo),
-                              if (current.card.source.isNotEmpty)
-                                (label: 'PDF 출처', value: current.card.source),
-                            ],
-                            (
-                              label: '학습 우선순위',
-                              value: current.card.learningPriority.label
+                        child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _Flashcard(
+                              revealed: _revealed,
+                              imageData: current.card.imageData,
+                              example: current.card.example,
+                              details: [
+                                if (current.card.isPersonal) ...[
+                                  for (final m
+                                      in current.card.effectiveMeanings)
+                                    if (m.explanationKo.isNotEmpty)
+                                      (label: '내 메모', value: m.explanationKo),
+                                  if (current.card.source.isNotEmpty)
+                                    (
+                                      label: 'PDF 출처',
+                                      value: current.card.source
+                                    ),
+                                ],
+                                (
+                                  label: '학습 우선순위',
+                                  value: current.card.learningPriority.label
+                                ),
+                                if (current.card.abbreviation.isNotEmpty)
+                                  (
+                                    label: '약어',
+                                    value: current.card.abbreviation
+                                  ),
+                              ],
+                              relatedTerms: current.card.relatedTerms,
+                              promptText: promptText,
+                              answerText: answerText,
+                              promptLabel: promptLabel,
+                              answerLabel: answerLabel,
+                              onReveal: () =>
+                                  setState(() => _revealed = !_revealed),
                             ),
-                            if (current.card.abbreviation.isNotEmpty)
-                              (label: '약어', value: current.card.abbreviation),
-                          ],
-                          relatedTerms: current.card.relatedTerms,
-                          promptText: promptText,
-                          answerText: answerText,
-                          promptLabel: promptLabel,
-                          answerLabel: answerLabel,
-                          onReveal: () =>
-                              setState(() => _revealed = !_revealed),
-                        ),
-                      ),
-                    ),
-                    _FeedbackDock(
-                      revealed: _revealed,
-                      onRepeat: _repeatCurrent,
-                      onNext: _advance,
-                      onReveal: () => setState(() => _revealed = true),
-                    ),
+                            const SizedBox(height: 16),
+                            _FeedbackDock(
+                                revealed: _revealed,
+                                onRepeat: _repeatCurrent,
+                                onNext: _advance,
+                                onReveal: () =>
+                                    setState(() => _revealed = true)),
+                            const SizedBox(height: 24),
+                            const _HomeSectionHeading('오늘의 학습'),
+                            const SizedBox(height: 12),
+                            _Panel(
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                  Text(
+                                      '목표 진행률 · ${widget.store.reviewsToday} / ${widget.store.dailyGoal}회',
+                                      style: const TextStyle(color: _muted)),
+                                  const SizedBox(height: 14),
+                                  _GoalProgress(store: widget.store),
+                                ])),
+                          ]),
+                    )),
                   ],
                 ),
               ),
@@ -1348,138 +1451,56 @@ class _Flashcard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: _line)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onReveal,
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Container(
-              height: 156,
-              decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                    Color(0xFF283644),
-                    Color(0xFF101A28),
-                    Color(0xFF69533C)
-                  ])),
-              child: Stack(children: [
-                Positioned(
-                    right: -14,
-                    top: -42,
-                    child: Icon(Icons.auto_stories_rounded,
-                        size: 205,
-                        color: Colors.white.withValues(alpha: 0.07))),
-                const Positioned(
-                    left: 24,
-                    top: 15,
-                    child: Icon(Icons.auto_stories_rounded,
-                        size: 92, color: Color(0xFFC4A477))),
-                Positioned(
-                    left: 17,
-                    right: 17,
-                    bottom: 12,
-                    child: Row(children: [
-                      Expanded(
-                          child: Text(promptLabel.toUpperCase(),
-                              style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 9,
-                                  letterSpacing: 1.1,
-                                  fontWeight: FontWeight.w600))),
-                      Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 4),
-                          color: _ink.withValues(alpha: 0.62),
-                          child: const Text('FLASHCARD',
-                              style: TextStyle(
-                                  color: Color(0xFFE3DFFF),
-                                  fontSize: 9,
-                                  letterSpacing: 0.5)))
-                    ])),
-              ]),
-            ),
-            if (imageData != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: _CardImage(
-                  imageData: imageData,
-                  width: double.infinity,
-                  height: 190,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(20),
+            onTap: onReveal,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                              child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                Text(promptLabel.toUpperCase(),
-                                    style: const TextStyle(
-                                        color: _indigo,
-                                        fontSize: 10,
-                                        letterSpacing: 1.2,
-                                        fontWeight: FontWeight.w700)),
-                                const SizedBox(height: 2),
-                                Text(promptText,
-                                    style: const TextStyle(
-                                        color: _ink,
-                                        fontSize: 32,
-                                        height: 1.15,
-                                        fontWeight: FontWeight.w700))
-                              ])),
-                          IconButton.filledTonal(
-                              tooltip: 'Flip card',
-                              onPressed: onReveal,
-                              icon: const Icon(Icons.flip_to_back_rounded)),
-                        ]),
-                    const SizedBox(height: 9),
-                    const SizedBox(height: 17),
-                    if (!revealed)
-                      Container(
+                    Center(
+                        child: Chip(
+                            label: Text(promptLabel), backgroundColor: _soft)),
+                    const SizedBox(height: 28),
+                    if (imageData != null) ...[
+                      _CardImage(
+                          imageData: imageData,
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 16),
-                          decoration: BoxDecoration(
-                              color: _soft.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(9)),
-                          child: const Column(children: [
-                            Icon(Icons.touch_app_rounded,
-                                color: _indigo, size: 23),
-                            SizedBox(height: 5),
-                            Text('답을 확인해 보세요',
-                                style: TextStyle(
-                                    color: _ink,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500)),
-                            SizedBox(height: 4),
-                            Text('카드를 눌러 뒤집기',
-                                style: TextStyle(
-                                    color: _muted,
-                                    fontSize: 9,
-                                    letterSpacing: 0.8))
-                          ]))
-                    else ...[
-                      _AnswerPanel(
-                        label: answerLabel,
-                        text: answerText,
-                        example: example,
-                        details: details,
-                        relatedTerms: relatedTerms,
-                      ),
+                          height: 190),
+                      const SizedBox(height: 20),
                     ],
+                    Text(promptText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: _ink,
+                            fontSize: 32,
+                            height: 1.3,
+                            fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 28),
+                    if (!revealed) ...[
+                      const Text('단어를 보고 의미를 생각해 본 다음\n아래에서 정답을 확인하세요.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: _muted, height: 1.8)),
+                      const SizedBox(height: 24),
+                      IconButton(
+                          tooltip: 'Flip card',
+                          onPressed: onReveal,
+                          icon: const Icon(Icons.menu_book_outlined,
+                              color: _muted, size: 28)),
+                      const SizedBox(height: 24),
+                    ] else
+                      _AnswerPanel(
+                          label: answerLabel,
+                          text: answerText,
+                          example: example,
+                          details: details,
+                          relatedTerms: relatedTerms),
                   ]),
-            ),
-          ]),
-        ),
+            )),
       );
 }
 
@@ -1567,7 +1588,7 @@ class _FeedbackDock extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(children: [
             const Expanded(
-              child: Text('FLASHCARD CONTROL',
+              child: Text('뜻을 떠올린 뒤 정답을 확인하세요.',
                   style: TextStyle(
                       color: _muted,
                       fontSize: 9,
@@ -1585,9 +1606,9 @@ class _FeedbackDock extends StatelessWidget {
                 child: FilledButton.icon(
                     onPressed: onReveal,
                     icon: const Icon(Icons.visibility_outlined, size: 18),
-                    label: const Text('답 보기'),
+                    label: const Text('정답 확인 →'),
                     style: FilledButton.styleFrom(
-                        backgroundColor: _ink,
+                        backgroundColor: _indigo,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)))))
@@ -2142,6 +2163,8 @@ class _DictionaryPage extends StatefulWidget {
 }
 
 class _DictionaryPageState extends State<_DictionaryPage> {
+  CorpusScope _corpusScope = CorpusScope.all;
+  CorpusSource? _corpusSource;
   late final TextEditingController _queryController;
   String? _categoryId;
   VocabularyType? _type;
@@ -2201,218 +2224,244 @@ class _DictionaryPageState extends State<_DictionaryPage> {
               widget.store.categoryById(_categoryId!) == null) {
             _categoryId = null;
           }
-          final results = widget.store.searchCards(_queryController.text,
-              categoryId: _categoryId,
-              vocabularyType: _type,
-              learningPriority: _priority,
-              bookmarkedOnly: widget.bookmarkedOnly);
+          final results = widget.store.corpus.select(
+              widget.store.searchCards(_queryController.text,
+                  categoryId: _categoryId,
+                  vocabularyType: _type,
+                  learningPriority: _priority,
+                  bookmarkedOnly: widget.bookmarkedOnly),
+              (entry) => entry.card.displayTerm,
+              scope: _corpusScope,
+              source: _corpusSource);
           final ids = results.map((e) => e.card.id).toSet();
           _selectedIds.removeWhere((id) => !ids.contains(id));
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 960),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                      child: Row(children: [
-                        Expanded(
-                            child: Text(widget.bookmarkedOnly ? '북마크' : '사전',
-                                style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: _ink))),
-                        Text('${results.length}개',
-                            style: const TextStyle(color: _muted)),
-                        IconButton(
-                            tooltip: '용어 선택',
-                            onPressed: _deleting || ids.isEmpty
+              child: CustomScrollView(slivers: [
+                SliverToBoxAdapter(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                        child: Row(children: [
+                          Expanded(
+                              child: Text(
+                                  widget.bookmarkedOnly ? '북마크' : '전공 영어 사전',
+                                  style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                      color: _ink))),
+                          Text('${results.length}개',
+                              style: const TextStyle(color: _muted)),
+                          IconButton(
+                              tooltip: '용어 선택',
+                              onPressed: _deleting || ids.isEmpty
+                                  ? null
+                                  : () => setState(() {
+                                        _selecting = !_selecting;
+                                        _selectedIds.clear();
+                                      }),
+                              icon: const Icon(Icons.checklist)),
+                        ]),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: TextField(
+                          controller: _queryController,
+                          textInputAction: TextInputAction.search,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText:
+                                widget.bookmarkedOnly ? '북마크 검색' : '영어·한국어 검색',
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: _queryController.text.isEmpty
                                 ? null
-                                : () => setState(() {
-                                      _selecting = !_selecting;
-                                      _selectedIds.clear();
-                                    }),
-                            icon: const Icon(Icons.checklist)),
-                      ]),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextField(
-                        controller: _queryController,
-                        textInputAction: TextInputAction.search,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText:
-                              widget.bookmarkedOnly ? '북마크 검색' : '영어·한국어 검색',
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: _queryController.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  tooltip: '검색어 지우기',
-                                  onPressed: () {
-                                    _queryController.clear();
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.close_rounded)),
-                          border: const OutlineInputBorder(),
+                                : IconButton(
+                                    tooltip: '검색어 지우기',
+                                    onPressed: () {
+                                      _queryController.clear();
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(Icons.close_rounded)),
+                            border: const OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 52,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: ChoiceChip(
-                                  showCheckmark: false,
-                                  label: const SizedBox(
-                                      width: 76,
-                                      child: Text('전체 유형',
-                                          textAlign: TextAlign.center)),
-                                  selected: _type == null,
-                                  onSelected: (_) =>
-                                      setState(() => _type = null))),
-                          for (final type in VocabularyType.values)
+                      SizedBox(
+                        height: 52,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
                             Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 child: ChoiceChip(
                                     showCheckmark: false,
-                                    label: SizedBox(
-                                        width: type ==
-                                                VocabularyType.generalTechnical
-                                            ? 112
-                                            : 76,
-                                        child: Text(type.label,
+                                    label: const SizedBox(
+                                        width: 76,
+                                        child: Text('전체 유형',
                                             textAlign: TextAlign.center)),
-                                    selected: _type == type,
+                                    selected: _type == null,
                                     onSelected: (_) =>
-                                        setState(() => _type = type))),
-                        ],
+                                        setState(() => _type = null))),
+                            for (final type in VocabularyType.values)
+                              Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  child: ChoiceChip(
+                                      showCheckmark: false,
+                                      label: SizedBox(
+                                          width: type ==
+                                                  VocabularyType
+                                                      .generalTechnical
+                                              ? 112
+                                              : 76,
+                                          child: Text(type.label,
+                                              textAlign: TextAlign.center)),
+                                      selected: _type == type,
+                                      onSelected: (_) =>
+                                          setState(() => _type = type))),
+                          ],
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                      child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                                flex: 3,
-                                child: DropdownButtonFormField<String>(
-                                  key: ValueKey(_categoryId),
-                                  initialValue: _categoryId ?? '',
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                      labelText: '과목',
-                                      isDense: true,
-                                      border: OutlineInputBorder()),
-                                  items: [
-                                    const DropdownMenuItem(
-                                        value: '', child: Text('전체 과목')),
-                                    for (final category
-                                        in widget.store.categories)
-                                      DropdownMenuItem(
-                                          value: category.id,
-                                          child: Text(
-                                              widget.store
-                                                  .categoryPath(category.id)
-                                                  .join(' / '),
-                                              overflow: TextOverflow.ellipsis)),
-                                  ],
-                                  onChanged: (id) {
-                                    setState(() =>
-                                        _categoryId = id == '' ? null : id);
-                                    widget.onCategorySelected(_categoryId);
-                                  },
-                                )),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                flex: 2,
-                                child: DropdownButtonFormField<String>(
-                                  key: ValueKey('priority-${_priority?.value}'),
-                                  initialValue: _priority?.value ?? '',
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                      labelText: '학습 우선순위',
-                                      isDense: true,
-                                      border: OutlineInputBorder()),
-                                  items: [
-                                    const DropdownMenuItem(
-                                        value: '', child: Text('전체')),
-                                    for (final priority
-                                        in LearningPriority.values)
-                                      DropdownMenuItem(
-                                          value: priority.value,
-                                          child: Text(priority.label)),
-                                  ],
-                                  onChanged: (value) => setState(() =>
-                                      _priority = value == ''
-                                          ? null
-                                          : LearningPriority.parse(value!)),
-                                )),
-                          ]),
-                    ),
-                    if (_selecting)
                       Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _TermSelectionBar(
-                            count: _selectedIds.length,
-                            allSelected: ids.isNotEmpty &&
-                                _selectedIds.length == ids.length,
-                            busy: _deleting,
-                            onSelectAll: () => setState(() {
-                              if (_selectedIds.length == ids.length) {
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                        child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                  flex: 3,
+                                  child: DropdownButtonFormField<String>(
+                                    key: ValueKey(_categoryId),
+                                    initialValue: _categoryId ?? '',
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                        labelText: '과목',
+                                        isDense: true,
+                                        border: OutlineInputBorder()),
+                                    items: [
+                                      const DropdownMenuItem(
+                                          value: '', child: Text('전체 과목')),
+                                      for (final category
+                                          in widget.store.categories)
+                                        DropdownMenuItem(
+                                            value: category.id,
+                                            child: Text(
+                                                widget.store
+                                                    .categoryPath(category.id)
+                                                    .join(' / '),
+                                                overflow:
+                                                    TextOverflow.ellipsis)),
+                                    ],
+                                    onChanged: (id) {
+                                      setState(() =>
+                                          _categoryId = id == '' ? null : id);
+                                      widget.onCategorySelected(_categoryId);
+                                    },
+                                  )),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  flex: 2,
+                                  child: DropdownButtonFormField<String>(
+                                    key: ValueKey(
+                                        'priority-${_priority?.value}'),
+                                    initialValue: _priority?.value ?? '',
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                        labelText: '학습 우선순위',
+                                        isDense: true,
+                                        border: OutlineInputBorder()),
+                                    items: [
+                                      const DropdownMenuItem(
+                                          value: '', child: Text('전체')),
+                                      for (final priority
+                                          in LearningPriority.values)
+                                        DropdownMenuItem(
+                                            value: priority.value,
+                                            child: Text(priority.label)),
+                                    ],
+                                    onChanged: (value) => setState(() =>
+                                        _priority = value == ''
+                                            ? null
+                                            : LearningPriority.parse(value!)),
+                                  )),
+                            ]),
+                      ),
+                      if (widget.store.corpus.available)
+                        CorpusControls(
+                            scope: _corpusScope,
+                            source: _corpusSource,
+                            onScopeChanged: (scope) => setState(() {
+                                  _corpusScope = scope;
+                                  _corpusSource = switch (scope) {
+                                    CorpusScope.all => null,
+                                    CorpusScope.abstracts ||
+                                    CorpusScope.abstractOnly =>
+                                      CorpusSource.abstracts,
+                                    _ => CorpusSource.textbook,
+                                  };
+                                }),
+                            onSourceChanged: (source) =>
+                                setState(() => _corpusSource = source)),
+                      if (_selecting)
+                        Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _TermSelectionBar(
+                              count: _selectedIds.length,
+                              allSelected: ids.isNotEmpty &&
+                                  _selectedIds.length == ids.length,
+                              busy: _deleting,
+                              onSelectAll: () => setState(() {
+                                if (_selectedIds.length == ids.length) {
+                                  _selectedIds.clear();
+                                } else {
+                                  _selectedIds.addAll(ids);
+                                }
+                              }),
+                              onDelete: _deleteSelected,
+                              onClose: () => setState(() {
+                                _selecting = false;
                                 _selectedIds.clear();
-                              } else {
-                                _selectedIds.addAll(ids);
-                              }
-                            }),
-                            onDelete: _deleteSelected,
-                            onClose: () => setState(() {
-                              _selecting = false;
-                              _selectedIds.clear();
-                            }),
-                          )),
-                    Expanded(
-                      child: results.isEmpty
-                          ? Center(
-                              child: Text(
-                                  widget.bookmarkedOnly &&
-                                          widget.store.bookmarkedCards.isEmpty
-                                      ? '북마크한 용어가 없습니다.'
-                                      : widget.store.totalCards == 0
-                                          ? '등록된 용어가 없습니다.'
-                                          : '검색 결과가 없습니다.',
-                                  style: const TextStyle(color: _muted)))
-                          : ListView.separated(
-                              padding:
-                                  const EdgeInsets.fromLTRB(12, 0, 12, 100),
-                              itemCount: results.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, i) => _VocabularyTile(
-                                  store: widget.store,
-                                  card: results[i].card,
-                                  selecting: _selecting,
-                                  selected:
-                                      _selectedIds.contains(results[i].card.id),
-                                  enabled: !_deleting,
-                                  onLongPress: () => setState(() {
-                                        _selecting = true;
-                                        _selectedIds.add(results[i].card.id);
-                                      }),
-                                  onTap: () => _selecting
-                                      ? _toggleSelected(results[i].card.id)
-                                      : widget.onOpenTerm(
-                                          results[i].deck.id, results[i].card)),
-                            ),
-                    ),
-                  ]),
+                              }),
+                            )),
+                    ])),
+                if (results.isEmpty)
+                  SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                          child: Text(
+                              widget.bookmarkedOnly &&
+                                      widget.store.bookmarkedCards.isEmpty
+                                  ? '북마크한 용어가 없습니다.'
+                                  : widget.store.totalCards == 0
+                                      ? '등록된 용어가 없습니다.'
+                                      : '검색 결과가 없습니다.',
+                              style: const TextStyle(color: _muted))))
+                else
+                  SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                      sliver: SliverList.separated(
+                        itemCount: results.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) => _VocabularyTile(
+                            store: widget.store,
+                            card: results[i].card,
+                            selecting: _selecting,
+                            selected: _selectedIds.contains(results[i].card.id),
+                            enabled: !_deleting,
+                            onLongPress: () => setState(() {
+                                  _selecting = true;
+                                  _selectedIds.add(results[i].card.id);
+                                }),
+                            onTap: () => _selecting
+                                ? _toggleSelected(results[i].card.id)
+                                : widget.onOpenTerm(
+                                    results[i].deck.id, results[i].card)),
+                      )),
+              ]),
             ),
           );
         },
@@ -2440,7 +2489,8 @@ class _VocabularyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final subjects = store.categoryNamesForCard(card);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      tileColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       enabled: enabled,
       selected: selected,
       leading: selecting
@@ -2450,7 +2500,8 @@ class _VocabularyTile extends StatelessWidget {
               onChanged: enabled ? (_) => onTap() : null)
           : null,
       title: Text(card.displayTerm,
-          style: const TextStyle(color: _ink, fontWeight: FontWeight.w700)),
+          style: const TextStyle(
+              color: _ink, fontSize: 18, fontWeight: FontWeight.w800)),
       subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(card.primaryMeaning, maxLines: 2, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 4),
@@ -2953,6 +3004,8 @@ class _DictionaryTermPageState extends State<_DictionaryTermPage> {
                               for (final meaning in term.effectiveMeanings)
                                 _MeaningView(meaning),
                             ])),
+                    CorpusInfo(
+                        catalog: widget.store.corpus, term: term.displayTerm),
                     TextButton.icon(
                         icon: const Icon(Icons.picture_as_pdf_outlined),
                         label: const Text('PDF 학습 출처'),
@@ -3633,18 +3686,17 @@ class _SettingsPageState extends State<_SettingsPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar:
-            AppBar(title: const Text('Settings'), backgroundColor: _surface),
+        appBar: AppBar(title: const Text('설정'), backgroundColor: _surface),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const _HomeSectionHeading('Daily study'),
+                const _PageHeading('학습 환경', '나에게 맞는 학습 환경을 설정하세요.'),
                 const SizedBox(height: 8),
                 const Text(
-                  'Choose the maximum number of cards to study each day.',
+                  '하루 학습 목표를 설정하세요. 기존 학습 기록은 유지됩니다.',
                   style: TextStyle(color: _muted, fontSize: 13),
                 ),
                 const SizedBox(height: 20),
@@ -3652,11 +3704,22 @@ class _SettingsPageState extends State<_SettingsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${_dailyGoal.round()} cards per day',
+                      Text('하루 학습 목표 · ${_dailyGoal.round()}회',
                           style: const TextStyle(
                               color: _ink,
                               fontSize: 18,
                               fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 16),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final goal in [5, 10, 15, 20])
+                          ChoiceChip(
+                              label: Text('$goal회'),
+                              selected: _dailyGoal.round() == goal,
+                              onSelected: _saving
+                                  ? null
+                                  : (_) => setState(
+                                      () => _dailyGoal = goal.toDouble())),
+                      ]),
                       Slider(
                         value: _dailyGoal,
                         min: 1,
@@ -3673,22 +3736,33 @@ class _SettingsPageState extends State<_SettingsPage> {
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: Text(_saving ? 'Saving…' : 'Save settings'),
+                  child: Text(_saving ? '저장 중…' : '설정 저장'),
                 ),
                 const SizedBox(height: 32),
                 const _HomeSectionHeading('데이터 백업'),
                 const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _saving ? null : _exportBackup,
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('백업 파일 저장'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _saving ? null : _restoreBackup,
-                  icon: const Icon(Icons.restore_outlined),
-                  label: const Text('백업 파일 복원'),
-                ),
+                _Panel(
+                    padding: EdgeInsets.zero,
+                    child: Column(children: [
+                      ListTile(
+                          title: const Text('백업 파일 저장'),
+                          subtitle: const Text('단어와 학습 기록을 JSON 파일로 저장'),
+                          trailing: const Icon(Icons.download_outlined),
+                          onTap: _saving ? null : _exportBackup),
+                      const Divider(height: 1),
+                      ListTile(
+                          title: const Text('백업 파일 복원'),
+                          subtitle: const Text('내용을 확인한 후 기존 백업 복원'),
+                          trailing: const Icon(Icons.restore_outlined),
+                          onTap: _saving ? null : _restoreBackup),
+                    ])),
+                const SizedBox(height: 28),
+                const _HomeSectionHeading('Recall 정보'),
+                const SizedBox(height: 12),
+                const _Panel(
+                    child: Text(
+                        '전공 영어 사전 · PDF 독해 · 플래시카드\n단어와 학습 기록은 이 기기에 저장됩니다.',
+                        style: TextStyle(color: _muted, height: 1.8))),
                 if (_saving) ...[
                   const SizedBox(height: 16),
                   const LinearProgressIndicator(),
@@ -3817,7 +3891,7 @@ class _FlashcardLaunchPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                 children: [
-                  const _HomeSectionHeading('플래시카드 복습'),
+                  const _PageHeading('단어 학습', '뜻을 떠올린 뒤 정답을 확인하세요.'),
                   const SizedBox(height: 4),
                   const Text('용어와 정의를 간단히 확인합니다.',
                       style: TextStyle(color: _muted, fontSize: 13)),

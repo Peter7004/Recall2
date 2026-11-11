@@ -13,6 +13,25 @@ import 'v3_fixtures.dart';
 
 Widget _testApp() => RecallApp(loadStore: () => RecallStore.load());
 
+Future<void> _reveal(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(finder, 200,
+      scrollable: find.byType(Scrollable).first);
+  // Lazy children can be built while still clipped by the viewport. Center the
+  // target and finish layout before asserting or tapping it.
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
+  await tester.pumpAndSettle();
+  expect(finder.hitTestable(), findsOneWidget);
+}
+
+Future<void> _openManagement(WidgetTester tester, String section) async {
+  await tester.tap(find.text('홈').last);
+  await tester.pumpAndSettle();
+  final label = {'모음': '단어 모음 관리', '과목': '과목 관리', '북마크': '북마크 단어'}[section]!;
+  await _reveal(tester, find.text(label));
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 class _BackupFilePicker extends FilePicker {
   Uint8List? saved;
   Uint8List? input;
@@ -71,12 +90,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('백업 파일 저장'));
     await tester.tap(find.text('백업 파일 저장'));
     await tester.pumpAndSettle();
     final backup = RecallBackup.parse(utf8.decode(picker.saved!));
     expect(backup.deckCount, 1);
     picker.input = Uint8List.fromList(utf8.encode(store.exportBackup()));
     await store.createDeck('Added after backup');
+    await tester.ensureVisible(find.text('백업 파일 복원'));
     await tester.tap(find.text('백업 파일 복원'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -84,6 +105,7 @@ void main() {
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
     expect(store.decks.length, 2);
+    await tester.ensureVisible(find.text('백업 파일 복원'));
     await tester.tap(find.text('백업 파일 복원'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -91,29 +113,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.decks.single.name, 'Existing');
     picker.input = Uint8List.fromList(utf8.encode('{broken'));
+    await tester.ensureVisible(find.text('백업 파일 복원'));
     await tester.tap(find.text('백업 파일 복원'));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);
     expect(store.decks.single.name, 'Existing');
     picker.input = null;
+    await tester.ensureVisible(find.text('백업 파일 복원'));
     await tester.tap(find.text('백업 파일 복원'));
     await tester.pumpAndSettle();
     expect(store.decks.single.name, 'Existing');
   });
 
-  testWidgets('dictionary is the first page and has five destinations',
-      (WidgetTester tester) async {
+  testWidgets('home has four destinations and opens the dictionary',
+      (tester) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-
-    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
-    expect(find.text('과목'), findsWidgets);
-    expect(find.text('모음'), findsOneWidget);
-    expect(find.text('플래시카드'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsNothing);
-
-    await tester.tap(find.text('북마크'));
+    expect(find.text('오늘의 전공 영어'), findsOneWidget);
+    for (final label in ['홈', '사전', '학습', '기록']) {
+      expect(find.text(label), findsOneWidget);
+    }
+    await tester.tap(find.text('사전'));
     await tester.pumpAndSettle();
+    expect(find.text('등록된 용어가 없습니다.'), findsOneWidget);
+    await _openManagement(tester, '북마크');
     expect(find.text('북마크한 용어가 없습니다.'), findsOneWidget);
   });
 
@@ -138,6 +161,8 @@ void main() {
 
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'electric potential');
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'electric potential'), findsOneWidget);
@@ -153,7 +178,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('북마크'));
+    await _openManagement(tester, '북마크');
     await tester.pumpAndSettle();
     expect(find.text('전압'), findsOneWidget);
   });
@@ -176,7 +201,7 @@ void main() {
     expect(find.text('사과'), findsNothing);
     expect(find.text('I eat an apple.'), findsNothing);
 
-    await tester.tap(find.text('답 보기'));
+    await tester.tap(find.text('정답 확인 →'));
     await tester.pump();
     expect(find.text('사과'), findsOneWidget);
     expect(find.text('I eat an apple.'), findsOneWidget);
@@ -216,6 +241,8 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('current'));
     await tester.pumpAndSettle();
     expect(find.text('뜻'), findsOneWidget);
@@ -240,7 +267,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('북마크').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '북마크');
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, '전공 용어'));
     await tester.pumpAndSettle();
@@ -265,7 +294,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.text('회로이론'));
     await tester.pumpAndSettle();
@@ -291,6 +322,8 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('electromagnetic induction'));
     await tester.pumpAndSettle();
@@ -300,6 +333,8 @@ void main() {
 
   testWidgets('a term can be created without a collection', (tester) async {
     await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어·모음 추가'));
     await tester.pumpAndSettle();
@@ -330,7 +365,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('모음').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '모음');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Second'));
     await tester.pumpAndSettle();
@@ -374,7 +411,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('모음').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '모음');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Photos'));
     await tester.pumpAndSettle();
@@ -410,11 +449,16 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     expect(find.text('일반 영어'), findsNothing);
     expect(find.byType(ChoiceChip), findsNWidgets(3));
     expect(find.text('우선순위 높음'), findsOneWidget);
     expect(find.text('우선순위 보통'), findsOneWidget);
+    await _reveal(tester, find.text('우선순위 낮음'));
     expect(find.text('우선순위 낮음'), findsOneWidget);
+    await _reveal(tester,
+        find.widgetWithText(DropdownButtonFormField<String>, '학습 우선순위'));
     await tester
         .tap(find.widgetWithText(DropdownButtonFormField<String>, '학습 우선순위'));
     await tester.pumpAndSettle();
@@ -423,7 +467,7 @@ void main() {
     expect(find.text('impedance'), findsOneWidget);
     expect(find.text('current'), findsNothing);
     expect(find.text('maintain'), findsNothing);
-    await tester.tap(find.text('북마크').last);
+    await _openManagement(tester, '북마크');
     await tester.pumpAndSettle();
     await tester
         .tap(find.widgetWithText(DropdownButtonFormField<String>, '학습 우선순위'));
@@ -466,6 +510,8 @@ void main() {
     final id = store.allCards.single.card.id;
     store.dispose();
     await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
     await tester.pumpAndSettle();
     expect(find.text('impedance'),
         findsOneWidget); // exclude does not hide the term.
@@ -547,7 +593,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ReviewPage(store: store)));
     await tester.pumpAndSettle();
     expect(find.text('current'), findsOneWidget);
-    await tester.tap(find.text('답 보기'));
+    await tester.tap(find.text('정답 확인 →'));
     await tester.pumpAndSettle();
     expect(find.textContaining('A flow of electric charge.'), findsOneWidget);
     expect(find.textContaining('전하의 흐름'), findsOneWidget);
@@ -566,15 +612,20 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 선택'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('선택한 용어 삭제'), findsOneWidget);
     final deleteButton = find.byWidgetPredicate(
         (widget) => widget is IconButton && widget.tooltip == '선택한 용어 삭제');
     expect(tester.widget<IconButton>(deleteButton).onPressed, isNull);
+    await _reveal(tester, find.widgetWithText(ListTile, 'current'));
     await tester.tap(find.widgetWithText(ListTile, 'current'));
+    await _reveal(tester, find.widgetWithText(ListTile, 'impedance'));
     await tester.tap(find.widgetWithText(ListTile, 'impedance'));
     await tester.pumpAndSettle();
+    await _reveal(tester, find.byTooltip('선택한 용어 삭제'));
     expect(find.text('선택 2개'), findsOneWidget);
     await tester.tap(find.byTooltip('선택한 용어 삭제'));
     await tester.pumpAndSettle();
@@ -610,6 +661,8 @@ void main() {
         csvText: 'word,meaning\ncurrent,전류\nimpedance,임피던스\nmaintain,유지하다');
     store.dispose();
     await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 선택'));
     await tester.pumpAndSettle();
@@ -652,7 +705,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('모음').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '모음');
     await tester.pumpAndSettle();
     await tester.tap(find.text('My terms'));
     await tester.pumpAndSettle();
@@ -684,7 +739,9 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('북마크').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '북마크');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('용어 선택'));
     await tester.pumpAndSettle();
@@ -733,7 +790,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('모음').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '모음');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Inside'));
     await tester.pumpAndSettle();
@@ -758,7 +817,9 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     expect(find.text('전기공학'), findsNothing);
     expect(find.text('반도체공학'), findsNothing);
@@ -777,7 +838,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('과목 추가'));
     await tester.pumpAndSettle();
@@ -797,7 +860,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     expect(find.text('재료공학'), findsOneWidget);
     expect(find.byIcon(Icons.push_pin_outlined), findsNWidgets(2));
@@ -815,7 +880,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('과목 추가'));
     await tester.pumpAndSettle();
@@ -863,13 +930,15 @@ void main() {
     store.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.text('재료공학 / 소자'));
     await tester.pumpAndSettle();
     expect(find.text('current'), findsOneWidget);
     expect(find.text('impedance'), findsNothing);
-    await tester.tap(find.text('과목').last);
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('재료공학 과목 삭제'));
     await tester.pumpAndSettle();
@@ -906,7 +975,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('재료공학 과목 고정'));
     await tester.pumpAndSettle();
@@ -918,7 +989,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     expect(find.byTooltip('재료공학 과목 고정 해제'), findsOneWidget);
     final persisted = await RecallStore.load();
@@ -947,7 +1020,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('재료공학 / 소자 과목 고정'));
     await tester.pumpAndSettle();
@@ -983,7 +1058,9 @@ void main() {
     initial.dispose();
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('과목').last);
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('재료공학 / $name 과목 고정'));
     await tester.pumpAndSettle();
@@ -1012,8 +1089,10 @@ void main() {
         {'recall.data.v3': jsonEncode(json)});
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.text('사전').last);
+    await tester.pumpAndSettle();
     expect(find.text('current'), findsOneWidget);
-    await tester.tap(find.text('과목').last);
+    await _openManagement(tester, '과목');
     await tester.pumpAndSettle();
     expect(find.text('전기공학'), findsNothing);
     expect(find.text('반도체공학'), findsNothing);

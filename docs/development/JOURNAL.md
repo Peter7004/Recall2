@@ -1,5 +1,16 @@
 # Reader development journal
 
+## 2026-11-11 — Safe release completed, corpus integration local
+
+- Published 1.0.7+8 after PR #4, full signed CI and Pages deployment passed. Verified
+  834-term APK/public CSV, package, version, same certificate and artifact checksum.
+- Corpus statistics implemented as an immutable sidecar, with strict file diagnostics,
+  DF/TF sorting within a chosen source, dictionary/PDF UI and fail-closed hidden state.
+- No real stats provided: production file is header-only; synthetic fixture stays in test.
+- PASS: 64 isolated tests, analyze, web build, browser corpus integration and existing
+  Reader source regression. Native Windows tests blocked by missing C++ compiler.
+- Corpus changes remain local/uncommitted and are not part of the published release.
+
 ## 2026-11-09 — Safe 834-term catalog upgrade
 
 - Verified remote main 0248264 has 834 nonempty unique terms; version 1.0.6 web deploy
@@ -279,3 +290,22 @@ deleteEntries (deleteCard intentionally only removes collection membership).
 Full native tests blocked by missing Windows C++ compiler; Android device/build NOT TESTED.
 See PERSONAL_VOCABULARY_VERIFICATION.md. No user data, unrelated staged copies or
 collaboration changes removed. No AI/package/DB addition. Commit authorized; no push/merge.
+
+
+## 2026-11-11 — UI v2 integrated locally
+- Applied supplied teal/navy design to production Flutter UI with real store data; added home and records views, four primary tabs, preserved Reader/collections/subjects and existing learning scope selection.
+- Reworked dictionary into a lazy sliver list with scrollable filters; redesigned flashcard/reveal/progress and settings backup panels.
+- PASS: analyze (ASCII workspace), release web build, Edge UI navigation/search/bookmark/review persistence and responsive captures, existing PDF learning smoke, corpus smoke. Existing store/model/Reader files unchanged during this UI task.
+- Flutter tests blocked by missing Windows C++ native hook toolchain; APK debug build blocked by pre-existing Gradle Kotlin settings failure. Physical Android NOT TESTED. No commit/push/deployment. No prototype data, historical charts or reset behavior copied.
+
+
+## 2026-11-11 — release preparation
+Created isolated origin/main worktree; synchronized exact UI/corpus/mobile-menu sources after ready signal. Protected 88 staged root entries. Prepared 1.0.8+9 and Linux PR checks. Verification and deployment pending.
+
+
+## 2026-11-11 — Mobile Reader menu
+Adaptive circular bottom-right menu groups existing Reader actions on widths below700. Desktop toolbar and minimal page navigation preserved. PASS analyze/web build and real mobile browser menu import, page3 navigation, search and desktop restoration. UI v2 regression PASS. Release1.0.8+9 authorized; pending CI and permanent-signed APK.
+
+
+## 2026-11-11 — Linux UI test navigation repair
+PR #5 first full run: 180 PASS / 7 FAIL. Updated widget-test navigation for lazy/scrollable redesigned content; preserve app behavior and assertions. Rerun pending. Merged latest root mobile validation notes without overwriting release coordination.
