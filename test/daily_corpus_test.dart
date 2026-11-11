@@ -170,16 +170,20 @@ void main() {
     expect(find.text('Textbook term'), findsOneWidget);
     expect(store.reviewsToday, 0);
 
+    // HomeShell owns its store; exercise the standalone session with a live one.
+    final explicitStore = await RecallStore.load(corpus: catalog);
     final explicit = [
-      store.allCards.firstWhere((e) => e.card.front == 'Personal term')
+      explicitStore.allCards.firstWhere((e) => e.card.front == 'Personal term')
     ];
-    await tester.pumpWidget(
-        MaterialApp(home: ReviewPage(store: store, initialCards: explicit)));
+    await tester.pumpWidget(MaterialApp(
+        home: ReviewPage(store: explicitStore, initialCards: explicit)));
     await tester.pumpAndSettle();
-    await store.setLearningSource(CorpusSource.abstracts);
+    await explicitStore.setLearningSource(CorpusSource.abstracts);
     await tester.pumpAndSettle();
     expect(find.text('Personal term'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    explicitStore.dispose();
   });
 }
 
