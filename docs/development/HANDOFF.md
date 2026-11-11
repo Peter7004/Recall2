@@ -6,7 +6,7 @@ Public UI/corpus/mobile/full Reader browser regressions and APK re-download SHA2
 PASS. Previous certificate and v1.0.7 assets preserved; root staged88 unchanged.
 APK SHA256 ca1cd106c0badf40b1ed428b0013c36fd09e9b6c9610e6aba1eb4650f747443a.
 See RELEASE_1.0.8.md for exact URLs, hashes, scope and PASS/FAIL/NOT TESTED.
-User synced green widget_test.dart/pubspec.yaml to root; merge these final docs and
+Primary agent synced green widget_test.dart/pubspec.yaml to root; merge these final docs and
 README version-only edits while preserving root collaboration content.
 Next product validation: actual Android device and real corpus statistics when supplied.
 Local Windows Gradle/native environment remains unresolved, not claimed fixed.
@@ -22,17 +22,17 @@ Active: Pages 42982937540; permanent signed APK 42982945172 pinned to merge SHA;
 separate test APK 42982937536 must not be published as production.
 Next: wait for builds; verify APK signer/package/version/assets/hash, publish v1.0.8,
 verify public web/downloads and run UI/corpus/Reader browser smokes on production.
-User synced green test/widget_test.dart and pubspec.yaml back to root; no root
+Primary agent synced green test/widget_test.dart and pubspec.yaml back to root; no root
 edits performed by this release coordinator. Root staged88 remain intact.
 PASS: Pages42982937540; public version1.0.8+9 and exact CSV asset hashes; public
-UI-v2 smoke. User independently reports public mobile Reader smoke PASS.
+UI-v2 smoke. Primary agent independently reports public mobile Reader smoke PASS.
 Coordinator public UI-v2, mobile-menu, corpus fixture integration and full Reader
 learning/source/deletion/corruption/image-PDF smokes all PASS (no JS errors).
 Corpus fixture was injected only into isolated test browser; production asset unchanged.
 NOT TESTED: Android device installation/gestures; signed artifact/public deployment pending.
-Local Windows environment repair remains unresolved: user reports minimal independent
+Local Windows environment repair remains unresolved: parallel environment agent reports minimal independent
 Gradle projects fail too while standalone Kotlin works; MSVC discovery still in progress.
-Do not claim local Windows fixed. User will sync verified widget_test/pubspec/docs to root.
+Do not claim local Windows fixed. Primary agent will sync verified widget_test/pubspec/docs to root.
 
 ## Active mobile Reader / release — 2026-11-11
 

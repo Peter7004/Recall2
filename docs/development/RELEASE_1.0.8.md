@@ -47,7 +47,7 @@ Package: io.github.peter7004.recall; versionName 1.0.8; versionCode 9.
 - Windows dart run invoked a pdfium build hook without a C++ compiler. Documented
   direct dart --packages CLI invocation passed fixture validation (exit0) and
   header-only unavailable-data validation (expected exit3).
-- Local Windows Gradle environment repair remains unresolved. User reports minimal
+- Local Windows Gradle environment repair remains unresolved. Parallel environment agent reports minimal
   independent Gradle projects fail while standalone Kotlin works; MSVC discovery
   was still in progress. Linux success does not prove local Windows is repaired.
 
@@ -58,7 +58,7 @@ Package: io.github.peter7004.recall; versionName 1.0.8; versionCode 9.
 
 ## Root synchronization
 
-User already synced green test/widget_test.dart and pubspec.yaml to the root.
+Primary agent already synced green test/widget_test.dart and pubspec.yaml to the root.
 Root Reader and smoke files matched the synchronized release source; do not replace
 newer root edits. Merge development records rather than overwriting concurrent work.
 README has both version references updated; preserve root collaboration additions.
