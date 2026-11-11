@@ -1,5 +1,16 @@
 # Reader development journal
 
+## 2026-11-09 — Safe 834-term catalog upgrade
+
+- Verified remote main 0248264 has 834 nonempty unique terms; version 1.0.6 web deploy
+  42560022388 succeeded. Signed build 42560029792 exists but was not released.
+- Regression reproduced against upstream: v1-to-v2 deletion replaces an edited
+  bundled card, clearing its bookmark and lastReviewed value; missing legacy terms vanish.
+- Removed the destructive deletion block. Existing matching cards are reused and
+  unmatched old cards remain; fresh installations still load the exact 834 catalog terms.
+- PASS: 43 isolated migration/store tests, full analyze and release web build. Android device NOT TESTED.
+- Prepare 1.0.7+8 safety release before publishing APK; corpus work stays separate.
+
 ## 2026-11-08 — Plain unhighlighted PDF selection verified
 
 - Existing implementation already allows saving any copyable selected text, with no

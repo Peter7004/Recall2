@@ -1,5 +1,19 @@
 # Reader handoff — start here
 
+## Catalog release safety — 2026-11-09
+Remote main 0248264 contains 834 unique terms and web 1.0.6 deployment succeeded.
+Signed 1.0.6 build 42560029792 succeeded but has not been published as a release.
+Found v1-to-v2 seeding deletes existing bundled cards and their attached history.
+Release fix removes destructive replacement, preserving IDs, user edits, bookmarks,
+reviews, collections and Reader references. Keep unmatched legacy cards as well.
+Version 1.0.7+8 prepared. PASS: 43 isolated tests, full analyze and release web build.
+Upstream regression reproduced (lost edited meaning/bookmark/review); fixed source passes.
+2026-11-11 resume: same source verified; next commit/PR and signed CI, then authorized release.
+PR #4 created. First signed CI 42975305117 failed only the old test that explicitly
+expected legacy-card deletion. Updated that test for the requested preservation policy;
+new regression passed in CI. Next rerun complete signed workflow, then merge/release.
+Corpus implementation remains local/uncommitted in original workspace; no corpus stats fabricated.
+
 ## Unhighlighted text check — 2026-11-08
 User asks whether plain PDF text can be drag-selected and saved. Existing selection
 callback and manual action do not require dictionary matches. No duplicate app feature

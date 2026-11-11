@@ -3,7 +3,7 @@
 A dictionary-first Flutter application for English vocabulary and electrical
 engineering terminology, with optional photo-assisted flashcard review.
 
-Current application release: **1.0.6+7**.
+Current application release: **1.0.7+8**.
 
 [Web app](https://peter7004.github.io/Recall2/) |
 [Android APK](https://github.com/Peter7004/Recall-APK-Private/releases/latest/download/Recall.apk) |
@@ -279,7 +279,7 @@ the resulting certificate against `RECALL_CERT_SHA256` before uploading it.
 Never commit a keystore or password, include it in an artifact, or print it in logs.
 
 For each update, keep the same application ID and keystore, increase the build
-number in `pubspec.yaml` (currently `1.0.6+7`), test, then publish a newer APK.
+number in `pubspec.yaml` (currently `1.0.7+8`), test, then publish a newer APK.
 Users install it over the production app without uninstalling. The stable public
 download is the latest release's `Recall.apk`, with no GitHub login required.
 This is manual APK distribution, not an automatic updater or a

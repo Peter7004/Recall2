@@ -193,7 +193,7 @@ void main() {
     updated.dispose();
   });
 
-  test('version two replaces only the previous bundled catalog', () async {
+  test('version two preserves legacy catalog and personal cards', () async {
     final old = BundledVocabulary(
       version: 1,
       csvText:
@@ -208,15 +208,16 @@ void main() {
       example: '',
     );
     final oldId = first.searchCards('Old catalog only').single.card.id;
+    final oldCard = first.cardById(oldId)!.toJson();
     await first.recordCardViewed(oldId);
     first.dispose();
 
     final updated = await RecallStore.load(bundledVocabulary: catalog);
-    expect(updated.cardById(oldId), isNull);
+    expect(updated.cardById(oldId)!.toJson(), oldCard);
     expect(updated.searchCards('Custom').single.card.primaryMeaning, 'Mine');
-    expect(updated.totalCards, 835);
-    expect(updated.decks.single.cards, hasLength(834));
-    expect(updated.recentCards, isEmpty);
+    expect(updated.totalCards, 836);
+    expect(updated.decks.single.cards, hasLength(835));
+    expect(updated.recentCards.single.card.id, oldId);
     updated.dispose();
   });
 
