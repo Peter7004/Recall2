@@ -301,3 +301,11 @@ collaboration changes removed. No AI/package/DB addition. Commit authorized; no 
 
 ## 2026-11-11 — release preparation
 Created isolated origin/main worktree; synchronized exact UI/corpus/mobile-menu sources after ready signal. Protected 88 staged root entries. Prepared 1.0.8+9 and Linux PR checks. Verification and deployment pending.
+
+
+## 2026-11-11 — Mobile Reader menu
+Adaptive circular bottom-right menu groups existing Reader actions on widths below700. Desktop toolbar and minimal page navigation preserved. PASS analyze/web build and real mobile browser menu import, page3 navigation, search and desktop restoration. UI v2 regression PASS. Release1.0.8+9 authorized; pending CI and permanent-signed APK.
+
+
+## 2026-11-11 — Linux UI test navigation repair
+PR #5 first full run: 180 PASS / 7 FAIL. Updated widget-test navigation for lazy/scrollable redesigned content; preserve app behavior and assertions. Rerun pending. Merged latest root mobile validation notes without overwriting release coordination.

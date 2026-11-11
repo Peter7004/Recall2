@@ -11,13 +11,21 @@ Root staged 88 entries are protected by build/release-coordination/root-index-ba
 Sync hashes and explicit paths: build/release-coordination/sync-manifest.json.
 Changed scope: UI/main/store read-only corpus, Reader menu, corpus assets/models,
 widget/corpus/browser tests, validator, PR workflow, version and release docs.
-Next: local analyze/startup tests, explicit-path commit and PR; full Linux CI,
+PR #5 https://github.com/Peter7004/Recall2/pull/5 opened at bccc4df.
+First Linux PR run 42982129380 FAIL: 180 PASS / 7 FAIL, all widget navigation.
+Failures: management links clipped/covered; lazy low-priority row not built; bulk
+selection tapped a clipped row. Test-only fix in test/widget_test.dart centers
+targets, completes layout and asserts hit testing before actions. Branding/reveal
+tests already PASS. Root test file not overwritten; copy back after green CI.
+Next: rerun full Linux PR CI,
 fix navigation regressions here, report changed test files for root sync; merge only
 when checks pass, verify Pages and signed APK from exact released source.
 PASS: exact initial file sync, staged-entry count 88, local Node startup tests 8/8, release-worktree full flutter analyze.
 User-reported PASS: final Reader analyze/web build; Edge menu import, page 3, search,
 desktop toolbar restoration. Final mobile smoke script resynced after resize-wait fix.
-FAIL: none in this release attempt yet.
+FAIL (environment): dart run invokes pdfium native hook without Windows C++ compiler.
+PASS: documented direct dart --packages invocation validates fixture (exit 0) and
+production header-only corpus (expected exit 3); Linux PR analyze PASS, tests running.
 NOT TESTED: full Linux tests/build, signed APK and Android device.
 Existing Windows C++/Gradle limitations recorded below are historical, not new results.
 Corpus CSV contains only its header; actual TF/DF data is unavailable. No fake data.
@@ -27,6 +35,9 @@ configure or verify modes unchanged. Reuse existing key only; never replace secr
 User authorized environment repair, mobile circular Reader menu, commit/push/PR/web/permanent-signed APK release. Main edits reader page; parallel agents inspect toolchain and prepare clean release worktree. Preserve original staged88. Next implement adaptive menu then browser validate and CI.
 
 # Reader handoff — UI checkpoint
+
+## Active mobile Reader / release — 2026-11-11
+User authorized environment repair, mobile circular Reader menu, commit/push/PR/web/permanent-signed APK release. Main edits reader page; parallel agents inspect toolchain and prepare clean release worktree. Preserve original staged88. Adaptive menu implemented in reader page: width<700 circle FAB and scrollable bottom sheet, page bar retained, wide toolbar unchanged. PASS final analyze/web and real mobile browser import/page3/search/resize; UI v2 smoke re-run PASS. Clean release worktree preparing1.0.8+9 CI. Native environment diagnosis ongoing.
 
 ## Active UI redesign — 2026-11-11
 User supplied Temp README/main.dart/index.html/screenshots. Integrated visual reference into existing Flutter app, NOT the standalone 24-word demo. Local branch codex/pdf-personal-vocabulary at c86f857; no UI/corpus commit, push, merge or deployment.

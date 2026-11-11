@@ -13,12 +13,21 @@ import 'v3_fixtures.dart';
 
 Widget _testApp() => RecallApp(loadStore: () => RecallStore.load());
 
+Future<void> _reveal(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(finder, 200,
+      scrollable: find.byType(Scrollable).first);
+  // Lazy children can be built while still clipped by the viewport. Center the
+  // target and finish layout before asserting or tapping it.
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
+  await tester.pumpAndSettle();
+  expect(finder.hitTestable(), findsOneWidget);
+}
+
 Future<void> _openManagement(WidgetTester tester, String section) async {
   await tester.tap(find.text('홈').last);
   await tester.pumpAndSettle();
   final label = {'모음': '단어 모음 관리', '과목': '과목 관리', '북마크': '북마크 단어'}[section]!;
-  await tester.scrollUntilVisible(find.text(label), 200,
-      scrollable: find.byType(Scrollable).first);
+  await _reveal(tester, find.text(label));
   await tester.tap(find.text(label));
   await tester.pumpAndSettle();
 }
@@ -446,7 +455,10 @@ void main() {
     expect(find.byType(ChoiceChip), findsNWidgets(3));
     expect(find.text('우선순위 높음'), findsOneWidget);
     expect(find.text('우선순위 보통'), findsOneWidget);
+    await _reveal(tester, find.text('우선순위 낮음'));
     expect(find.text('우선순위 낮음'), findsOneWidget);
+    await _reveal(tester,
+        find.widgetWithText(DropdownButtonFormField<String>, '학습 우선순위'));
     await tester
         .tap(find.widgetWithText(DropdownButtonFormField<String>, '학습 우선순위'));
     await tester.pumpAndSettle();
@@ -608,9 +620,12 @@ void main() {
     final deleteButton = find.byWidgetPredicate(
         (widget) => widget is IconButton && widget.tooltip == '선택한 용어 삭제');
     expect(tester.widget<IconButton>(deleteButton).onPressed, isNull);
+    await _reveal(tester, find.widgetWithText(ListTile, 'current'));
     await tester.tap(find.widgetWithText(ListTile, 'current'));
+    await _reveal(tester, find.widgetWithText(ListTile, 'impedance'));
     await tester.tap(find.widgetWithText(ListTile, 'impedance'));
     await tester.pumpAndSettle();
+    await _reveal(tester, find.byTooltip('선택한 용어 삭제'));
     expect(find.text('선택 2개'), findsOneWidget);
     await tester.tap(find.byTooltip('선택한 용어 삭제'));
     await tester.pumpAndSettle();
