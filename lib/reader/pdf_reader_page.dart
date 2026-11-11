@@ -1356,7 +1356,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                         (_documentId, page.pageNumber)),
                                     cacheKey: (
                                       _documentId,
-                                      page.pageNumber,
+                                      page,
                                       _terminology
                                     ),
                                     viewToken: _controller.isReady

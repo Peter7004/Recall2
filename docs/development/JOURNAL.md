@@ -399,3 +399,15 @@ existing corpus dictionary/PDF/source preservation. Desktop test pointer correct
 from outside centered scroll surface; final rerun PASS. Visual screenshots inspected.
 Root staged88 untouched. Local5220 preview updated; no commit/push/deploy requested
 for this UI task. Android device and full semantic review NOT TESTED.
+
+
+## 2026-11-12 — Source-return highlight geometry
+
+Fixed progressive PDF page replacement: extract text and normalize rectangles with
+the same loaded page; invalidate hover geometry when the PdfPage instance changes.
+Regression demonstrated wrong coordinates before fix; 203 tests/analyze/web PASS
+after fix. Existing real-browser learning/source/persistence smoke PASS. Circuit
+textbook page344 (cover/body different sizes) source return/search panel/zoom/paged
+mode screenshots checked. No fixed offsets or saved-data rewrites. Exact user's
+saved profile/all995 pages/Android device NOT TESTED. Existing web font warning.
+Local commit on codex/reader-highlight-alignment; no push/merge/deployment.

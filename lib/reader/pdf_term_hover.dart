@@ -14,8 +14,12 @@ Future<List<PdfTermArea>> loadPdfHoverAreas(
   if (page.document.permissions?.allowsCopying == false) {
     throw const TermTextUnavailable('복사가 제한된 PDF입니다. 단어 강조를 분석할 수 없습니다.');
   }
-  final text = await page.loadStructuredText(ensureLoaded: true);
-  return pdfHoverAreasFromText(page, text, lookup);
+  // Progressive loading replaces PdfPage instances. Extracting loaded text
+  // alone leaves `page` with guessed dimensions/rotation, shifting every rect.
+  // Use the same resolved page for extraction and coordinate conversion.
+  final loadedPage = await page.ensureLoaded();
+  final text = await loadedPage.loadStructuredText();
+  return pdfHoverAreasFromText(loadedPage, text, lookup);
 }
 
 /// Geometry mapping is separate from extraction so malformed maps can be tested.
