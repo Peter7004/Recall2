@@ -514,7 +514,7 @@ void main() {
   });
 
   testWidgets(
-      'v3 detail and editor hide management fields and preserve old formulas',
+      'detail shows priority evidence but hides management fields and preserves old formulas',
       (tester) async {
     final store = await RecallStore.load();
     await store.addCard(
@@ -525,7 +525,7 @@ void main() {
         vocabularyType: VocabularyType.technical,
         learningPriority: LearningPriority.high,
         inclusionRecommendation: InclusionRecommendation.exclude,
-        priorityReason: 'PRIVATE_REASON',
+        priorityReason: 'LEARNING_REASON',
         collector: 'PRIVATE_COLLECTOR',
         notes: 'PRIVATE_NOTES',
         formula: 'PRIVATE_FORMULA',
@@ -554,11 +554,11 @@ void main() {
     expect(find.text('Opposition to AC flow.'), findsOneWidget);
     expect(find.text('교류의 흐름을 방해하는 정도'), findsOneWidget);
     expect(find.text('우선순위 높음'), findsOneWidget);
+    expect(find.text('LEARNING_REASON'), findsOneWidget);
     for (final value in [
       'exclude',
       'review',
       'include',
-      'PRIVATE_REASON',
       'PRIVATE_COLLECTOR',
       'PRIVATE_NOTES',
       'PRIVATE_FORMULA',

@@ -1,11 +1,60 @@
-## Active release1.0.13+14 — 2026-11-12
-User authorized GitHub upload, web and permanent APK deployment with data preserved.
-Source fix d285589; worktree C:/Users/Public/Recall-highlight-fix,
-branch codex/reader-highlight-alignment. Version-only release preparation follows.
-Next seed actual1.0.12 web profile, push PR, pass CI, merge and verify Pages,
-build permanent-signed APK from pinned merge SHA, verify and publish1.0.13.
-Preserve package/certificate, corpus/vocabulary and all user/Reader storage keys.
-No data migrations; root staged88 untouched. Android physical update NOT TESTED.
+## Active: release study-evidence UI 1.0.14+15 — 2026-11-12
+User explicitly authorized GitHub commit and deployment. Worktree: C:/Users/Public/Recall-study-evidence-release, branch codex/study-evidence-release from origin/main19e570a.
+Local5220 serves the exact current JavaScript; fresh browser dictionary detail graph PASS. Existing tab cause unconfirmed. Graph lives in term detail, not dictionary list.
+PASS refreshed Windows206 tests/analyze/release web build and startup8. Public1.0.13 upgrade profile seeded.
+Next: commit explicit feature/test/version/docs files, PR checks then merge, deploy Pages and permanently signed APK, verify same-profile preservation and download.
+Do not stage unrelated root88 files. No corpus/vocabulary/storage changes. Physical Android NOT TESTED.
+
+## Completed locally: dictionary study-decision visualization — 2026-11-12
+User wants AI priority and corpus observation combined as evidence for choosing
+what to study. Dictionary detail now has StudyEvidence: categorical priority Y,
+selected source DF/N X, source tabs, exact DF/TF, priority reason and method dialog.
+The source tabs are view-only; no aggregate score, ranking or storage changes.
+Personal priority is labeled separately; other cards use AI/stored priority because
+per-field AI-vs-human edit provenance is not stored. Explanation discloses this.
+Zero/pending/missing-data/missing-denominator are distinguished; unknown data draws
+no point. Pending observations excluded. Counts, source assets, IDs and records unchanged.
+Files: lib/main.dart, lib/corpus/study_evidence.dart,
+test/study_evidence_test.dart, test/widget_test.dart,
+tool/study_evidence_smoke.cjs, tool/corpus_real_smoke.cjs and development records.
+PASS all206 Flutter tests, analyze, release web build. Existing Cupertino font
+warning persists. PASS real browser1100/390/320 widths, source toggles, criteria
+and exact unchanged Recall storage; corpus filter/sort/PDF lookup/save/source/reload.
+Screenshots in build/study-evidence visually inspected (desktop and320px).
+Initial FAIL: opaque container/ExpansionTile Material assertion and large-text axis
+overflow fixed. Criteria changed to explicit accessible dialog button. Old test
+expecting priority reason hidden updated for this request; management fields hidden.
+Final logs build/study-decision-{tests,analyze,web,browser,corpus-browser}.log.
+Preview http://127.0.0.1:5220/ (server PID4160, hidden). Dictionary -> term detail.
+NOT TESTED Android physical device. No new AI, dependencies, data migration or API.
+Root staged88 unrelated files untouched. No commit/push/merge/deploy requested for
+this UI task; public web/APK still1.0.13. Next when requested: commit and deploy.
+Older release entries below are history, not pending work.
+
+## Completed release1.0.13+14 — 2026-11-12
+User-authorized GitHub upload/web/permanent APK deployment COMPLETE.
+Fix d285589; release0f2025f; PR13 merged19e570a533252304a3b2e29dea8aeca3267cc8b8.
+PASS PR CI43050086480, Pages43050507536, permanent APK43050531058.
+PASS203 Flutter tests/analyze/web and startup8; public circuit PDF source-return,
+search panel, zoom and page mode screenshots checked after deployment.
+PASS actual same-profile1.0.12→1.0.13: all five Recall stored values exactly preserved,
+including dictionary/bookmark/review/focus, PDF term+occurrence, page bookmark and
+reading progress; managed PDF reopens at page3. No keys/schemas/assets migrated.
+PASS local apksigner/aapt: unchanged production package io.github.peter7004.recall,
+permanent certificate bc3842b9f7fd111587d9d337e434bd89406cf8b92a9bae114ad288692ae39977,
+versionCode14/name1.0.13. Exact834 vocabulary/corpus/provenance payload verified.
+APK78470953 bytes, SHA256 c147312c227e7e505c75fd4174db8e8b10ace74bb789d97119dee0d7202f8c56.
+PASS unauthenticated latest APK full-download checksum; previous1.0.12 assets unchanged.
+Release https://github.com/Peter7004/Recall-APK-Private/releases/tag/v1.0.13
+Web https://peter7004.github.io/Recall2/ ; local5220 preview updated to1.0.13.
+Evidence: C:/Users/Public/Recall-highlight-fix/build/release-1.0.13/verification.json,
+upgrade-result.json, local-signature.txt, local-package-info.txt; root build/highlight-public.
+Root staged88 unrelated files untouched. Source worktree branch codex/reader-highlight-alignment
+is clean and pushed; final post-deployment evidence is recorded here locally for next handoff.
+NOT TESTED: physical Android install/update (adb empty), user's actual browser profile,
+and all995 textbook pages. Do not infer these from build or isolated-profile success.
+No unfinished deployment step. Next when available: user-profile/physical-device confirmation.
+Older entries below are history, not active release work.
 
 ## Completed locally: source-return highlight geometry — 2026-11-12
 User reports PC web PDF learning-source return offsets throughout circuit textbook.
