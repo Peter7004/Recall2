@@ -1,9 +1,34 @@
-## Active: release study-evidence UI 1.0.14+15 — 2026-11-12
-User explicitly authorized GitHub commit and deployment. Worktree: C:/Users/Public/Recall-study-evidence-release, branch codex/study-evidence-release from origin/main19e570a.
-Local5220 serves the exact current JavaScript; fresh browser dictionary detail graph PASS. Existing tab cause unconfirmed. Graph lives in term detail, not dictionary list.
-PASS refreshed Windows206 tests/analyze/release web build and startup8. Public1.0.13 upgrade profile seeded.
-Next: commit explicit feature/test/version/docs files, PR checks then merge, deploy Pages and permanently signed APK, verify same-profile preservation and download.
-Do not stage unrelated root88 files. No corpus/vocabulary/storage changes. Physical Android NOT TESTED.
+## Active: release AI priority criteria1.0.15+16 — 2026-11-12
+User explicitly authorized commit/deploy. Worktree C:/Users/Public/Recall-ai-priority-release, codex/ai-priority-release from main281cde4. Copy explicit tested UI/test/provenance/docs only; increment version. Root88 unrelated staged files untouched.
+Prior implementation PASS analyze/206 tests/web/1100-390-320 real UI/storage. No implementation changes since verification, only version/docs. Next: seed public1.0.14 upgrade profile, commit/PR checks, merge, Pages/permanent APK, public UI/upgrade and signature/download verification. Android device NOT TESTED.
+
+## Completed locally: AI priority naming and recovered criteria — 2026-11-12
+User requested AI 판단 학습 우선순위 and criteria recovered from past prompts, without inventing missing rules.
+Found original Downloads/Recall_Master_Guidelines_v3.0.txt sections5/7 and matching historical attachment8af3e290 in Codex 리뷰 요청 코드 검토; related ChatGPT/Codex older turns inspected. Detailed source/hash/excerpts and limits in docs/development/AI_PRIORITY_CRITERIA.md.
+Implemented heading/axis/semantics rename, current-grade v3.0 criteria, separate stored card reason, full criteria/source/limits dialog. Reader personal cards retain 내 학습 우선순위; missing reasons remain missing. No invented score/weights/thresholds, no AI calls or reclassification.
+Unconfirmed: actual per-card executed prompt/version/model and review completion; not proof that all834 current grades comply with v3.0. Explicitly disclosed in dialog.
+Changed: lib/corpus/study_evidence.dart, test/study_evidence_test.dart, tool/study_evidence_smoke.cjs, criteria provenance doc and development records. No dependencies, data/schema/IDs/rank changes.
+PASS flutter analyze, all206 tests, release web build, real Edge1100/390/320 criteria/source-toggle/unchanged-storage checks. Mobile and criteria screenshots visually inspected. Source model/store unchanged except pre-existing worktree line endings; vocabulary/corpus bytes unchanged.
+Evidence build/ai-priority-{analyze,tests,web,browser}.log and build/study-evidence/*.png/result.json. Existing Cupertino font warning remains; build succeeds.
+Local preview http://127.0.0.1:5220/ now shows new label. Dictionary -> term detail -> scroll to AI 판단 학습 우선순위 -> 판단 기준.
+NOT TESTED Android physical device. No commit/push/deploy requested in this follow-up; public1.0.14 remains prior release. Root88 unrelated staged files untouched.
+Next only when requested: commit/deploy this coherent change using explicit files from clean origin/main worktree. No unfinished local implementation/verification.
+
+## Completed release1.0.14+15 — 2026-11-12
+User-authorized GitHub commit/web/permanent APK deployment COMPLETE.
+Feature commit ac4e348243876e18a58b8845ef4bfcf28c278569; PR14 merged281cde430cded91f9e12202504d0ed3908e3fe8e.
+PASS Windows206 Flutter tests, analyze, release web build; startup8. PASS PR CI43155416805, Pages43155732038, permanent APK43155742071.
+PASS public dictionary graph/source toggles/criteria at1100/390/320, screenshots inspected; corpus filtering/sorting and PDF lookup/save/source/reload regressions.
+PASS actual same-profile1.0.13→1.0.14 exact five-key preservation: dictionary/bookmark/review/focus, Reader term+occurrence, page bookmark and progress; managed PDF reopens at page3.
+PASS local apksigner/aapt: same production package io.github.peter7004.recall, permanent certificate bc3842b9f7fd111587d9d337e434bd89406cf8b92a9bae114ad288692ae39977, versionCode15/name1.0.14.
+PASS APK/public web834-term vocabulary/corpus/provenance payload equals merged source. No storage/key/schema/ranking/data changes.
+APK78470993 bytes; SHA2567b2dbd95b1e8ef6f3b31005243f170c68b111f4e482479cce98b4c6f4c19926e. Full unauthenticated latest-link download verified. Previous1.0.13 assets unchanged; preserved earlier manual attached.
+Web https://peter7004.github.io/Recall2/ ; release https://github.com/Peter7004/Recall-APK-Private/releases/tag/v1.0.14
+UI location: Dictionary -> term detail -> scroll to 학습 우선순위 판단. Local5220 serves1.0.14; current served JavaScript matched latest build, fresh browser displayed graph. Cause in user's previously open tab remains unconfirmed. Do not clear user storage.
+Evidence C:/Users/Public/Recall-study-evidence-release/build/release-1.0.14/{verification.json,upgrade-result.json,local-signature.txt,local-package-info.txt}; build/study-evidence and corpus-real-smoke in same worktree.
+NOT TESTED physical Android install/update (adb empty) and user's actual browser profile. Web/build checks do not prove Android device behavior.
+Source worktree codex/study-evidence-release clean and pushed. Root88 unrelated staged files untouched. Final post-deploy records local for next handoff.
+No unfinished release step. Next: user confirmation of detail graph and physical Android update when available. Historical entries below are not pending.
 
 ## Completed locally: dictionary study-decision visualization — 2026-11-12
 User wants AI priority and corpus observation combined as evidence for choosing
