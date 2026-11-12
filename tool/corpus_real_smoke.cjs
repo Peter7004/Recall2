@@ -46,38 +46,35 @@ const fs = require('node:fs'), path = require('node:path');
       if (process.env.RECALL_DEBUG_UI) console.log('TYPED', term, (await page.locator('body').ariaSnapshot()).slice(-6500));
       await page.getByRole('button', {name: new RegExp('^' + term + ' ')}).first().click();
       await pause();
-      await page.getByRole('group', {name: /^코퍼스 관측 정보/}).scrollIntoViewIfNeeded();
+      await page.getByRole('checkbox', {name:'교재 기준',exact:true}).scrollIntoViewIfNeeded();
     }
     async function checkText(text) {
       await pause();
-      let target = page.getByText(text, {exact: true});
-      if (await target.count() === 0) {
-        target = page.getByText(new RegExp('코퍼스 관측 정보.*' + text));
-        if (await target.count() === 0) {
-          target = page.getByRole('group', {name: /^코퍼스 관측 정보/});
-          assert((await target.getAttribute('aria-label')).includes(text), text);
-        }
-      }
-      await target.scrollIntoViewIfNeeded();
-      await target.waitFor();
+      assert((await page.locator('body').ariaSnapshot()).includes(text), text);
     }
     await start();
     const before = await snapshot();
     await checkText('PDF 22개 · 초록 639개 · 문맥 필터 적용');
     await search('Voltage');
-    await checkText('교재·강의자료: TF 7294 · DF 21');
-    await checkText('논문 초록: TF 261 · DF 107');
+    await checkText('등장 문서 21 / 22개 (DF)');
+    await checkText('총 출현 7294회 (TF)');
+    await page.getByRole('checkbox',{name:'논문 초록 기준',exact:true}).click();
+    await checkText('등장 문서 107 / 639개 (DF)');
+    await checkText('총 출현 261회 (TF)');
     await page.screenshot({path: path.join(out, 'voltage.png')});
-    await button('집계 기준').click();
+    await button('판단 기준').click();await button('집계 기준').click();
     await page.getByText('빈도 집계 기준', {exact: true}).waitFor();
     assert.match(await page.locator('body').ariaSnapshot(), /논문 전체 본문 빈도가 아닙니다/);
-    await button('닫기').click();
+    await button('닫기').click();await button('닫기').click();
     await button('Back').click();
     await search('Frequency');
-    await checkText('교재·강의자료: TF 1904 · DF 16');
-    await checkText('논문 초록: TF 180 · DF 103');
-    await checkText('의미 보류 — PDF: 1452회 · 19개 파일');
-    await checkText('의미 보류 — 초록: 106회 · 57개 초록');
+    await checkText('등장 문서 16 / 22개 (DF)');
+    await checkText('총 출현 1904회 (TF)');
+    await checkText('의미 보류 1452회 · 19개 문서 (그래프 제외)');
+    await page.getByRole('checkbox',{name:'논문 초록 기준',exact:true}).click();
+    await checkText('등장 문서 103 / 639개 (DF)');
+    await checkText('총 출현 180회 (TF)');
+    await checkText('의미 보류 106회 · 57개 문서 (그래프 제외)');
     await page.screenshot({path: path.join(out, 'frequency-pending.png')});
     await button('Back').click();
     await pause();

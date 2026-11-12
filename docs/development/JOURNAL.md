@@ -400,6 +400,16 @@ from outside centered scroll surface; final rerun PASS. Visual screenshots inspe
 Root staged88 untouched. Local5220 preview updated; no commit/push/deploy requested
 for this UI task. Android device and full semantic review NOT TESTED.
 
+## 2026-11-12 — Coverage UI1.0.12 release verified
+
+PR12/567270df2faa8b71bf9127cfa54736b813374547; CI43042651851,
+Pages43043054362, permanent APK43043073226 PASS. Public graph/focus/queue/mobile-
+desktop and actual1.0.11→1.0.12 exact stored focus/bookmark/review/managedPDF/page3
+upgrade PASS. apksigner/aapt permanent certificate/package/code13/payload and public
+unauthenticated SHA2568dcbb37fea452b5d60f868cdd3612a6ec0fd0e29a3ba269b869dc505641d8e83 PASS.
+Previous1.0.11 release unchanged. Root staged88 untouched; local5220 preview retained.
+Android physical device unavailable (adb empty), so native update NOT TESTED.
+
 
 ## 2026-11-12 — Source-return highlight geometry
 
@@ -411,3 +421,35 @@ textbook page344 (cover/body different sizes) source return/search panel/zoom/pa
 mode screenshots checked. No fixed offsets or saved-data rewrites. Exact user's
 saved profile/all995 pages/Android device NOT TESTED. Existing web font warning.
 Local commit on codex/reader-highlight-alignment; no push/merge/deployment.
+
+
+## 2026-11-12 — Highlight alignment1.0.13 release verified
+
+PR13/19e570a533252304a3b2e29dea8aeca3267cc8b8; checks43050086480,
+Pages43050507536, permanent APK43050531058 PASS. Public real circuit PDF source
+return/zoom/page-mode checked. Actual1.0.12→1.0.13 same-profile exact saved values,
+PDF term/occurrence/page bookmark/review/focus/progress and managed PDF page3 PASS.
+Local APK signature/package/version14 and834-term/corpus payload PASS. Public latest
+APK full-download SHA256c147312c227e7e505c75fd4174db8e8b10ace74bb789d97119dee0d7202f8c56
+PASS; prior1.0.12 assets unchanged. No data migration or user data deletion.
+Android device/user's actual saved profile NOT TESTED. Root staged88 preserved.
+
+
+## 2026-11-12 — Dictionary priority/corpus decision map
+
+Added read-only two-axis study evidence to dictionary details: stored priority
+category vs selected-source DF/N, actual TF/DF, reason, source tabs and method dialog.
+No aggregate score/provenance invention or recommendation/data mutations. Missing,
+zero and pending cases differ; personal priority gets its own label.
+206 tests/analyze/web PASS; real desktop1100/mobile390/320 source switching, criteria,
+exact storage preservation and existing corpus/PDF regression smoke PASS.
+Visual screenshots checked. Fixed initial Material assertion and 2x axis overflow;
+updated old hidden-reason test for the newly requested evidence. Android NOT TESTED.
+Local5220 preview updated. No commit/push/deployment; staged88 unchanged.
+
+
+## 2026-11-12 — Study-evidence release preparation
+User authorized commit/deploy after reporting an invisible local preview. Current localhost5220 JavaScript matches latest build; fresh browser term-detail visualization PASS. Existing tab cause unconfirmed.
+Prepared1.0.14+15 in isolated codex/study-evidence-release from main19e570a. Explicit task files only; root88 staged copies untouched.
+PASS refreshed206 Windows Flutter tests and8 startup tests. Public1.0.13 isolated profile seeded with bookmark/review/PDF term, occurrence, page bookmark and page3 for upgrade validation. Previous release asset digests saved.
+Next: PR CI, merge, Pages and permanent APK deployment, same-profile data and public download checks. Physical Android NOT TESTED.

@@ -11,6 +11,7 @@ import 'package:recall/bundled_vocabulary.dart';
 import 'corpus/corpus_loader.dart';
 import 'corpus/corpus_stats.dart';
 import 'corpus/corpus_widgets.dart';
+import 'corpus/study_evidence.dart';
 import 'package:recall/recall_backup.dart';
 import 'package:recall/recall_store.dart';
 import 'package:recall/reader/pdf_reader_page.dart';
@@ -3031,8 +3032,11 @@ class _DictionaryTermPageState extends State<_DictionaryTermPage> {
                               for (final meaning in term.effectiveMeanings)
                                 _MeaningView(meaning),
                             ])),
-                    CorpusInfo(
-                        catalog: widget.store.corpus, term: term.displayTerm),
+                    StudyEvidence(
+                        key: ValueKey(term.id),
+                        catalog: widget.store.corpus,
+                        card: term,
+                        initialSource: widget.store.learningSource),
                     TextButton.icon(
                         icon: const Icon(Icons.picture_as_pdf_outlined),
                         label: const Text('PDF 학습 출처'),
