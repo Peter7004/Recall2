@@ -453,3 +453,11 @@ User authorized commit/deploy after reporting an invisible local preview. Curren
 Prepared1.0.14+15 in isolated codex/study-evidence-release from main19e570a. Explicit task files only; root88 staged copies untouched.
 PASS refreshed206 Windows Flutter tests and8 startup tests. Public1.0.13 isolated profile seeded with bookmark/review/PDF term, occurrence, page bookmark and page3 for upgrade validation. Previous release asset digests saved.
 Next: PR CI, merge, Pages and permanent APK deployment, same-profile data and public download checks. Physical Android NOT TESTED.
+
+
+## 2026-11-12 — Release1.0.14+15 completed
+Commitac4e348/PR14 merged281cde4; CI43155416805, Pages43155732038, permanent APK43155742071 PASS. Public desktop/mobile study-evidence/corpus/PDF regression checks and actual same-profile1.0.13→1.0.14 exact five-key preservation PASS; managed PDF restores page3. APK local apksigner/aapt, same package/certificate, code15, bundled834/corpus/provenance and unauthenticated full-download checksum PASS. Previous release assets preserved. Physical Android NOT TESTED. No user-data/schema/ranking changes. Root88 staged unrelated files untouched. See current HANDOFF for links and artifact hashes.
+
+
+## 2026-11-12 — Recovered AI priority criteria and renamed UI
+Found original v3.0 sections5/7 and historical classification prompt; documented exact excerpt/hash and scope in AI_PRIORITY_CRITERIA.md. Renamed ordinary term detail to AI 판단 학습 우선순위, kept personal cards separate, displayed current-grade guideline and existing reason, expanded criteria dialog with all grades/source/uncertainty. No term-level prompt/model/review provenance claimed; no invented numeric criteria or data changes. PASS analyze/206 tests/web and real1100/390/320 source/criteria/storage smoke; screenshots inspected. Preview5220 updated. Android NOT TESTED; no new commit/deploy.

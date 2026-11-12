@@ -5,7 +5,8 @@ previously proposed Reader improvements. Deliver small, tested milestones.
 
 | ID | Status | Deliverable / completion criteria |
 | --- | --- | --- |
-| C4 | RELEASE IN PROGRESS | Dictionary priority × source DF/N decision map, reasons and exact counts.206 tests/analyze/web and real1100/390/320 UI/storage/PDF regressions PASS. No rank/storage changes or deployment. |
+| C4a | COMPLETE LOCALLY | AI 판단 학습 우선순위 label, recovered v3.0 grade criteria/source/provenance limits.206 tests/analyze/web and real1100/390/320 UI/storage PASS. No data/rank changes; personal cards distinct. Not committed/deployed. |
+| C4 | RELEASED1.0.14+15 | Dictionary priority × source DF/N decision map, reasons and exact counts. PR14/281cde4;206 tests/analyze/web/startup8 and public1100/390/320 corpus/PDF regressions PASS. Actual1.0.13→1.0.14 saved-data preservation and permanent APK signature/package/public checksum PASS. No data/ranking changes. Android device NOT TESTED. |
 | H1 | RELEASED1.0.13+14 | Loaded-page geometry and cache fix. PR13/19e570a, CI/Pages/permanent APK and public source-return checks PASS; actual1.0.12→1.0.13 saved-data preservation and APK certificate/package/checksum PASS. Physical Android/user profile NOT TESTED. |
 | C3 | RELEASED1.0.12+13 | Recommendation DF/N donuts and source DF/TF; context-filter wording with explicit method limits. Windows201/analyze/web, public mobile/desktop graph and actual1.0.11→1.0.12 saved-data checks PASS; permanent signed APK/public checksum verified. No statistics or storage changes. Android device NOT TESTED. |
 | C2 | RELEASED1.0.11+12 | Home textbook/abstract focus, source-specific daily recommendations/study, separate preference persistence and preserved explicit sessions. Windows198/analyze/web/startup8, public browser and actual1.0.10→1.0.11 stored-data preservation PASS; signed APK/public checksum verified. See DAILY_CORPUS_RECOMMENDATIONS.md. Android device NOT TESTED. |

@@ -69,6 +69,8 @@ void main() {
     expect(find.text('등장 문서 11 / 22개 (DF)'), findsOneWidget);
     expect(find.text('총 출현 20회 (TF)'), findsOneWidget);
     expect(find.text(value.priorityReason), findsOneWidget);
+    expect(find.text('AI 판단 학습 우선순위'), findsOneWidget);
+    expect(find.text('등급 기준 · Recall 지침 v3.0'), findsOneWidget);
     final oldPoint =
         tester.getCenter(find.byKey(const ValueKey('study-evidence-dot')));
     await tester.tap(find.text('논문 초록 기준'));
@@ -88,6 +90,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('학습 판단 기준'), findsOneWidget);
     expect(find.textContaining('검증된 중요도 점수는 아닙니다'), findsOneWidget);
+    expect(find.text('높음 (high)'), findsOneWidget);
+    expect(find.text('보통 (medium)'), findsOneWidget);
+    expect(find.text('낮음 (low)'), findsOneWidget);
+    expect(find.textContaining('실제 적용 프롬프트·AI 모델·검수 완료 여부'), findsOneWidget);
+    expect(find.textContaining('수치 점수·가중치·등급별 빈도 임계값'), findsOneWidget);
+    await tester.ensureVisible(find.text('집계 기준'));
     await tester.tap(find.text('집계 기준'));
     await tester.pumpAndSettle();
     expect(find.text('빈도 집계 기준'), findsOneWidget);
@@ -104,10 +112,12 @@ void main() {
         0);
     expect(find.text('의미 보류 100회 · 20개 문서 (그래프 제외)'), findsOneWidget);
     expect(find.text('선택한 자료에서 채택된 용례가 없습니다.'), findsOneWidget);
-    await tester.pumpWidget(view(const CorpusCatalog.empty(), card()));
+    await tester.pumpWidget(
+        view(const CorpusCatalog.empty(), card().copyWith(priorityReason: '')));
     expect(find.byType(PriorityCoverageMap), findsNothing);
     expect(find.textContaining('제공되지'), findsOneWidget);
     expect(find.textContaining('0.0%'), findsNothing);
+    expect(find.text('우선순위 근거가 등록되지 않았습니다.'), findsOneWidget);
     await tester.pumpWidget(view(catalog(metadata: false), card()));
     expect(find.byType(PriorityCoverageMap), findsNothing);
     expect(find.text('등장 문서 11개 (DF)'), findsOneWidget);
@@ -132,8 +142,9 @@ void main() {
       final localY = point.dy - tester.getTopLeft(graph).dy;
       if (previousY != null) expect(localY, greaterThan(previousY));
       previousY = localY;
-      expect(find.text('내 우선순위'), findsOneWidget);
-      expect(find.text('AI·등록 우선순위'), findsNothing);
+      expect(find.text('내 학습 우선순위'), findsOneWidget);
+      expect(find.text('AI 판단 학습 우선순위'), findsNothing);
+      expect(find.text('등급 기준 · Recall 지침 v3.0'), findsNothing);
       expect(tester.takeException(), isNull);
     }
   });
