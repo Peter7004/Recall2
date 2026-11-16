@@ -1,3 +1,6 @@
+## Mobile Reader 1.0.16 release in progress
+Mobile document header, highlight control, reading actions and scrollable term panel in pdf_reader_page.dart. Next: tests, PR, public Pages and permanent APK verification.
+
 ## Active: release AI priority criteria1.0.15+16 — 2026-11-12
 User explicitly authorized commit/deploy. Worktree C:/Users/Public/Recall-ai-priority-release, codex/ai-priority-release from main281cde4. Copy explicit tested UI/test/provenance/docs only; increment version. Root88 unrelated staged files untouched.
 Prior implementation PASS analyze/206 tests/web/1100-390-320 real UI/storage. No implementation changes since verification, only version/docs. Next: seed public1.0.14 upgrade profile, commit/PR checks, merge, Pages/permanent APK, public UI/upgrade and signature/download verification. Android device NOT TESTED.

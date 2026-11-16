@@ -906,6 +906,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
   Uint8List? _bytes;
   String _name = 'Recall Reader';
   String? _word;
+  bool _termPanelVisible = true;
   bool _opening = false;
   bool _ready = false;
   int _page = 1;
@@ -1094,6 +1095,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
       if (mounted && request == _selectionRequest && id == _documentId) {
         setState(() {
           _word = word;
+          _termPanelVisible = true;
           _selectionRanges = word == null ? const [] : ranges;
         });
       }
@@ -1197,19 +1199,62 @@ class _PdfReaderPageState extends State<PdfReaderPage>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        floatingActionButton: _compact
-            ? FloatingActionButton(
-                heroTag: 'reader-menu',
-                tooltip: 'Reader 메뉴',
-                shape: const CircleBorder(),
-                onPressed: _showReaderMenu,
-                child: const Icon(Icons.menu_rounded),
-              )
+        bottomNavigationBar: _compact && _bytes != null
+            ? SafeArea(
+                top: false,
+                child: Material(
+                    color: Colors.white,
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                              onPressed: () =>
+                                  setState(() => _termPanelVisible = false),
+                              icon: const Icon(Icons.menu_book_outlined),
+                              label: const Text('읽기')),
+                          TextButton.icon(
+                              onPressed: _word == null
+                                  ? null
+                                  : () =>
+                                      setState(() => _termPanelVisible = true),
+                              icon: const Icon(Icons.info_outline),
+                              label: const Text('용어 정보')),
+                          TextButton.icon(
+                              onPressed: _opening ? null : _showLearning,
+                              icon: const Icon(Icons.bookmarks_outlined),
+                              label: const Text('내 단어장')),
+                        ])))
             : null,
         appBar: AppBar(
-            title: Text(_name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: _compact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        const Text('Recall Reader',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        if (_bytes != null)
+                          Text(_name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall),
+                      ])
+                : Text(_name, maxLines: 1, overflow: TextOverflow.ellipsis),
             actions: _compact
-                ? const []
+                ? [
+                    if (_bytes != null)
+                      IconButton(
+                          tooltip: _highlightAll ? '강조 켜짐' : '강조 꺼짐',
+                          isSelected: _highlightAll,
+                          onPressed: _ready ? _toggleHighlight : null,
+                          icon: Icon(_highlightAll
+                              ? Icons.visibility
+                              : Icons.visibility_off)),
+                    IconButton(
+                        tooltip: 'Reader 메뉴',
+                        onPressed: _showReaderMenu,
+                        icon: const Icon(Icons.menu_rounded)),
+                  ]
                 : [
                     IconButton(
                         tooltip: '저장한 단어·출처',
@@ -1354,11 +1399,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                     },
                                     key: ValueKey(
                                         (_documentId, page.pageNumber)),
-                                    cacheKey: (
-                                      _documentId,
-                                      page,
-                                      _terminology
-                                    ),
+                                    cacheKey: (_documentId, page, _terminology),
                                     viewToken: _controller.isReady
                                         ? (
                                             _controller.centerPosition,
@@ -1417,7 +1458,43 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                 pageCount: _pages,
                                 onNavigate: (page) =>
                                     unawaited(_navigateToPage(page)))),
-                      if (_word != null)
+                      if (_compact && _termPanelVisible && _word != null)
+                        Positioned.fill(
+                            child: Stack(children: [
+                          ModalBarrier(
+                              dismissible: true,
+                              semanticsLabel: '용어 정보 닫기',
+                              color: Colors.black26,
+                              onDismiss: () =>
+                                  setState(() => _termPanelVisible = false)),
+                          Align(
+                              alignment: Alignment.centerRight,
+                              child: Drawer(
+                                  width: math.min(360.0,
+                                      MediaQuery.sizeOf(context).width * .88),
+                                  child: Column(children: [
+                                    ListTile(
+                                        title: const Text('용어 정보'),
+                                        trailing: IconButton(
+                                            tooltip: '닫기',
+                                            icon: const Icon(Icons.close),
+                                            onPressed: () => setState(() =>
+                                                _termPanelVisible = false))),
+                                    const Divider(height: 1),
+                                    Expanded(
+                                        child: ListView(
+                                            padding: const EdgeInsets.all(16),
+                                            children: [
+                                          Text(_word!,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge),
+                                          const SizedBox(height: 12),
+                                          _lookupContent(_word!),
+                                        ])),
+                                  ]))),
+                        ])),
+                      if (!_compact && _word != null)
                         Positioned(
                           left: 16,
                           right: 16,
