@@ -1,3 +1,6 @@
+## Unified PC and mobile Reader
+Removed width-dependent toolbar and popup branches. Next: analyze, tests and web deployment.
+
 ## Mobile Reader 1.0.16 release in progress
 Mobile document header, highlight control, reading actions and scrollable term panel in pdf_reader_page.dart. Next: tests, PR, public Pages and permanent APK verification.
 

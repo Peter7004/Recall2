@@ -1118,8 +1118,6 @@ class _PdfReaderPageState extends State<PdfReaderPage>
     super.dispose();
   }
 
-  bool get _compact => MediaQuery.sizeOf(context).width < 700;
-
   Future<void> _showReaderMenu() => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
@@ -1199,7 +1197,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        bottomNavigationBar: _compact && _bytes != null
+        bottomNavigationBar: _bytes != null
             ? SafeArea(
                 top: false,
                 child: Material(
@@ -1226,63 +1224,30 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                         ])))
             : null,
         appBar: AppBar(
-            title: _compact
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        const Text('Recall Reader',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        if (_bytes != null)
-                          Text(_name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall),
-                      ])
-                : Text(_name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            actions: _compact
-                ? [
-                    if (_bytes != null)
-                      IconButton(
-                          tooltip: _highlightAll ? '강조 켜짐' : '강조 꺼짐',
-                          isSelected: _highlightAll,
-                          onPressed: _ready ? _toggleHighlight : null,
-                          icon: Icon(_highlightAll
-                              ? Icons.visibility
-                              : Icons.visibility_off)),
-                    IconButton(
-                        tooltip: 'Reader 메뉴',
-                        onPressed: _showReaderMenu,
-                        icon: const Icon(Icons.menu_rounded)),
-                  ]
-                : [
-                    IconButton(
-                        tooltip: '저장한 단어·출처',
-                        onPressed: _opening ? null : _showLearning,
-                        icon: const Icon(Icons.school_outlined)),
-                    if (_ready)
-                      IconButton(
-                          tooltip: '본문 검색',
-                          icon: const Icon(Icons.search),
-                          onPressed: () =>
-                              setState(() => _searchVisible = !_searchVisible)),
-                    if (_bytes != null)
-                      IconButton(
-                          tooltip: _paged ? '연속 스크롤로 전환' : '페이지별 보기로 전환',
-                          icon: Icon(_paged
-                              ? Icons.view_agenda_outlined
-                              : Icons.view_carousel_outlined),
-                          onPressed: _ready ? _switchMode : null),
-                    if (_bytes != null)
-                      IconButton(
-                          tooltip: '문서 목록',
-                          onPressed: _opening ? null : _showLibrary,
-                          icon: const Icon(Icons.folder_open_outlined)),
-                    IconButton(
-                        tooltip: 'PDF 열기',
-                        onPressed: _opening ? null : _open,
-                        icon: const Icon(Icons.file_open_outlined)),
-                  ]),
+            title:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Recall Reader',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              if (_bytes != null)
+                Text(_name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall),
+            ]),
+            actions: [
+              if (_bytes != null)
+                IconButton(
+                    tooltip: _highlightAll ? '강조 켜짐' : '강조 꺼짐',
+                    isSelected: _highlightAll,
+                    onPressed: _ready ? _toggleHighlight : null,
+                    icon: Icon(_highlightAll
+                        ? Icons.visibility
+                        : Icons.visibility_off)),
+              IconButton(
+                  tooltip: 'Reader 메뉴',
+                  onPressed: _showReaderMenu,
+                  icon: const Icon(Icons.menu_rounded)),
+            ]),
         body: Column(children: [
           if (_opening) const LinearProgressIndicator(),
           if (_searchVisible) _searchPanel(),
@@ -1308,52 +1273,6 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                           ? () => _navigateToPage(_page + 1)
                           : null,
                       icon: const Icon(Icons.chevron_right)),
-                  if (!_compact) ...[
-                    IconButton(
-                        tooltip: '축소',
-                        onPressed: _ready ? () => _controller.zoomDown() : null,
-                        icon: const Icon(Icons.zoom_out)),
-                    IconButton(
-                        tooltip: '확대',
-                        onPressed: _ready ? () => _controller.zoomUp() : null,
-                        icon: const Icon(Icons.zoom_in)),
-                    IconButton(
-                        tooltip: _pageBookmarks.any((b) => b.page == _page)
-                            ? '페이지 북마크 해제'
-                            : '페이지 북마크 추가',
-                        onPressed:
-                            _ready && _bookmarksReadable && !_bookmarkBusy
-                                ? _togglePageBookmark
-                                : null,
-                        icon: Icon(_pageBookmarks.any((b) => b.page == _page)
-                            ? Icons.bookmark
-                            : Icons.bookmark_border)),
-                    IconButton(
-                        tooltip: '미리보기·북마크',
-                        onPressed:
-                            _ready ? () => _showDocumentNavigator() : null,
-                        icon: const Icon(Icons.grid_view_outlined)),
-                    IconButton(
-                        tooltip: '문서 목차',
-                        onPressed: _ready
-                            ? () => _showDocumentNavigator(outlineOnly: true)
-                            : null,
-                        icon: const Icon(Icons.format_list_bulleted)),
-                    if (_returnPoint != null)
-                      IconButton(
-                          tooltip: '이전 읽던 위치로 돌아가기',
-                          onPressed:
-                              _opening || !_ready ? null : _returnToReading,
-                          icon: const Icon(Icons.undo)),
-                    IconButton(
-                        tooltip: _highlightAll
-                            ? '커서를 올릴 때만 강조로 전환'
-                            : '사전 단어 항상 강조로 전환',
-                        isSelected: _highlightAll,
-                        onPressed: _ready ? _toggleHighlight : null,
-                        icon: const Icon(Icons.highlight_alt_outlined),
-                        selectedIcon: const Icon(Icons.highlight)),
-                  ],
                 ]),
           if (_bytes != null) _analysisStatus(),
           Expanded(
@@ -1458,7 +1377,7 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                 pageCount: _pages,
                                 onNavigate: (page) =>
                                     unawaited(_navigateToPage(page)))),
-                      if (_compact && _termPanelVisible && _word != null)
+                      if (_termPanelVisible && _word != null)
                         Positioned.fill(
                             child: Stack(children: [
                           ModalBarrier(
@@ -1494,32 +1413,6 @@ class _PdfReaderPageState extends State<PdfReaderPage>
                                         ])),
                                   ]))),
                         ])),
-                      if (!_compact && _word != null)
-                        Positioned(
-                          left: 16,
-                          right: 16,
-                          bottom: 16,
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 360),
-                              child: Material(
-                                elevation: 6,
-                                borderRadius: BorderRadius.circular(8),
-                                child: ListTile(
-                                    title: Text(_word!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis),
-                                    subtitle: _lookupContent(_word!),
-                                    trailing: IconButton(
-                                        tooltip: '닫기',
-                                        onPressed: () =>
-                                            setState(() => _word = null),
-                                        icon: const Icon(Icons.close))),
-                              ),
-                            ),
-                          ),
-                        ),
                     ])),
         ]),
       );

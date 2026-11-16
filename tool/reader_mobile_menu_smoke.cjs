@@ -10,8 +10,8 @@ await btn('Reader 메뉴').click();await p.waitForTimeout(300);
 const out=path.resolve(__dirname,'../build/ui-v2-smoke');fs.mkdirSync(out,{recursive:true});await p.screenshot({path:path.join(out,'reader-mobile-menu.png')});
 await btn('페이지 번호로 이동').click();await p.getByRole('textbox').click();await p.keyboard.press('Control+A');await p.keyboard.type('3');await btn('이동').click();await btn('3 / 5').waitFor();await btn('홈').click();await btn('Reader').click();await btn('3 / 5').waitFor();
 await btn('Reader 메뉴').click();await btn('본문 검색').click();await p.getByRole('textbox').waitFor();
-await p.setViewportSize({width:1100,height:850});await btn('미리보기·북마크').waitFor();await btn('Reader 메뉴').waitFor({state:'detached'});
-console.log('PASS mobile Reader menu import/page jump/search and desktop toolbar restoration');
+await p.setViewportSize({width:1100,height:850});await btn('읽기').waitFor();await btn('용어 정보').waitFor();await btn('내 단어장').waitFor();await btn('Reader 메뉴').click();await btn('미리보기·북마크').waitFor();
+console.log('PASS mobile Reader menu import/page jump/search and shared desktop controls');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1});
 
 
